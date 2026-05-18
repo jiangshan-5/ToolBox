@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/converter_provider.dart';
 
-/// Highly customizable universal Unit Converter Sandbox Screen
+/// Highly customizable universal Unit Converter Sandbox Screen with premium dynamic micro-interactions
 class ConverterScreen extends ConsumerStatefulWidget {
   const ConverterScreen({super.key});
 
@@ -95,7 +96,11 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                           _buildSandboxSelectorPanel(state, notifier),
                           const SizedBox(height: 16),
                         ],
-                        _buildConversionCard(context, state, notifier, activeColor),
+                        // MAIN CONVERSION CARD
+                        HoverGlowCard(
+                          glowColor: activeColor,
+                          child: _buildConversionCard(context, state, notifier, activeColor),
+                        ),
                         if (state.allConversionsMatrix.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           _buildAllUnitsMatrixGrid(state, activeColor),
@@ -148,7 +153,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
           final isSel = state.category == cat;
           final color = item['color'] as Color;
 
-          return GestureDetector(
+          return ScaleOnTap(
             onTap: () => notifier.setCategory(cat),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -190,57 +195,70 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     return Column(
       children: [
         if (_isCreatingCustom)
-          Container(
-            padding: const EdgeInsets.all(20),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.purpleAccent.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.purpleAccent.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('设计自定义公式转换卡片', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white60, size: 20),
-                      onPressed: () => setState(() => _isCreatingCustom = false),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSmallFormInput(controller: _customNameController, label: '转换器标题 (如: 汇率、游戏点数换算)'),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildSmallFormInput(controller: _customFromController, label: '原始单位 (如: 金币)')),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildSmallFormInput(controller: _customToController, label: '目标单位 (如: 钻石)')),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: _buildSmallFormInput(controller: _customFactorController, label: '换算比例系数 (Multiplier)')),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildSmallFormInput(controller: _customOffsetController, label: '加减法偏移量 (Offset)', hint: '0.0')),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => _handleCreateCustom(notifier),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purpleAccent,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          HoverGlowCard(
+            glowColor: Colors.purpleAccent,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.purpleAccent.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.purpleAccent.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('设计自定义公式转换卡片', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      ScaleOnTap(
+                        onTap: () => setState(() => _isCreatingCustom = false),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: Icon(Icons.close, color: Colors.white60, size: 20),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Text('一 键 注 入 并 启 用', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  _buildSmallFormInput(controller: _customNameController, label: '转换器标题 (如: 汇率、游戏点数换算)'),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildSmallFormInput(controller: _customFromController, label: '原始单位 (如: 金币)')),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildSmallFormInput(controller: _customToController, label: '目标单位 (如: 钻石)')),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildSmallFormInput(controller: _customFactorController, label: '换算比例系数 (Multiplier)')),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildSmallFormInput(controller: _customOffsetController, label: '加减法偏移量 (Offset)', hint: '0.0')),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ScaleOnTap(
+                    onTap: () => _handleCreateCustom(notifier),
+                    child: Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [Color(0xFF8A2387), Color(0xFFE94057)]),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(color: Colors.purpleAccent.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text('一 键 注 入 并 启 用', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
@@ -278,15 +296,23 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _isCreatingCustom = true),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.purpleAccent),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ScaleOnTap(
+                onTap: () => setState(() => _isCreatingCustom = true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.purpleAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.purpleAccent.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.add, color: Colors.purpleAccent, size: 16),
+                      SizedBox(width: 6),
+                      Text('添加新公式', style: TextStyle(color: Colors.purpleAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
-                icon: const Icon(Icons.add, color: Colors.purpleAccent, size: 16),
-                label: const Text('添加新公式', style: TextStyle(color: Colors.purpleAccent, fontSize: 13, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -342,7 +368,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
           const SizedBox(height: 12),
           
           // SWAP BUTTON
-          GestureDetector(
+          ScaleOnTap(
             onTap: notifier.reverseUnits,
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -373,20 +399,30 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
           const SizedBox(height: 24),
 
           // CLIPBOARD COPY
-          OutlinedButton.icon(
-            onPressed: () {
+          ScaleOnTap(
+            onTap: () {
               Clipboard.setData(ClipboardData(text: '${state.inputValue} ${state.fromUnit.toUpperCase()} = ${state.result.toStringAsFixed(5)} ${state.toUnit.toUpperCase()}'));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('完整计算公式已复制'), duration: Duration(seconds: 1)),
               );
             },
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: activeColor.withOpacity(0.3)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: activeColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: activeColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.copy_all_rounded, color: activeColor, size: 18),
+                  const SizedBox(width: 8),
+                  Text('复制转换公式', style: TextStyle(color: activeColor, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
-            icon: Icon(Icons.copy_all_rounded, color: activeColor, size: 18),
-            label: Text('复制转换公式', style: TextStyle(color: activeColor, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -504,27 +540,37 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
           itemCount: state.allConversionsMatrix.length,
           itemBuilder: (context, index) {
             final item = state.allConversionsMatrix[index];
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.015),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.04)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    item.value.toStringAsFixed(4).replaceAll(RegExp(r'\.?0+$'), ''),
-                    style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold, overflow: TextOverflow.ellipsis),
+            
+            // Reusable slide entrances staggered delay animations
+            return StaggerEntrance(
+              index: index,
+              child: HoverGlowCard(
+                glowColor: color,
+                liftOffset: -3.0,
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.015),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.04)),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.unit.toUpperCase(),
-                    style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w500),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        item.value.toStringAsFixed(4).replaceAll(RegExp(r'\.?0+$'), ''),
+                        style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold, overflow: TextOverflow.ellipsis),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.unit.toUpperCase(),
+                        style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
