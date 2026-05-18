@@ -1,10 +1,53 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../dashboard/provider/tools_provider.dart';
 
-/// Supported physical categories
-enum ConverterCategory { length, mass, temperature, area }
+/// Supported standard physical categories, adding Sandbox for custom user converters
+enum ConverterCategory { length, mass, temperature, area, sandbox }
 
-/// Comprehensive state model wrapping conversion parameters
+/// User-defined conversion formula template
+class CustomConverter {
+  final String id;
+  final String name;
+  final String fromUnit;
+  final String toUnit;
+  final double factor;  // multiplier
+  final double offset;  // offset, e.g. x * factor + offset
+
+  const CustomConverter({
+    required this.id,
+    required this.name,
+    required this.fromUnit,
+    required this.toUnit,
+    required this.factor,
+    required this.offset,
+  });
+
+  CustomConverter copyWith({
+    String? name,
+    String? fromUnit,
+    String? toUnit,
+    double? factor,
+    double? offset,
+  }) {
+    return CustomConverter(
+      id: id,
+      name: name ?? this.name,
+      fromUnit: fromUnit ?? this.fromUnit,
+      toUnit: toUnit ?? this.toUnit,
+      factor: factor ?? this.factor,
+      offset: offset ?? this.offset,
+    );
+  }
+}
+
+/// Dynamic container for all active conversions outputs
+class MatrixUnitItem {
+  final String unit;
+  final double value;
+  const MatrixUnitItem(this.unit, this.value);
+}
+
+/// Comprehensive State Model supporting custom rules and visual matrix comparisons
 class ConverterState {
   final ConverterCategory category;
   final double inputValue;
@@ -13,6 +56,13 @@ class ConverterState {
   final double result;
   final bool isConverting;
 
+  // Sandbox Custom Rules
+  final List<CustomConverter> customConverters;
+  final String? activeCustomId;
+
+  // Simultaneous Outputs
+  final List<MatrixUnitItem> allConversionsMatrix;
+
   const ConverterState({
     required this.category,
     required this.inputValue,
@@ -20,6 +70,9 @@ class ConverterState {
     required this.toUnit,
     required this.result,
     required this.isConverting,
+    required this.customConverters,
+    this.activeCustomId,
+    required this.allConversionsMatrix,
   });
 
   ConverterState copyWith({
@@ -29,6 +82,9 @@ class ConverterState {
     String? toUnit,
     double? result,
     bool? isConverting,
+    List<CustomConverter>? customConverters,
+    String? activeCustomId,
+    List<MatrixUnitItem>? allConversionsMatrix,
   }) {
     return ConverterState(
       category: category ?? this.category,
@@ -37,16 +93,18 @@ class ConverterState {
       toUnit: toUnit ?? this.toUnit,
       result: result ?? this.result,
       isConverting: isConverting ?? this.isConverting,
+      customConverters: customConverters ?? this.customConverters,
+      activeCustomId: activeCustomId ?? this.activeCustomId,
+      allConversionsMatrix: allConversionsMatrix ?? this.allConversionsMatrix,
     );
   }
 }
 
-/// Supercharged StateNotifier handling multi-dimensional conversions, physical constants, and PostgreSQL telemetry logging
+/// Sandboxed Converter StateNotifier
 class ConverterNotifier extends StateNotifier<ConverterState> {
   final Ref _ref;
 
-  // Conversion Factors relative to base units
-  // Length (Base: Meter)
+  // Standard conversion metrics relative to base units
   final Map<String, double> lengthFactors = {
     'mm': 0.001,
     'cm': 0.01,
@@ -58,7 +116,6 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
     'mile': 1609.344,
   };
 
-  // Mass (Base: Kilogram)
   final Map<String, double> massFactors = {
     'g': 0.001,
     'kg': 1.0,
@@ -68,7 +125,6 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
     'jin': 0.5,
   };
 
-  // Area (Base: Square Meter)
   final Map<String, double> areaFactors = {
     '㎡': 1.0,
     '㎢': 1000000.0,
@@ -78,16 +134,78 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
   };
 
   ConverterNotifier(this._ref)
-      : super(const ConverterState(
+      : super(ConverterState(
           category: ConverterCategory.length,
           inputValue: 0.0,
           fromUnit: 'cm',
           toUnit: 'm',
           result: 0.0,
           isConverting: false,
-        ));
+          customConverters: [
+            const CustomConverter(
+              id: '1',
+              name: '游戏金币换算器',
+              fromUnit: '金币',
+              toUnit: '钻石',
+              factor: 0.01,
+              offset: 5.0, // e.g. y = x * 0.01 + 5.0
+            ),
+            const CustomConverter(
+              id: '2',
+              name: '幻想光速转换',
+              fromUnit: '光年',
+              toUnit: '万公里',
+              factor: 946073047.25,
+              offset: 0.0,
+            ),
+          ],
+          activeCustomId: '1',
+          allConversionsMatrix: [],
+        )) {
+    _calculateMatrixComparisons(); // Init matrix
+  }
 
-  /// Get unit key list based on selected category
+  /// Add dynamic user-defined conversion formula card
+  void addCustomConverter({
+    required String name,
+    required String fromUnit,
+    required String toUnit,
+    required double factor,
+    required double offset,
+  }) {
+    final list = [...state.customConverters];
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    list.add(CustomConverter(
+      id: id,
+      name: name,
+      fromUnit: fromUnit,
+      toUnit: toUnit,
+      factor: factor,
+      offset: offset,
+    ));
+    state = state.copyWith(
+      customConverters: list,
+      activeCustomId: id,
+    );
+    _performConversionInstant();
+  }
+
+  void removeCustomConverter(String id) {
+    final list = state.customConverters.where((element) => element.id != id).toList();
+    String? nextActive = list.isNotEmpty ? list.first.id : null;
+    state = state.copyWith(
+      customConverters: list,
+      activeCustomId: nextActive,
+    );
+    _performConversionInstant();
+  }
+
+  void setActiveCustomId(String id) {
+    state = state.copyWith(activeCustomId: id);
+    _performConversionInstant();
+  }
+
+  /// Fetch available units
   List<String> getUnitsForCategory(ConverterCategory cat) {
     switch (cat) {
       case ConverterCategory.length:
@@ -98,10 +216,14 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
         return ['°c', '°f', 'k'];
       case ConverterCategory.area:
         return areaFactors.keys.toList();
+      case ConverterCategory.sandbox:
+        if (state.activeCustomId == null || state.customConverters.isEmpty) return ['源单位', '目标单位'];
+        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
+        return [cur.fromUnit, cur.toUnit];
     }
   }
 
-  /// Change Category and set corresponding sensible defaults
+  /// Category navigation
   void setCategory(ConverterCategory cat) {
     String defFrom = 'cm';
     String defTo = 'm';
@@ -115,6 +237,15 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
     } else if (cat == ConverterCategory.area) {
       defFrom = '㎡';
       defTo = 'mu';
+    } else if (cat == ConverterCategory.sandbox) {
+      if (state.customConverters.isNotEmpty) {
+        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
+        defFrom = cur.fromUnit;
+        defTo = cur.toUnit;
+      } else {
+        defFrom = '输入';
+        defTo = '输出';
+      }
     }
 
     state = state.copyWith(
@@ -123,11 +254,12 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
       toUnit: defTo,
       result: 0.0,
     );
+    _calculateMatrixComparisons();
   }
 
   void updateInputValue(double val) {
     state = state.copyWith(inputValue: val);
-    _performConversionInstant(); // Instant dynamic update as typing
+    _performConversionInstant();
   }
 
   void updateFromUnit(String unit) {
@@ -140,7 +272,6 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
     _performConversionInstant();
   }
 
-  /// Double reverse the physical unit from <=> to
   void reverseUnits() {
     state = state.copyWith(
       fromUnit: state.toUnit,
@@ -148,42 +279,89 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
       inputValue: state.result,
       result: state.inputValue,
     );
+    _calculateMatrixComparisons();
   }
 
-  /// Internal instant calculation triggered on input parameters modification
+  /// Instant calculations
   void _performConversionInstant() {
-    if (state.inputValue == 0.0) {
-      state = state.copyWith(result: 0.0);
-      return;
-    }
-
     double finalResult = 0.0;
     final cat = state.category;
     final from = state.fromUnit;
     final to = state.toUnit;
     final input = state.inputValue;
 
-    if (cat == ConverterCategory.temperature) {
+    if (input == 0.0) {
+      state = state.copyWith(result: 0.0);
+      _calculateMatrixComparisons();
+      return;
+    }
+
+    if (cat == ConverterCategory.sandbox) {
+      if (state.activeCustomId != null && state.customConverters.isNotEmpty) {
+        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
+        if (from == cur.fromUnit) {
+          // Forward calculation: y = x * factor + offset
+          finalResult = input * cur.factor + cur.offset;
+        } else {
+          // Backward calculation: x = (y - offset) / factor
+          finalResult = (input - cur.offset) / cur.factor;
+        }
+      }
+    } else if (cat == ConverterCategory.temperature) {
       finalResult = _convertTemperature(input, from, to);
     } else {
       final factors = cat == ConverterCategory.length
           ? lengthFactors
           : (cat == ConverterCategory.mass ? massFactors : areaFactors);
 
-      double baseVal = input * factors[from]!;
-      finalResult = baseVal / factors[to]!;
+      if (factors.containsKey(from) && factors.containsKey(to)) {
+        double baseVal = input * factors[from]!;
+        finalResult = baseVal / factors[to]!;
+      }
     }
 
     state = state.copyWith(result: finalResult);
+    _calculateMatrixComparisons();
   }
 
-  /// Custom linear temperature algorithms
+  /// Calculates simultaneous comparison sheet across all other sibling units
+  void _calculateMatrixComparisons() {
+    final cat = state.category;
+    final input = state.inputValue;
+    final from = state.fromUnit;
+
+    if (cat == ConverterCategory.sandbox || cat == ConverterCategory.temperature) {
+      state = state.copyWith(allConversionsMatrix: []);
+      return;
+    }
+
+    final factors = cat == ConverterCategory.length
+        ? lengthFactors
+        : (cat == ConverterCategory.mass ? massFactors : areaFactors);
+
+    if (!factors.containsKey(from)) {
+      state = state.copyWith(allConversionsMatrix: []);
+      return;
+    }
+
+    // Convert input to base standard unit value
+    final double baseVal = input * factors[from]!;
+    
+    final List<MatrixUnitItem> matrix = [];
+    factors.forEach((unitKey, factor) {
+      if (unitKey != from) {
+        final calculated = baseVal / factor;
+        matrix.add(MatrixUnitItem(unitKey, calculated));
+      }
+    });
+
+    state = state.copyWith(allConversionsMatrix: matrix);
+  }
+
   double _convertTemperature(double value, String from, String to) {
     if (from == to) return value;
     
     double tempInCelsius = 0;
-    
-    // 1. Standardize to Celsius
     if (from == '°c') {
       tempInCelsius = value;
     } else if (from == '°f') {
@@ -192,7 +370,6 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
       tempInCelsius = value - 273.15;
     }
 
-    // 2. Convert to Target
     if (to == '°c') {
       return tempInCelsius;
     } else if (to == '°f') {
@@ -203,38 +380,9 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
 
     return value;
   }
-
-  /// Trigger heavy formal processing, telemetry logger
-  Future<void> runFormalConversion() async {
-    if (state.isConverting) return;
-
-    state = state.copyWith(isConverting: true);
-    final stopwatch = Stopwatch()..start();
-
-    // Smooth transition simulation
-    await Future.delayed(const Duration(milliseconds: 150));
-    _performConversionInstant();
-    
-    stopwatch.stop();
-    state = state.copyWith(isConverting: false);
-
-    // Save to PostgreSQL backend
-    _ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'converter',
-      parameters: {
-        'category': state.category.name,
-        'input_value': state.inputValue,
-        'from_unit': state.fromUnit,
-        'to_unit': state.toUnit,
-        'result': double.parse(state.result.toStringAsFixed(4)),
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
-  }
 }
 
-/// Riverpod provider for the supercharged converter
+/// Riverpod provider
 final converterProvider = StateNotifierProvider.autoDispose<ConverterNotifier, ConverterState>((ref) {
   return ConverterNotifier(ref);
 });

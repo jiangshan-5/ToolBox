@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../provider/bmi_provider.dart';
 
-/// Highly clinical, modern Body Health and Biometric Analyzer Screen
+/// Sandboxed clinical Body Fitness and Macronutrient Analyzer Screen
 class BmiScreen extends ConsumerStatefulWidget {
   const BmiScreen({super.key});
 
@@ -13,20 +13,25 @@ class BmiScreen extends ConsumerStatefulWidget {
 class _BmiScreenState extends ConsumerState<BmiScreen> {
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
+  final _targetWeightController = TextEditingController(text: '70.0');
 
   Future<void> _handleAnalyze() async {
     final double? h = double.tryParse(_heightController.text.trim());
     final double? w = double.tryParse(_weightController.text.trim());
+    final double? tw = double.tryParse(_targetWeightController.text.trim());
 
-    if (h == null || w == null || h <= 0 || w <= 0) {
+    if (h == null || w == null || tw == null || h <= 0 || w <= 0 || tw <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('请输入合理的数值'),
+          content: Text('请输入合理的体征数值（身高、当前体重及目标体重）'),
           backgroundColor: Colors.pinkAccent,
         ),
       );
       return;
     }
+
+    // Set Target Weight dynamically in provider before running analysis
+    ref.read(bmiProvider.notifier).setTargetWeight(tw);
 
     final success = await ref.read(bmiProvider.notifier).runBiometricAnalysis(
       heightInput: h,
@@ -47,16 +52,18 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
   void dispose() {
     _heightController.dispose();
     _weightController.dispose();
+    _targetWeightController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(bmiProvider);
+    final notifier = ref.read(bmiProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('体征与健康代谢分析中心', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('体征目标与宏量营养沙盒', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -71,13 +78,15 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildUnitSystemToggle(state),
+                  _buildUnitSystemToggle(state, notifier),
                   const SizedBox(height: 20),
-                  _buildGenderSelector(state),
+                  _buildGenderSelector(state, notifier),
                   const SizedBox(height: 24),
-                  _buildBiometricInputs(state),
+                  _buildBiometricInputs(state, notifier),
                   const SizedBox(height: 24),
-                  _buildActivitySelector(state),
+                  _buildGoalSandboxConfig(state, notifier),
+                  const SizedBox(height: 24),
+                  _buildMacroSplitsSandbox(state, notifier),
                   const SizedBox(height: 32),
                   _buildSubmitButton(state),
                   if (state.bmi != null) ...[
@@ -105,7 +114,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
     );
   }
 
-  Widget _buildUnitSystemToggle(BmiState state) {
+  Widget _buildUnitSystemToggle(BmiState state, BmiNotifier notifier) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -117,7 +126,10 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => ref.read(bmiProvider.notifier).toggleSystem(true),
+              onTap: () {
+                notifier.toggleSystem(true);
+                _targetWeightController.text = '70.0';
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
@@ -140,7 +152,10 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => ref.read(bmiProvider.notifier).toggleSystem(false),
+              onTap: () {
+                notifier.toggleSystem(false);
+                _targetWeightController.text = '154.0';
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
@@ -166,13 +181,13 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
     );
   }
 
-  Widget _buildGenderSelector(BmiState state) {
+  Widget _buildGenderSelector(BmiState state, BmiNotifier notifier) {
     final isMale = state.gender == 'male';
     return Row(
       children: [
         Expanded(
           child: GestureDetector(
-            onTap: () => ref.read(bmiProvider.notifier).setGender('male'),
+            onTap: () => notifier.setGender('male'),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(vertical: 18),
@@ -203,7 +218,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
         const SizedBox(width: 16),
         Expanded(
           child: GestureDetector(
-            onTap: () => ref.read(bmiProvider.notifier).setGender('female'),
+            onTap: () => notifier.setGender('female'),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(vertical: 18),
@@ -235,7 +250,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
     );
   }
 
-  Widget _buildBiometricInputs(BmiState state) {
+  Widget _buildBiometricInputs(BmiState state, BmiNotifier notifier) {
     final heightUnit = state.isMetric ? 'cm' : 'inch';
     final weightUnit = state.isMetric ? 'kg' : 'lb';
 
@@ -254,7 +269,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
               Expanded(
                 child: _buildInputField(
                   controller: _heightController,
-                  label: '输入身高 ($heightUnit)',
+                  label: '输入当前身高 ($heightUnit)',
                   icon: Icons.height_rounded,
                 ),
               ),
@@ -262,16 +277,19 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
               Expanded(
                 child: _buildInputField(
                   controller: _weightController,
-                  label: '输入体重 ($weightUnit)',
+                  label: '输入当前体重 ($weightUnit)',
                   icon: Icons.monitor_weight_outlined,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            '输入年龄: ${state.age} 岁',
-            style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.between,
+            children: [
+              const Text('基础新陈代谢年龄:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              Text('${state.age} 岁', style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold)),
+            ],
           ),
           Slider(
             value: state.age.toDouble(),
@@ -280,45 +298,40 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
             divisions: 95,
             activeColor: Colors.pinkAccent,
             inactiveColor: Colors.white10,
-            onChanged: (v) => ref.read(bmiProvider.notifier).setAge(v.toInt()),
+            onChanged: (v) => notifier.setAge(v.toInt()),
           ),
+          const SizedBox(height: 8),
+          _buildActivitySelector(state, notifier),
         ],
       ),
     );
   }
 
   Widget _buildInputField({required TextEditingController controller, required String label, required IconData icon}) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
-      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-        prefixIcon: Icon(icon, color: Colors.pinkAccent, size: 20),
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+        prefixIcon: Icon(icon, color: Colors.pinkAccent, size: 18),
         filled: true,
         fillColor: Colors.white.withOpacity(0.04),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.pinkAccent, width: 1.5),
-        ),
       ),
     );
   }
 
-  Widget _buildActivitySelector(BmiState state) {
+  Widget _buildActivitySelector(BmiState state, BmiNotifier notifier) {
     final activities = ['久坐不动', '轻度活动', '中度运动', '高强度训练', '专业运动员'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '选择您的日常活跃程度',
-          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
+        const Text('日常活跃系数:', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 8),
         SizedBox(
-          height: 48,
+          height: 40,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: activities.length,
@@ -326,25 +339,25 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
               final act = activities[index];
               final isSel = state.activity == act;
               return GestureDetector(
-                onTap: () => ref.read(bmiProvider.notifier).setActivity(act),
+                onTap: () => notifier.setActivity(act),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: isSel ? Colors.pinkAccent : Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(14),
+                    color: isSel ? Colors.pinkAccent.withOpacity(0.15) : Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSel ? Colors.transparent : Colors.white.withOpacity(0.08),
+                      color: isSel ? Colors.pinkAccent.withOpacity(0.4) : Colors.white.withOpacity(0.06),
                     ),
                   ),
                   child: Center(
                     child: Text(
                       act,
                       style: TextStyle(
-                        color: isSel ? Colors.white : Colors.white70,
+                        color: isSel ? Colors.pinkAccent : Colors.white70,
                         fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -354,6 +367,219 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // ==================== 1. WEIGHT GOAL SANDBOX PANEL ====================
+
+  Widget _buildGoalSandboxConfig(BmiState state, BmiNotifier notifier) {
+    final weightUnit = state.isMetric ? 'kg' : 'lb';
+    final changeText = state.weeklyChange < 0
+        ? '📉 每周减重 ${state.weeklyChange.abs().toStringAsFixed(2)} $weightUnit'
+        : '📈 每周增重 ${state.weeklyChange.toStringAsFixed(2)} $weightUnit';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.track_changes_rounded, color: Colors.pinkAccent, size: 18),
+              SizedBox(width: 8),
+              Text('增肌减脂体重目标沙盒', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            controller: _targetWeightController,
+            label: '设定终极目标体重 ($weightUnit)',
+            icon: Icons.flag_rounded,
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.between,
+            children: [
+              const Text('每周健康体重变动期望:', style: TextStyle(color: Colors.white60, fontSize: 13)),
+              Text(changeText, style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          Slider(
+            value: state.weeklyChange,
+            min: state.isMetric ? -1.5 : -3.3,
+            max: state.isMetric ? 1.5 : 3.3,
+            divisions: 60,
+            activeColor: Colors.pinkAccent,
+            inactiveColor: Colors.white10,
+            onChanged: (v) => notifier.setWeeklyChange(v),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== 2. MACROS RATIO SANDBOX ====================
+
+  Widget _buildMacroSplitsSandbox(BmiState state, BmiNotifier notifier) {
+    final total = state.proteinPercent + state.carbPercent + state.fatPercent;
+    final isBalanced = total == 100;
+
+    final presets = [
+      {'title': '均衡饮食流', 'p': 30, 'c': 40, 'f': 30},
+      {'title': '极低碳生酮流', 'p': 20, 'c': 5, 'f': 75},
+      {'title': '高蛋白增肌流', 'p': 40, 'c': 40, 'f': 20},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.restaurant_menu_rounded, color: Colors.pinkAccent, size: 18),
+              SizedBox(width: 8),
+              Text('三大宏量营养分配比重沙盒', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Presets row
+          SizedBox(
+            height: 34,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: presets.map((p) {
+                final isCurrent = state.proteinPercent == p['p'] &&
+                    state.carbPercent == p['c'] &&
+                    state.fatPercent == p['f'];
+                return GestureDetector(
+                  onTap: () => notifier.setMacrosRatios(p['p']!, p['c']!, p['f']!),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? Colors.pinkAccent : Colors.white.withOpacity(0.02),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: isCurrent ? Colors.transparent : Colors.white.withOpacity(0.06)),
+                    ),
+                    child: Text(
+                      p['title'] as String,
+                      style: TextStyle(
+                        color: isCurrent ? Colors.white : Colors.white70,
+                        fontSize: 11,
+                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+
+          // Protein Slider (Orange)
+          _buildMacroSliderRow(
+            label: '🥚 蛋白质 (Protein %)',
+            value: state.proteinPercent,
+            color: Colors.orangeAccent,
+            onChanged: (v) => notifier.setMacrosRatios(v, state.carbPercent, state.fatPercent),
+          ),
+
+          // Carb Slider (Cyan)
+          _buildMacroSliderRow(
+            label: '🍞 碳水化合物 (Carbs %)',
+            value: state.carbPercent,
+            color: Colors.cyanAccent,
+            onChanged: (v) => notifier.setMacrosRatios(state.proteinPercent, v, state.fatPercent),
+          ),
+
+          // Fat Slider (Green)
+          _buildMacroSliderRow(
+            label: '🥑 脂肪 (Fats %)',
+            value: state.fatPercent,
+            color: Colors.greenAccent,
+            onChanged: (v) => notifier.setMacrosRatios(state.proteinPercent, state.carbPercent, v),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Ratio Sum Warning check
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('沙盒配比占比总和:', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              Text(
+                '$total% / 100%',
+                style: TextStyle(
+                  color: isBalanced ? Colors.greenAccent : Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          if (!isBalanced) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Text(
+                  '⚠️ 营养素能量占比总和必须等于 100%，以保证克数正确。',
+                  style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+            )
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMacroSliderRow({
+    required String label,
+    required int value,
+    required Color color,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.between,
+            children: [
+              Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text('$value%', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+          Slider(
+            value: value.toDouble(),
+            min: 0,
+            max: 100,
+            divisions: 20,
+            activeColor: color,
+            inactiveColor: Colors.white10,
+            onChanged: (v) => onChanged(v.toInt()),
+          ),
+        ],
+      ),
     );
   }
 
@@ -370,20 +596,23 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
       child: state.isCalculating
           ? const CircularProgressIndicator(color: Colors.white)
           : const Text(
-              '一 键 智 能 体 征 分 析',
+              '注 入 配 置 并 诊 断',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2),
             ),
     );
   }
 
-  // --- HEALTH DASHBOARD ---
+  // ==================== RESULT DASHBOARDS ====================
 
   Widget _buildResultDashboard(BmiState state) {
+    final isBalanced = (state.proteinPercent + state.carbPercent + state.fatPercent) == 100;
+    final weightUnit = state.isMetric ? 'kg' : 'lb';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '人体健康数据体征仪',
+          '体征目标与营养诊断仪',
           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
@@ -419,6 +648,112 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
 
         const SizedBox(height: 20),
 
+        // WEIGHT SANDBOX PROJECTIONS SUMMARY CARD
+        if (state.weeksToTarget != null && state.weeksToTarget! > 0)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.02),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+            ),
+            child: Column(
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.hourglass_empty_rounded, color: Colors.cyanAccent, size: 20),
+                    SizedBox(width: 8),
+                    Text('目标身材预计达成沙盒倒计时', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${state.weeksToTarget!.toStringAsFixed(1)} 周',
+                  style: const TextStyle(color: Colors.cyanAccent, fontSize: 36, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '约等于 ${(state.weeksToTarget! * 7).toStringAsFixed(0)} 天，日摄入偏离值：${state.caloricOffset.toStringAsFixed(0)} kcal',
+                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: 20),
+
+        // DAILY TARGET FOOD ENERGY CAP
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.restaurant_rounded, color: Colors.pinkAccent, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    '沙盒量身定制每日卡路里摄入目标',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${state.finalCalorieGoal!.toStringAsFixed(0)} 千卡 / 天',
+                style: const TextStyle(color: Colors.greenAccent, fontSize: 32, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '根据您配置的体重目标热量偏离（已对齐临床健康红线底限），这是您每天的完美能量目标。',
+                style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // DYNAMIC MACROS PILLS DASHBOARD (Only visible if 100% split is balanced)
+        if (isBalanced && state.proteinGrams != null) ...[
+          const Text('沙盒每日蛋白质 / 碳水 / 脂肪精确吃法 (克数):', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildMacroPillBox(
+                label: '蛋 白 质',
+                value: '${state.proteinGrams!.toStringAsFixed(1)}g',
+                percent: '${state.proteinPercent}%',
+                color: Colors.orangeAccent,
+              ),
+              const SizedBox(width: 10),
+              _buildMacroPillBox(
+                label: '碳水化合物',
+                value: '${state.carbGrams!.toStringAsFixed(1)}g',
+                percent: '${state.carbPercent}%',
+                color: Colors.cyanAccent,
+              ),
+              const SizedBox(width: 10),
+              _buildMacroPillBox(
+                label: '脂 肪',
+                value: '${state.fatGrams!.toStringAsFixed(1)}g',
+                percent: '${state.fatPercent}%',
+                color: Colors.greenAccent,
+              ),
+            ],
+          ),
+        ],
+
+        const SizedBox(height: 20),
+
         // CLINICAL DETAILS GRID
         GridView.count(
           shrinkWrap: true,
@@ -438,7 +773,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
             _buildGridMetricCard(
               title: '理想标准体重',
               value: '${state.idealWeight!.toStringAsFixed(1)}',
-              unit: state.isMetric ? 'kg' : 'lb',
+              unit: weightUnit,
               color: Colors.cyanAccent,
               icon: Icons.check_circle_rounded,
             ),
@@ -451,50 +786,34 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
             ),
           ],
         ),
-
-        const SizedBox(height: 20),
-
-        // TARGET CALORIC TARGET BANNER
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.restaurant_rounded, color: Colors.pinkAccent, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    '每日卡路里能量上限推荐',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    const TextSpan(text: '根据您的日常活跃度 (', style: TextStyle(color: Colors.white60, fontSize: 13)),
-                    TextSpan(text: state.activity, style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold, fontSize: 13)),
-                    const TextSpan(text: ')，建议您每日的食物卡路里摄入维持在 ', style: TextStyle(color: Colors.white60, fontSize: 13)),
-                    TextSpan(
-                      text: '${state.dailyCalories!.toStringAsFixed(0)}',
-                      style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                    const TextSpan(text: ' 千卡 (kcal) 以内，以维持能量完美代谢平衡。', style: TextStyle(color: Colors.white60, fontSize: 13)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
+    );
+  }
+
+  Widget _buildMacroPillBox({
+    required String label,
+    required String value,
+    required String percent,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.02),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+            const SizedBox(height: 6),
+            Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(percent, style: TextStyle(color: color.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
     );
   }
 
