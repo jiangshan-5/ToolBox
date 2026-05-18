@@ -285,7 +285,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
           ),
           const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.between,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('基础新陈代谢年龄:', style: TextStyle(color: Colors.white70, fontSize: 13)),
               Text('${state.age} 岁', style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold)),
@@ -403,7 +403,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
           ),
           const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.between,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('每周健康体重变动期望:', style: TextStyle(color: Colors.white60, fontSize: 13)),
               Text(changeText, style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold)),
@@ -463,7 +463,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
                     state.carbPercent == p['c'] &&
                     state.fatPercent == p['f'];
                 return GestureDetector(
-                  onTap: () => notifier.setMacrosRatios(p['p']!, p['c']!, p['f']!),
+                  onTap: () => notifier.setMacrosRatios(p['p'] as int, p['c'] as int, p['f'] as int),
                   child: Container(
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -563,7 +563,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.between,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
               Text('$value%', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),

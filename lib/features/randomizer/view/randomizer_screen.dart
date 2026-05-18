@@ -232,7 +232,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               ),
               const SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('零对齐填充长度:', style: TextStyle(color: Colors.white60, fontSize: 13)),
                   Text('${state.padLeft} 位 (如: 007)', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
@@ -248,7 +248,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                 onChanged: (v) => notifier.setPadLeft(v.toInt()),
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('生成总项数:', style: TextStyle(color: Colors.white60, fontSize: 13)),
                   Text('${state.generateCount} 项', style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
@@ -264,7 +264,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                 onChanged: (v) => notifier.setGenerateCount(v.toInt()),
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('允许结果出现重复项:', style: TextStyle(color: Colors.white60, fontSize: 13)),
                   Switch(
@@ -406,7 +406,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.between,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('配置选项与相对权重占比', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13)),
                     Text('共 ${state.weightedOptions.length} 个选项', style: const TextStyle(color: Colors.pinkAccent, fontSize: 12)),
@@ -480,7 +480,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
         if (state.weightedOptions.isNotEmpty) ...[
           // DRAW COUNT CONFIG
           Row(
-            mainAxisAlignment: MainAxisAlignment.between,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('本次抽取目标项数:', style: TextStyle(color: Colors.white60, fontSize: 13)),
               Text('${state.drawCount} 项', style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold)),
@@ -556,7 +556,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               const SizedBox(height: 20),
               if (_diceLabelsController.text.trim().isEmpty) ...[
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.between,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('使用标准数字多面骰:', style: TextStyle(color: Colors.white60, fontSize: 13)),
                     Text('${state.diceSides} 面骰子', style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
@@ -652,7 +652,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.between,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('🎉 随机产生结果清单:', style: TextStyle(color: Colors.white60, fontSize: 13)),
               OutlinedButton.icon(

@@ -202,7 +202,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.between,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('设计自定义公式转换卡片', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                     IconButton(
