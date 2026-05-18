@@ -1,54 +1,17 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../dashboard/provider/tools_provider.dart';
+import '../provider/randomizer_provider.dart';
 
-class RandomizerScreen extends ConsumerStatefulWidget {
+/// Clean ConsumerWidget representing the UI rendering of the Randomizer feature
+class RandomizerScreen extends ConsumerWidget {
   const RandomizerScreen({super.key});
 
   @override
-  ConsumerState<RandomizerScreen> createState() => _RandomizerScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final randomizerState = ref.watch(randomizerProvider);
+    final isGenerating = randomizerState.isGenerating;
+    final result = randomizerState.result;
 
-class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
-  int _result = 0;
-  final _random = Random();
-  bool _isGenerating = false;
-
-  /// Trigger number generation and log execution metrics to database
-  Future<void> _generate() async {
-    setState(() {
-      _isGenerating = true;
-    });
-
-    final stopwatch = Stopwatch()..start();
-
-    // Subtle delay to simulate physical wheel spinning / tactile feel
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    final generatedVal = _random.nextInt(100) + 1;
-    stopwatch.stop();
-
-    setState(() {
-      _result = generatedVal;
-      _isGenerating = false;
-    });
-
-    // Fire-and-forget telemetry logging to backend database
-    ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'randomizer',
-      parameters: {
-        'min': 1,
-        'max': 100,
-        'result': generatedVal,
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('随机选择生成器', style: TextStyle(color: Colors.white)),
@@ -87,10 +50,10 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                       ],
                     ),
                     child: Center(
-                      child: _isGenerating
+                      child: isGenerating
                           ? const CircularProgressIndicator(color: Colors.orangeAccent)
                           : Text(
-                              '$_result',
+                              '$result',
                               style: const TextStyle(
                                 fontSize: 72, 
                                 fontWeight: FontWeight.bold, 
@@ -101,7 +64,9 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                   ),
                   const SizedBox(height: 50),
                   ElevatedButton(
-                    onPressed: _isGenerating ? null : _generate,
+                    onPressed: isGenerating
+                        ? null
+                        : () => ref.read(randomizerProvider.notifier).generate(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orangeAccent,
                       foregroundColor: Colors.black87,

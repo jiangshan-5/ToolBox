@@ -1,65 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../dashboard/provider/tools_provider.dart';
+import '../provider/converter_provider.dart';
 
-class ConverterScreen extends ConsumerStatefulWidget {
+/// Clean ConsumerWidget representing the UI of the Physical Converter feature
+class ConverterScreen extends ConsumerWidget {
   const ConverterScreen({super.key});
 
   @override
-  ConsumerState<ConverterScreen> createState() => _ConverterScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(converterProvider);
+    final notifier = ref.read(converterProvider.notifier);
 
-class _ConverterScreenState extends ConsumerState<ConverterScreen> {
-  double _inputValue = 0;
-  String _fromUnit = 'cm';
-  String _toUnit = 'm';
-  double _result = 0;
-  bool _isConverting = false;
-
-  final Map<String, double> _unitFactors = {
-    'cm': 1.0,
-    'm': 100.0,
-    'inch': 2.54,
-    'feet': 30.48,
-  };
-
-  /// Trigger conversion calculation and log telemetry to PostgreSQL
-  Future<void> _convert() async {
-    setState(() {
-      _isConverting = true;
-    });
-
-    final stopwatch = Stopwatch()..start();
-
-    // Quick delay simulating unit processing
-    await Future.delayed(const Duration(milliseconds: 150));
-
-    double valueInCm = _inputValue * _unitFactors[_fromUnit]!;
-    double finalResult = valueInCm / _unitFactors[_toUnit]!;
-    
-    stopwatch.stop();
-
-    setState(() {
-      _result = finalResult;
-      _isConverting = false;
-    });
-
-    // Fire off non-blocking telemetry logging to database
-    ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'converter',
-      parameters: {
-        'input_value': _inputValue,
-        'from_unit': _fromUnit,
-        'to_unit': _toUnit,
-        'result': double.parse(finalResult.toStringAsFixed(4)),
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('标准单位转换器', style: TextStyle(color: Colors.white)),
@@ -77,14 +28,14 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  _buildInputField(),
+                  _buildInputField(notifier),
                   const SizedBox(height: 24),
-                  _buildUnitSelectors(),
+                  _buildUnitSelectors(context, state, notifier),
                   const SizedBox(height: 40),
-                  _buildConvertButton(),
-                  if (_result > 0 || _inputValue > 0) ...[
+                  _buildConvertButton(state, notifier),
+                  if (state.result > 0 || state.inputValue > 0) ...[
                     const SizedBox(height: 50),
-                    _buildResultDisplay(),
+                    _buildResultDisplay(state),
                   ]
                 ],
               ),
@@ -107,7 +58,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  Widget _buildInputField() {
+  Widget _buildInputField(ConverterNotifier notifier) {
     return TextField(
       keyboardType: TextInputType.number,
       style: const TextStyle(color: Colors.white),
@@ -127,15 +78,13 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
         ),
       ),
       onChanged: (v) {
-        final val = double.tryParse(v) ?? 0;
-        setState(() {
-          _inputValue = val;
-        });
+        final val = double.tryParse(v) ?? 0.0;
+        notifier.updateInputValue(val);
       },
     );
   }
 
-  Widget _buildUnitSelectors() {
+  Widget _buildUnitSelectors(BuildContext context, ConverterState state, ConverterNotifier notifier) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -146,15 +95,15 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildDropdown(_fromUnit, (v) => setState(() => _fromUnit = v!)),
+          _buildDropdown(context, state.fromUnit, notifier.unitFactors.keys.toList(), (v) => notifier.updateFromUnit(v!)),
           const Icon(Icons.arrow_forward_rounded, color: Colors.cyanAccent),
-          _buildDropdown(_toUnit, (v) => setState(() => _toUnit = v!)),
+          _buildDropdown(context, state.toUnit, notifier.unitFactors.keys.toList(), (v) => notifier.updateToUnit(v!)),
         ],
       ),
     );
   }
 
-  Widget _buildDropdown(String value, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(BuildContext context, String value, List<String> units, ValueChanged<String?> onChanged) {
     return Theme(
       data: Theme.of(context).copyWith(
         canvasColor: const Color(0xFF24243E),
@@ -165,7 +114,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
         iconEnabledColor: Colors.cyanAccent,
         underline: const SizedBox(),
         style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-        items: _unitFactors.keys.map((u) {
+        items: units.map((u) {
           return DropdownMenuItem(
             value: u,
             child: Text(u.toUpperCase()),
@@ -176,9 +125,9 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  Widget _buildConvertButton() {
+  Widget _buildConvertButton(ConverterState state, ConverterNotifier notifier) {
     return ElevatedButton(
-      onPressed: _isConverting ? null : _convert,
+      onPressed: state.isConverting ? null : () => notifier.convert(),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.cyanAccent,
         foregroundColor: Colors.black87,
@@ -186,7 +135,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 4,
       ),
-      child: _isConverting
+      child: state.isConverting
           ? const SizedBox(
               width: 24,
               height: 24,
@@ -196,18 +145,18 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  Widget _buildResultDisplay() {
+  Widget _buildResultDisplay(ConverterState state) {
     return Column(
       children: [
         const Text('转换结果', style: TextStyle(fontSize: 14, color: Colors.white60)),
         const SizedBox(height: 8),
         Text(
-          _result.toStringAsFixed(4),
+          state.result.toStringAsFixed(4),
           style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold, color: Colors.cyanAccent),
         ),
         const SizedBox(height: 4),
         Text(
-          _toUnit.toUpperCase(), 
+          state.toUnit.toUpperCase(), 
           style: const TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.bold),
         ),
       ],

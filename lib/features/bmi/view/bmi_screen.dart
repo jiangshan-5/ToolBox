@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../dashboard/provider/tools_provider.dart';
+import '../provider/bmi_provider.dart';
 
+/// ConsumerStatefulWidget representing the BMI calculator view, hosting lifecycle-bound text controllers safely
 class BmiScreen extends ConsumerStatefulWidget {
   const BmiScreen({super.key});
 
@@ -12,12 +13,8 @@ class BmiScreen extends ConsumerStatefulWidget {
 class _BmiScreenState extends ConsumerState<BmiScreen> {
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
-  double? _bmi;
-  String _message = "";
-  bool _isCalculating = false;
 
-  /// Perform physical calculator logic and log telemetry to PostgreSQL
-  Future<void> _calculate() async {
+  Future<void> _handleCalculate() async {
     final double? h = double.tryParse(_heightController.text.trim());
     final double? w = double.tryParse(_weightController.text.trim());
 
@@ -31,47 +28,19 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
       return;
     }
 
-    setState(() {
-      _isCalculating = true;
-    });
-
-    final stopwatch = Stopwatch()..start();
-    
-    // Simulate quick calculation load
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final calculatedBmi = w / ((h / 100) * (h / 100));
-    String msg = "";
-
-    if (calculatedBmi < 18.5) {
-      msg = "体重偏轻 - 营养摄入有些不足，吃点点心吧！🥗";
-    } else if (calculatedBmi < 25) {
-      msg = "健康体态 - 指标非常完美，继续保持！✨";
-    } else if (calculatedBmi < 30) {
-      msg = "超重范围 - 适当运动，少糖少油哦！🏃";
-    } else {
-      msg = "肥胖范围 - 为了健康，建议咨询专业医生！❤️";
-    }
-    stopwatch.stop();
-
-    setState(() {
-      _bmi = calculatedBmi;
-      _message = msg;
-      _isCalculating = false;
-    });
-
-    // Save telemetry to DB logs
-    ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'bmi_calculator',
-      parameters: {
-        'height': h,
-        'weight': w,
-        'bmi': double.parse(calculatedBmi.toStringAsFixed(2)),
-        'outcome': msg,
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
+    final success = await ref.read(bmiProvider.notifier).calculate(
+      height: h,
+      weight: w,
     );
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('计算失败，请输入合理数值'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+    }
   }
 
   @override
@@ -83,6 +52,11 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bmiState = ref.watch(bmiProvider);
+    final bmi = bmiState.bmi;
+    final message = bmiState.message;
+    final isCalculating = bmiState.isCalculating;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('健康 BMI 计算器', style: TextStyle(color: Colors.white)),
@@ -112,10 +86,10 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
                     icon: Icons.monitor_weight_outlined,
                   ),
                   const SizedBox(height: 40),
-                  _buildCalculateButton(),
-                  if (_bmi != null) ...[
+                  _buildCalculateButton(isCalculating),
+                  if (bmi != null) ...[
                     const SizedBox(height: 40),
-                    _buildResultCard(),
+                    _buildResultCard(bmi, message),
                   ]
                 ],
               ),
@@ -138,9 +112,9 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
     );
   }
 
-  Widget _buildCalculateButton() {
+  Widget _buildCalculateButton(bool isCalculating) {
     return ElevatedButton(
-      onPressed: _isCalculating ? null : _calculate,
+      onPressed: isCalculating ? null : _handleCalculate,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.pinkAccent,
         foregroundColor: Colors.white,
@@ -148,7 +122,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 4,
       ),
-      child: _isCalculating
+      child: isCalculating
           ? const SizedBox(
               width: 24,
               height: 24,
@@ -158,7 +132,7 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
     );
   }
 
-  Widget _buildResultCard() {
+  Widget _buildResultCard(double bmi, String message) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -179,12 +153,12 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
           const Text('您的 BMI 指数', style: TextStyle(fontSize: 14, color: Colors.white60)),
           const SizedBox(height: 8),
           Text(
-            _bmi!.toStringAsFixed(1),
+            bmi.toStringAsFixed(1),
             style: const TextStyle(fontSize: 72, fontWeight: FontWeight.bold, color: Colors.pinkAccent),
           ),
           const SizedBox(height: 12),
           Text(
-            _message, 
+            message, 
             textAlign: TextAlign.center, 
             style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
           ),
