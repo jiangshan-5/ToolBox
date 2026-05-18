@@ -46,7 +46,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
 
     // Fire off non-blocking telemetry logging to database
     ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'unit_converter',
+      toolKey: 'converter',
       parameters: {
         'input_value': _inputValue,
         'from_unit': _fromUnit,
@@ -181,7 +181,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
       onPressed: _isConverting ? null : _convert,
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.cyanAccent,
-        foregroundColor: Colors.black80,
+        foregroundColor: Colors.black87,
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 4,

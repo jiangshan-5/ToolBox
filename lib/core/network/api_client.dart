@@ -7,7 +7,7 @@ class ApiClient {
   late final Dio _dio;
 
   /// The live production cloud server URL (Alibaba Cloud Shenzhen)
-  static const String liveServerUrl = 'http://47.106.119.62:1234';
+  static const String liveServerUrl = 'http://47.106.119.62:1234/api/v1';
 
   /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
   static const bool useLiveServer = true;
@@ -18,14 +18,14 @@ class ApiClient {
       return liveServerUrl;
     }
     if (kIsWeb) {
-      return 'http://localhost:8000';
+      return 'http://localhost:8000/api/v1';
     }
     // Android Emulator bridges to local host loopback via 10.0.2.2
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
+      return 'http://10.0.2.2:8000/api/v1';
     }
     // iOS Simulator, Windows, macOS, Linux desktop
-    return 'http://127.0.0.1:8000';
+    return 'http://127.0.0.1:8000/api/v1';
   }
 
   ApiClient() {

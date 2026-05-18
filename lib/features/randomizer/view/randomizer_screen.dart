@@ -104,7 +104,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                     onPressed: _isGenerating ? null : _generate,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orangeAccent,
-                      foregroundColor: Colors.black80,
+                      foregroundColor: Colors.black87,
                       padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       elevation: 5,

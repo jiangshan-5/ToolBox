@@ -31,8 +31,73 @@
 
   <title>toolbox_app</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- 🎨 Elegant Dark-Purple Loading System Stylesheet -->
+  <style>
+    body {
+      background-color: #141221;
+      margin: 0;
+      overflow: hidden;
+    }
+    #loading {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #141221 0%, #1a153b 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(138, 75, 243, 0.1);
+      border-radius: 50%;
+      border-top-color: #8a4bf3;
+      animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+      -webkit-animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    }
+    .loading-text {
+      margin-top: 24px;
+      color: #b0a9df;
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      font-weight: 500;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @-webkit-keyframes spin {
+      to { -webkit-transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
+  <!-- 🔮 Live Dark Purple Splash Screen Overlay -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Toolbox Pro 正在初始化极速引擎...</div>
+  </div>
+
+  <script>
+    // 🚀 High-performance Observer to instantly fade out the loader once the Flutter Canvas renders
+    const observer = new MutationObserver((mutations) => {
+      if (document.querySelector('flt-glass-pane') || document.querySelector('canvas')) {
+        const loading = document.getElementById('loading');
+        if (loading) {
+          loading.style.transition = 'opacity 0.5s ease-out';
+          loading.style.opacity = '0';
+          setTimeout(() => loading.remove(), 500);
+        }
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  </script>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
