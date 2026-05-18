@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/token_manager.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -30,50 +32,123 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(AuthState(isAuthenticated: false)) {
+  final ApiClient _apiClient;
+
+  AuthNotifier(this._apiClient) : super(AuthState(isAuthenticated: false)) {
     _init();
   }
 
-  // Check if user was previously logged in
+  /// Cold start session validator: Automatically logins user if dynamic token is valid
   Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString('user_email');
-    if (savedEmail != null) {
-      state = AuthState(isAuthenticated: true, email: savedEmail);
+    final token = await TokenManager.getToken();
+    final email = await TokenManager.getEmail();
+
+    if (token != null && email != null) {
+      try {
+        // Ping /auth/me to verify token validity
+        await _apiClient.instance.get('/auth/me');
+        state = AuthState(isAuthenticated: true, email: email);
+      } catch (e) {
+        // If expired or network error fails auth checks, wipe session
+        await TokenManager.clearSession();
+        state = AuthState(isAuthenticated: false);
+      }
     }
   }
 
+  /// Login endpoint caller
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-    
-    // Formal validation
+
+    // Simple client side checks
     if (email.isEmpty || !email.contains('@')) {
-      state = state.copyWith(isLoading: false, error: "Invalid email format");
+      state = state.copyWith(isLoading: false, error: "邮箱格式不正确");
       return;
     }
     if (password.length < 6) {
-      state = state.copyWith(isLoading: false, error: "Password too short (min 6)");
+      state = state.copyWith(isLoading: false, error: "密码长度不能少于 6 位");
       return;
     }
 
     try {
-      await Future.delayed(const Duration(seconds: 1.5)); // Simulate API
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_email', email);
-      
-      state = AuthState(isAuthenticated: true, email: email);
+      final response = await _apiClient.instance.post(
+        '/auth/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+
+      final token = response.data['access_token'] as String;
+      final responseEmail = response.data['user']['email'] as String;
+
+      // Persist credentials securely
+      await TokenManager.saveSession(token: token, email: responseEmail);
+
+      state = AuthState(isAuthenticated: true, email: responseEmail);
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.error?.toString() ?? "登录失败，请稍后重试",
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: "Connection failed");
+      state = state.copyWith(isLoading: false, error: "系统异常: $e");
     }
   }
 
+  /// Register endpoint caller
+  Future<void> register(String email, String password) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    if (email.isEmpty || !email.contains('@')) {
+      state = state.copyWith(isLoading: false, error: "邮箱格式不正确");
+      return;
+    }
+    if (password.length < 6) {
+      state = state.copyWith(isLoading: false, error: "密码长度不能少于 6 位");
+      return;
+    }
+
+    try {
+      final response = await _apiClient.instance.post(
+        '/auth/register',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+
+      final token = response.data['access_token'] as String;
+      final responseEmail = response.data['user']['email'] as String;
+
+      // Persist session
+      await TokenManager.saveSession(token: token, email: responseEmail);
+
+      state = AuthState(isAuthenticated: true, email: responseEmail);
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.error?.toString() ?? "注册失败，请稍后重试",
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: "系统异常: $e");
+    }
+  }
+
+  /// Session teardown
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_email');
+    await TokenManager.clearSession();
     state = AuthState(isAuthenticated: false);
   }
 }
 
+// 1. Register API Client provider
+final apiClientProvider = Provider<ApiClient>((ref) {
+  return ApiClient();
+});
+
+// 2. Auth State Provider linking to ApiClient
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
+  final apiClient = ref.watch(apiClientProvider);
+  return AuthNotifier(apiClient);
 });

@@ -16,26 +16,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  /// Trigger secure backend authorization
   Future<void> _handleLogin() async {
-    // Basic UI validation
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
+        const SnackBar(
+          content: Text('请填写完整的账号和密码'),
+          backgroundColor: Colors.orangeAccent,
+        ),
       );
       return;
     }
 
-    await ref.read(authProvider.notifier).login(
-          _emailController.text,
-          _passwordController.text,
-        );
+    await ref.read(authProvider.notifier).login(email, password);
     
-    final error = ref.read(authProvider).error;
-    if (error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
-      );
+    if (mounted) {
+      final error = ref.read(authProvider).error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error), 
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -59,15 +74,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Text(
-                          'Welcome Back',
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                          '欢迎回来',
+                          style: TextStyle(
+                            fontSize: 28, 
+                            fontWeight: FontWeight.bold, 
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        const Text('Login to your Toolbox account', style: TextStyle(color: Colors.white60)),
+                        const Text(
+                          '登录您的 Toolbox Pro 账户', 
+                          style: TextStyle(color: Colors.white60),
+                        ),
                         const SizedBox(height: 40),
-                        _buildTextField(_emailController, 'Email', Icons.email_outlined),
+                        _buildTextField(_emailController, '邮箱地址', Icons.email_outlined),
                         const SizedBox(height: 16),
-                        _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscure: true),
+                        _buildTextField(_passwordController, '密码', Icons.lock_outline, obscure: true),
                         const SizedBox(height: 32),
                         _buildLoginButton(),
                         const SizedBox(height: 24),
@@ -100,12 +122,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return TextField(
       controller: controller,
       obscureText: obscure,
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60),
         prefixIcon: Icon(icon, color: Colors.deepPurpleAccent),
         filled: true,
         fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.deepPurpleAccent),
+        ),
       ),
     );
   }
@@ -119,20 +150,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('LOGIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: _isLoading 
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            ) 
+          : const Text('登 录', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 
   Widget _buildRegisterLink() {
     return TextButton(
-      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-      child: const Text("Don't have an account? Register", style: TextStyle(color: Colors.white70)),
+      onPressed: () => Navigator.push(
+        context, 
+        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+      ),
+      child: const Text("还没有账户？立即注册", style: TextStyle(color: Colors.white70)),
     );
-  }
-
-  Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
-    await ref.read(authProvider.notifier).login(_emailController.text, _passwordController.text);
-    if (mounted) setState(() => _isLoading = false);
   }
 }

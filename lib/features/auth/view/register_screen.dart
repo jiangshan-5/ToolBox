@@ -16,7 +16,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isLoading = false;
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    _isLoading = authState.isLoading;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -33,21 +43,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Text(
-                          'Create Account',
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                          '创建账户',
+                          style: TextStyle(
+                            fontSize: 28, 
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        const Text('Join the premium toolbox today', style: TextStyle(color: Colors.white60)),
+                        const Text(
+                          '立即注册，开启您的高级工具箱', 
+                          style: TextStyle(color: Colors.white60),
+                        ),
                         const SizedBox(height: 40),
-                        _buildTextField(_emailController, 'Email', Icons.email_outlined),
+                        _buildTextField(_emailController, '邮箱地址', Icons.email_outlined),
                         const SizedBox(height: 16),
-                        _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscure: true),
+                        _buildTextField(_passwordController, '密码', Icons.lock_outline, obscure: true),
                         const SizedBox(height: 32),
                         _buildRegisterButton(),
                         const SizedBox(height: 24),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text("Already have an account? Login", style: TextStyle(color: Colors.white70)),
+                          child: const Text("已有账户？立即登录", style: TextStyle(color: Colors.white70)),
                         ),
                       ],
                     ),
@@ -77,12 +94,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return TextField(
       controller: controller,
       obscureText: obscure,
+      style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60),
         prefixIcon: Icon(icon, color: Colors.deepPurpleAccent),
         filled: true,
         fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.deepPurpleAccent),
+        ),
       ),
     );
   }
@@ -96,16 +122,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         minimumSize: const Size(double.infinity, 56),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('REGISTER', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: _isLoading 
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            ) 
+          : const Text('注 册', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 
   Future<void> _handleRegister() async {
-    setState(() => _isLoading = true);
-    await ref.read(authProvider.notifier).register(_emailController.text, _passwordController.text);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请填写完整的账号和密码'), backgroundColor: Colors.orangeAccent),
+      );
+      return;
+    }
+
+    await ref.read(authProvider.notifier).register(email, password);
+    
     if (mounted) {
-      setState(() => _isLoading = false);
-      // Logic handled by the root AuthWrapper
+      final error = ref.read(authProvider).error;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+        );
+      } else {
+        // Pop back to login screen on successful registration since AuthWrapper will handle transition
+        Navigator.pop(context);
+      }
     }
   }
+}
+
 }
