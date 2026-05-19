@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../widgets/glass_card.dart';
+import '../../../core/widgets/glass_card.dart';
 import '../provider/auth_provider.dart';
 import 'register_screen.dart';
+import '../../dashboard/view/dashboard_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -161,12 +162,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildRegisterLink() {
-    return TextButton(
-      onPressed: () => Navigator.push(
-        context, 
-        MaterialPageRoute(builder: (_) => const RegisterScreen()),
-      ),
-      child: const Text("还没有账户？立即注册", style: TextStyle(color: Colors.white70)),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton(
+          onPressed: () => Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (_) => const RegisterScreen()),
+          ),
+          child: const Text("还没有账户？立即注册", style: TextStyle(color: Colors.white70)),
+        ),
+        const SizedBox(height: 10),
+        TextButton(
+          onPressed: () => Navigator.pushReplacement(
+            context, 
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          ),
+          child: const Text(
+            "⚡ 游客快捷体验 (免登录)", 
+            style: TextStyle(
+              color: Colors.cyanAccent, 
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

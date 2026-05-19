@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/app_theme.dart';
+import 'core/storage/local_storage.dart';
 import 'features/auth/provider/auth_provider.dart';
 import 'features/auth/view/login_screen.dart';
 import 'features/dashboard/view/dashboard_screen.dart';
 
-void main() {
-  runApp(const ProviderScope(child: ToolboxApp()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const ToolboxApp(),
+    ),
+  );
 }
 
 class ToolboxApp extends StatelessWidget {
@@ -30,10 +42,14 @@ class AuthWrapper extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
 
-    if (authState.isAuthenticated) {
-      return const DashboardScreen();
-    } else {
-      return const LoginScreen();
-    }
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: authState.isAuthenticated 
+          ? const DashboardScreen(key: ValueKey('Dashboard')) 
+          : const LoginScreen(key: ValueKey('Login')),
+    );
   }
 }

@@ -35,6 +35,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final ApiClient _apiClient;
 
   AuthNotifier(this._apiClient) : super(AuthState(isAuthenticated: false)) {
+    _apiClient.onAuthFailure = () {
+      state = AuthState(isAuthenticated: false);
+    };
     _init();
   }
 
@@ -80,10 +83,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       final token = response.data['access_token'] as String;
+      final refreshToken = response.data['refresh_token'] as String;
       final responseEmail = response.data['user']['email'] as String;
 
       // Persist credentials securely
-      await TokenManager.saveSession(token: token, email: responseEmail);
+      await TokenManager.saveSession(accessToken: token, refreshToken: refreshToken, email: responseEmail);
 
       state = AuthState(isAuthenticated: true, email: responseEmail);
     } on DioException catch (e) {
@@ -119,10 +123,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       final token = response.data['access_token'] as String;
+      final refreshToken = response.data['refresh_token'] as String;
       final responseEmail = response.data['user']['email'] as String;
 
       // Persist session
-      await TokenManager.saveSession(token: token, email: responseEmail);
+      await TokenManager.saveSession(accessToken: token, refreshToken: refreshToken, email: responseEmail);
 
       state = AuthState(isAuthenticated: true, email: responseEmail);
     } on DioException catch (e) {
@@ -137,8 +142,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Session teardown
   Future<void> logout() async {
+    // Clear state and storage immediately for instant UI feedback
     await TokenManager.clearSession();
     state = AuthState(isAuthenticated: false);
+    
+    try {
+      // Fire backend logout in background without awaiting or blocking UI
+      _apiClient.instance.post('/auth/logout').ignore();
+    } catch (e) {
+      // Silent catch
+    }
   }
 }
 

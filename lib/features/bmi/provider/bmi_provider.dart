@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../dashboard/provider/tools_provider.dart';
+import '../../dashboard/provider/analytics_provider.dart';
+import '../../auth/provider/auth_provider.dart';
 
 /// State model wrapping clinical biometric outputs and custom diet/weight planning sandboxes
 class BmiState {
@@ -325,6 +327,23 @@ class BmiNotifier extends StateNotifier<BmiState> {
       status: 'success',
       durationMs: stopwatch.elapsedMilliseconds,
     );
+
+    // Sync physical health metrics to the new analytics Cloud Database
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      await apiClient.instance.post(
+        '/analytics/health',
+        data: {
+          'weight_kg': double.parse(weightInKg.toStringAsFixed(2)),
+          'height_cm': double.parse(heightInCm.toStringAsFixed(2)),
+          'bmi': double.parse(bmi.toStringAsFixed(2)),
+        },
+      );
+      // Invalidate to refresh the chart immediately
+      _ref.invalidate(analyticsProvider);
+    } catch (e) {
+      print('Failed to sync health telemetry: $e');
+    }
 
     return true;
   }

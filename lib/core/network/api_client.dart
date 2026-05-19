@@ -5,6 +5,11 @@ import 'token_manager.dart';
 
 class ApiClient {
   late final Dio _dio;
+  late final Dio _refreshDio;
+  bool _isRefreshing = false;
+
+  /// Callback triggered when authorization fails permanently
+  VoidCallback? onAuthFailure;
 
   /// The live production cloud server URL (Alibaba Cloud Shenzhen)
   static const String liveServerUrl = 'http://47.106.119.62:1234/api/v1';
@@ -29,6 +34,12 @@ class ApiClient {
   }
 
   ApiClient() {
+    _refreshDio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        contentType: Headers.jsonContentType,
+      ),
+    );
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -48,7 +59,82 @@ class ApiClient {
           }
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
+        onError: (DioException error, handler) async {
+          // Intercept 401 Unauthorized for silent automatic token refresh
+          final requestPath = error.requestOptions.path;
+          if (error.response?.statusCode == 401 &&
+              !requestPath.contains('/auth/login') &&
+              !requestPath.contains('/auth/register') &&
+              !requestPath.contains('/auth/refresh')) {
+            
+            final refreshToken = await TokenManager.getRefreshToken();
+            final email = await TokenManager.getEmail();
+            
+            if (refreshToken != null && email != null) {
+              if (!_isRefreshing) {
+                _isRefreshing = true;
+                try {
+                  // Call refresh endpoint with the separate refresh Dio instance
+                  final refreshResponse = await _refreshDio.post(
+                    '/auth/refresh',
+                    data: {'refresh_token': refreshToken},
+                  );
+                  
+                  final newAccessToken = refreshResponse.data['access_token'] as String;
+                  final newRefreshToken = refreshResponse.data['refresh_token'] as String;
+                  
+                  // Save newly rotated tokens
+                  await TokenManager.saveSession(
+                    accessToken: newAccessToken,
+                    refreshToken: newRefreshToken,
+                    email: email,
+                  );
+                  
+                  _isRefreshing = false;
+                  
+                  // Replay the original failed request with the new access token
+                  final options = error.requestOptions;
+                  options.headers['Authorization'] = 'Bearer $newAccessToken';
+                  
+                  final response = await _dio.fetch(options);
+                  return handler.resolve(response);
+                } catch (refreshError) {
+                  _isRefreshing = false;
+                  
+                  // Token refresh failed (e.g. revoked or expired) -> Wipe session
+                  await TokenManager.clearSession();
+                  
+                  // Trigger global authentication failure callback
+                  onAuthFailure?.call();
+                  
+                  final customException = DioException(
+                    requestOptions: error.requestOptions,
+                    response: error.response,
+                    type: error.type,
+                    error: "登录已失效，请重新登录",
+                  );
+                  return handler.next(customException);
+                }
+              } else {
+                // Another request is currently refreshing the token, wait for it to complete
+                int retries = 0;
+                while (_isRefreshing && retries < 10) {
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  retries++;
+                }
+                
+                final newAccessToken = await TokenManager.getToken();
+                if (newAccessToken != null) {
+                  final options = error.requestOptions;
+                  options.headers['Authorization'] = 'Bearer $newAccessToken';
+                  
+                  final response = await _dio.fetch(options);
+                  return handler.resolve(response);
+                }
+              }
+            }
+          }
+
           // Cleanly extract custom error messages set by FastAPI detail fields
           String message = "网络连接失败，请检查网络设置并稍后重试";
           

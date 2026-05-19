@@ -1,0 +1,94 @@
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+class DynamicBackground extends StatefulWidget {
+  final Widget child;
+
+  const DynamicBackground({super.key, required this.child});
+
+  @override
+  State<DynamicBackground> createState() => _DynamicBackgroundState();
+}
+
+class _DynamicBackgroundState extends State<DynamicBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Solid Dark Base
+        Container(
+          color: const Color(0xFF0A0714),
+        ),
+        
+        // Floating Mesh Gradients
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                Positioned(
+                  top: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
+                  left: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 1.2,
+                    height: 400,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.blueAccent.withOpacity(0.08),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withOpacity(0.12),
+                          blurRadius: 200,
+                          spreadRadius: 150,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
+                  right: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 1.2,
+                    height: 400,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.purpleAccent.withOpacity(0.08),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.purpleAccent.withOpacity(0.12),
+                          blurRadius: 200,
+                          spreadRadius: 150,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        
+        // Foreground Content
+        widget.child,
+      ],
+    );
+  }
+}

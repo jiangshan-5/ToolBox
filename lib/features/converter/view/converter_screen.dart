@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/converter_provider.dart';
 
-/// Highly customizable universal Unit Converter Sandbox Screen with premium dynamic micro-interactions
+/// Highly customizable universal Unit Converter Sandbox Screen with premium isolated dynamic micro-interactions
 class ConverterScreen extends ConsumerStatefulWidget {
   const ConverterScreen({super.key});
 
@@ -18,8 +18,16 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
   final _customToController = TextEditingController();
   final _customFactorController = TextEditingController();
   final _customOffsetController = TextEditingController();
+  final _inputValueController = TextEditingController();
 
   bool _isCreatingCustom = false;
+  double _swapRotationTurns = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _inputValueController.text = '0';
+  }
 
   @override
   void dispose() {
@@ -28,6 +36,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     _customToController.dispose();
     _customFactorController.dispose();
     _customOffsetController.dispose();
+    _inputValueController.dispose();
     super.dispose();
   }
 
@@ -40,7 +49,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
 
     if (name.isEmpty || from.isEmpty || to.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('所有字段都为必填项'), backgroundColor: Colors.purpleAccent),
+        const SnackBar(content: Text('所有公式字段均为必填项'), backgroundColor: Colors.purpleAccent),
       );
       return;
     }
@@ -62,22 +71,54 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
 
     setState(() => _isCreatingCustom = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('自定义物理公式卡片创建成功！'), backgroundColor: Colors.purpleAccent),
+      const SnackBar(
+        content: Text('⚡ 自定义物理换算卡片注入成功！'),
+        backgroundColor: Colors.purpleAccent,
+      ),
     );
+  }
+
+  Color _getCategoryColor(ConverterCategory cat) {
+    switch (cat) {
+      case ConverterCategory.length:
+        return Colors.cyanAccent;
+      case ConverterCategory.mass:
+        return Colors.pinkAccent;
+      case ConverterCategory.temperature:
+        return Colors.orangeAccent;
+      case ConverterCategory.area:
+        return Colors.greenAccent;
+      case ConverterCategory.sandbox:
+        return Colors.purpleAccent;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(converterProvider);
     final notifier = ref.read(converterProvider.notifier);
-    final activeColor = _getCategoryColor(state.category);
+    final category = ref.watch(converterProvider.select((s) => s.category));
+    final activeColor = _getCategoryColor(category);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF090714),
       appBar: AppBar(
-        title: const Text('物理量公式沙盒转换站', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          '物理量公式沙盒转换站',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 0.8),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [const Color(0xFF090714).withOpacity(0.8), Colors.transparent],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
       ),
       extendBodyBehindAppBar: true,
       body: Stack(
@@ -86,27 +127,44 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
           SafeArea(
             child: Column(
               children: [
-                _buildCategorySelector(state, notifier),
+                _buildCategorySelector(category, notifier),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
                     child: Column(
                       children: [
-                        if (state.category == ConverterCategory.sandbox) ...[
-                          _buildSandboxSelectorPanel(state, notifier),
+                        if (category == ConverterCategory.sandbox) ...[
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final activeCustomId = ref.watch(converterProvider.select((s) => s.activeCustomId));
+                              final customConverters = ref.watch(converterProvider.select((s) => s.customConverters));
+                              return _buildSandboxSelectorPanel(activeCustomId, customConverters, notifier);
+                            },
+                          ),
                           const SizedBox(height: 16),
                         ],
-                        // MAIN CONVERSION CARD
+                        // MAIN CONVERSION CARD (Highly optimized input isolate card)
                         HoverGlowCard(
                           glowColor: activeColor,
-                          child: _buildConversionCard(context, state, notifier, activeColor),
+                          child: _buildConversionCard(context, notifier, activeColor),
                         ),
-                        if (state.allConversionsMatrix.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          _buildAllUnitsMatrixGrid(state, activeColor),
-                        ],
-                        const SizedBox(height: 24),
-                        _buildDetailsAndGuides(state, activeColor),
+                        // ALL MATRIX RESULT GRID
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final allConversionsMatrix = ref.watch(converterProvider.select((s) => s.allConversionsMatrix));
+                            if (allConversionsMatrix.isEmpty) return const SizedBox.shrink();
+                            return Column(
+                              children: [
+                                const SizedBox(height: 24),
+                                _buildAllUnitsMatrixGrid(allConversionsMatrix, activeColor),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        _buildDetailsAndGuides(category, activeColor),
+                        const SizedBox(height: 30),
                       ],
                     ),
                   ),
@@ -120,18 +178,24 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
   }
 
   Widget _buildBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF0C091F),
+              Color(0xFF140F2D),
+              Color(0xFF06050C),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCategorySelector(ConverterState state, ConverterNotifier notifier) {
+  Widget _buildCategorySelector(ConverterCategory activeCat, ConverterNotifier notifier) {
     final categories = [
       {'title': '长度', 'cat': ConverterCategory.length, 'icon': Icons.linear_scale_rounded, 'color': Colors.cyanAccent},
       {'title': '质量', 'cat': ConverterCategory.mass, 'icon': Icons.monitor_weight_rounded, 'color': Colors.pinkAccent},
@@ -141,43 +205,47 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     ];
 
     return Container(
-      height: 90,
+      height: 76,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final item = categories[index];
           final cat = item['cat'] as ConverterCategory;
-          final isSel = state.category == cat;
+          final isSel = activeCat == cat;
           final color = item['color'] as Color;
 
           return ScaleOnTap(
-            onTap: () => notifier.setCategory(cat),
+            onTap: () {
+              notifier.setCategory(cat);
+              _inputValueController.text = '0';
+            },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 90,
-              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              duration: const Duration(milliseconds: 250),
+              width: 82,
+              margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
               decoration: BoxDecoration(
-                color: isSel ? color.withOpacity(0.12) : Colors.white.withOpacity(0.02),
-                borderRadius: BorderRadius.circular(18),
+                color: isSel ? color.withOpacity(0.12) : Colors.white.withOpacity(0.015),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSel ? color.withOpacity(0.4) : Colors.white.withOpacity(0.08),
+                  color: isSel ? color.withOpacity(0.5) : Colors.white.withOpacity(0.05),
                   width: 1.5,
                 ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(item['icon'] as IconData, color: isSel ? color : Colors.white60, size: 24),
-                  const SizedBox(height: 6),
+                  Icon(item['icon'] as IconData, color: isSel ? color : Colors.white38, size: 20),
+                  const SizedBox(height: 5),
                   Text(
                     item['title'] as String,
                     style: TextStyle(
-                      color: isSel ? color : Colors.white70,
+                      color: isSel ? color : Colors.white60,
                       fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -189,9 +257,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  // ==================== CUSTOM SANDBOX FORM BUILDER ====================
-
-  Widget _buildSandboxSelectorPanel(ConverterState state, ConverterNotifier notifier) {
+  Widget _buildSandboxSelectorPanel(String? activeCustomId, List<CustomConverter> customConverters, ConverterNotifier notifier) {
     return Column(
       children: [
         if (_isCreatingCustom)
@@ -201,7 +267,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
               padding: const EdgeInsets.all(20),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.purpleAccent.withOpacity(0.05),
+                color: Colors.purpleAccent.withOpacity(0.04),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.purpleAccent.withOpacity(0.2)),
               ),
@@ -269,26 +335,29 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: Colors.white.withOpacity(0.015),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
                   ),
                   child: Theme(
-                    data: Theme.of(context).copyWith(canvasColor: const Color(0xFF24243E)),
+                    data: Theme.of(context).copyWith(canvasColor: const Color(0xFF140F2D)),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: state.activeCustomId,
+                        value: activeCustomId,
                         iconEnabledColor: Colors.purpleAccent,
-                        dropdownColor: const Color(0xFF24243E),
+                        dropdownColor: const Color(0xFF140F2D),
                         style: const TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 14),
-                        items: state.customConverters.map((c) {
+                        items: customConverters.map((c) {
                           return DropdownMenuItem(
                             value: c.id,
                             child: Text(c.name),
                           );
                         }).toList(),
                         onChanged: (v) {
-                          if (v != null) notifier.setActiveCustomId(v);
+                          if (v != null) {
+                            notifier.setActiveCustomId(v);
+                            _inputValueController.text = '0';
+                          }
                         },
                       ),
                     ),
@@ -321,108 +390,156 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
   }
 
   Widget _buildSmallFormInput({required TextEditingController controller, required String label, String hint = ''}) {
-    return TextFormField(
-      controller: controller,
-      style: const TextStyle(color: Colors.white, fontSize: 13),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white30, fontSize: 11),
-        hintText: hint.isEmpty ? null : hint,
-        hintStyle: const TextStyle(color: Colors.white10),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.04),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.01),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: TextFormField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white30, fontSize: 11),
+          hintText: hint.isEmpty ? null : hint,
+          hintStyle: const TextStyle(color: Colors.white10),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.015),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        ),
       ),
     );
   }
 
-  // ==================== CONVERSION CARD PANELS ====================
-
-  Widget _buildConversionCard(BuildContext context, ConverterState state, ConverterNotifier notifier, Color activeColor) {
+  Widget _buildConversionCard(BuildContext context, ConverterNotifier notifier, Color activeColor) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withOpacity(0.015),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withOpacity(0.04)),
       ),
       child: Column(
         children: [
-          // SOURCE PANEL
-          _buildUnitPanel(
-            context: context,
-            label: '原始数值与单位',
-            valueText: state.inputValue == 0 ? '' : state.inputValue.toString(),
-            activeUnit: state.fromUnit,
-            units: notifier.getUnitsForCategory(state.category),
-            color: activeColor,
-            isReadOnly: false,
-            onValueChanged: (v) {
-              final parsed = double.tryParse(v) ?? 0.0;
-              notifier.updateInputValue(parsed);
+          // SOURCE PANEL (Decoupled input text field from top-level rebuild)
+          Consumer(
+            builder: (context, ref, child) {
+              final fromUnit = ref.watch(converterProvider.select((s) => s.fromUnit));
+              final category = ref.watch(converterProvider.select((s) => s.category));
+              return _buildUnitPanel(
+                context: context,
+                label: '原始数值与单位',
+                valueText: '',
+                controller: _inputValueController,
+                activeUnit: fromUnit,
+                units: notifier.getUnitsForCategory(category),
+                color: activeColor,
+                isReadOnly: false,
+                onValueChanged: (v) {
+                  final parsed = double.tryParse(v) ?? 0.0;
+                  notifier.updateInputValue(parsed);
+                },
+                onUnitChanged: (u) => notifier.updateFromUnit(u!),
+              );
             },
-            onUnitChanged: (u) => notifier.updateFromUnit(u!),
           ),
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           
-          // SWAP BUTTON
+          // SWAP BUTTON WITH SPRING ROTATION ANIMATION
           ScaleOnTap(
-            onTap: notifier.reverseUnits,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: activeColor.withOpacity(0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: activeColor.withOpacity(0.3), width: 1.5),
+            onTap: () {
+              setState(() {
+                _swapRotationTurns += 0.5; // Spins 180 degrees smoothly on tap!
+              });
+              notifier.reverseUnits();
+            },
+            child: AnimatedRotation(
+              turns: _swapRotationTurns,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOutBack,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: activeColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: activeColor.withOpacity(0.35), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: activeColor.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    )
+                  ],
+                ),
+                child: Icon(Icons.swap_vert_rounded, color: activeColor, size: 22),
               ),
-              child: Icon(Icons.swap_vert_rounded, color: activeColor, size: 24),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // TARGET PANEL
-          _buildUnitPanel(
-            context: context,
-            label: '转换结果',
-            valueText: state.result.toStringAsFixed(5),
-            activeUnit: state.toUnit,
-            units: notifier.getUnitsForCategory(state.category),
-            color: activeColor,
-            isReadOnly: true,
-            onValueChanged: (_) {},
-            onUnitChanged: (u) => notifier.updateToUnit(u!),
+          // TARGET PANEL (Only rebuilds output conversion value changes)
+          Consumer(
+            builder: (context, ref, child) {
+              final result = ref.watch(converterProvider.select((s) => s.result));
+              final toUnit = ref.watch(converterProvider.select((s) => s.toUnit));
+              final category = ref.watch(converterProvider.select((s) => s.category));
+              return _buildUnitPanel(
+                context: context,
+                label: '转换结果',
+                valueText: result.toStringAsFixed(5),
+                activeUnit: toUnit,
+                units: notifier.getUnitsForCategory(category),
+                color: activeColor,
+                isReadOnly: true,
+                onValueChanged: (_) {},
+                onUnitChanged: (u) => notifier.updateToUnit(u!),
+              );
+            },
           ),
           
           const SizedBox(height: 24),
 
-          // CLIPBOARD COPY
-          ScaleOnTap(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: '${state.inputValue} ${state.fromUnit.toUpperCase()} = ${state.result.toStringAsFixed(5)} ${state.toUnit.toUpperCase()}'));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('完整计算公式已复制'), duration: Duration(seconds: 1)),
+          // CLIPBOARD COPY BUTTON
+          Consumer(
+            builder: (context, ref, child) {
+              final inputValue = ref.watch(converterProvider.select((s) => s.inputValue));
+              final fromUnit = ref.watch(converterProvider.select((s) => s.fromUnit));
+              final result = ref.watch(converterProvider.select((s) => s.result));
+              final toUnit = ref.watch(converterProvider.select((s) => s.toUnit));
+
+              return ScaleOnTap(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: '$inputValue ${fromUnit.toUpperCase()} = ${result.toStringAsFixed(5)} ${toUnit.toUpperCase()}'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('⚡ 完整物理换算公式已复制到剪贴板'),
+                      backgroundColor: Colors.white10,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: activeColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: activeColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.copy_all_rounded, color: activeColor, size: 18),
+                      const SizedBox(width: 8),
+                      Text('复制完整换算公式', style: TextStyle(color: activeColor, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
               );
             },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: activeColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: activeColor.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.copy_all_rounded, color: activeColor, size: 18),
-                  const SizedBox(width: 8),
-                  Text('复制转换公式', style: TextStyle(color: activeColor, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -433,6 +550,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     required BuildContext context,
     required String label,
     required String valueText,
+    TextEditingController? controller,
     required String activeUnit,
     required List<String> units,
     required Color color,
@@ -443,15 +561,15 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: Colors.white.withOpacity(0.01),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: Colors.white.withOpacity(0.03)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
-          const SizedBox(height: 12),
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -460,17 +578,18 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                         valueText == '0.00000' ? '0' : valueText,
                         style: TextStyle(
                           color: color,
-                          fontSize: 32,
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       )
                     : TextFormField(
-                        initialValue: valueText,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                        controller: controller,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold, letterSpacing: -0.5),
                         decoration: const InputDecoration(
                           hintText: '0',
-                          hintStyle: TextStyle(color: Colors.white24),
+                          hintStyle: TextStyle(color: Colors.white12),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -479,20 +598,20 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  color: Colors.white.withOpacity(0.03),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
                 child: Theme(
-                  data: Theme.of(context).copyWith(canvasColor: const Color(0xFF24243E)),
+                  data: Theme.of(context).copyWith(canvasColor: const Color(0xFF140F2D)),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: activeUnit,
-                      dropdownColor: const Color(0xFF24243E),
+                      dropdownColor: const Color(0xFF140F2D),
                       iconEnabledColor: color,
-                      style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
                       items: units.map((u) {
                         return DropdownMenuItem(
                           value: u,
@@ -511,130 +630,127 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  // ==================== SIMULTANEOUS MATRIX VIEW GRID ====================
-
-  Widget _buildAllUnitsMatrixGrid(ConverterState state, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.dashboard_outlined, color: color, size: 18),
-            const SizedBox(width: 8),
-            const Text(
-              '同屏全局单位即时对照表',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 2.3,
-          ),
-          itemCount: state.allConversionsMatrix.length,
-          itemBuilder: (context, index) {
-            final item = state.allConversionsMatrix[index];
-            
-            // Reusable slide entrances staggered delay animations
-            return StaggerEntrance(
-              index: index,
-              child: HoverGlowCard(
-                glowColor: color,
-                liftOffset: -3.0,
-                borderRadius: const BorderRadius.all(Radius.circular(16)),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.015),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.04)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.value.toStringAsFixed(4).replaceAll(RegExp(r'\.?0+$'), ''),
-                        style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold, overflow: TextOverflow.ellipsis),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.unit.toUpperCase(),
-                        style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailsAndGuides(ConverterState state, Color color) {
-    String desc = '';
-    
-    if (state.category == ConverterCategory.sandbox) {
-      if (state.activeCustomId != null && state.customConverters.isNotEmpty) {
-        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
-        desc = '沙盒公式数学表达：y = x * ${cur.factor} + ${cur.offset}。原单位与目标单位根据加乘规则自动逆运算。';
-      } else {
-        desc = '您目前没有可启用的自定义公式。点击右上角“添加新公式”开启您的专属沙盒！';
-      }
-    } else if (state.category == ConverterCategory.length) {
-      desc = '长度常识：1 英寸(inch) 等于 2.54 厘米(cm)，1 英尺(feet) 等于 30.48 厘米(cm)；公里与英里为地理常用距离。';
-    } else if (state.category == ConverterCategory.mass) {
-      desc = '质量常识：1 磅(lb) 约等于 0.4536 千克(kg)，1 盎司(oz) 约等于 28.35 克(g)；1 市斤刚好为 0.5 千克。';
-    } else if (state.category == ConverterCategory.temperature) {
-      desc = '温度常识：摄氏度与开氏度为等温距单位，0°C 对应 273.15K；华氏度广泛应用于北美地区。';
-    } else if (state.category == ConverterCategory.area) {
-      desc = '面积常识：1 公顷(ha) 等于 10,000 平方米，中国传统市亩 (mu) 刚好约为 666.67 平方米。';
-    }
-
+  Widget _buildAllUnitsMatrixGrid(List<MatrixUnitItem> matrix, Color color) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(0.015),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withOpacity(0.04)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              desc,
-              style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.5),
-            ),
+          Row(
+            children: [
+              Icon(Icons.dashboard_outlined, color: color, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                '多维度同物理量极速对照矩阵',
+                style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              int cols = constraints.maxWidth > 550 ? 3 : 2;
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 2.3,
+                ),
+                itemCount: matrix.length,
+                itemBuilder: (context, idx) {
+                  final e = matrix[idx];
+                  return StaggerEntrance(
+                    index: idx,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: color.withOpacity(0.12)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            e.unit.toUpperCase(),
+                            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            e.value.toStringAsFixed(3),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Color _getCategoryColor(ConverterCategory cat) {
-    switch (cat) {
+  Widget _buildDetailsAndGuides(ConverterCategory category, Color color) {
+    String title = '';
+    String desc = '';
+
+    switch (category) {
       case ConverterCategory.length:
-        return Colors.cyanAccent;
+        title = '📏 物理量解析：长度 (Length)';
+        desc = '长度是一维空间的度量，为数值点到点之间的距离。国际标准单位为米 (m)。本换算站同时涵盖了天文学单位和英美传统制单位对照。';
+        break;
       case ConverterCategory.mass:
-        return Colors.pinkAccent;
+        title = '⚖️ 物理量解析：质量 (Mass)';
+        desc = '质量是物体所含物质的量，是度量物体惯性大小的物理量。国际标准单位为千克 (kg)。本站亦对齐了市制金衡及磅盎司单位。';
+        break;
       case ConverterCategory.temperature:
-        return Colors.orangeAccent;
+        title = '🌡️ 物理量解析：温度 (Temperature)';
+        desc = '温度是度量物体冷热程度的物理量，微观上是分子热运动剧烈程度的表现。本站完美对齐了摄氏度 (°C)、华氏度 (°F) 及热力学开尔文 (K) 转换方程式。';
+        break;
       case ConverterCategory.area:
-        return Colors.greenAccent;
+        title = '📐 物理量解析：面积 (Area)';
+        desc = '面积是二维平面图形占有空间维度的量度。标准单位为平方米 (㎡)。本站同时支持传统公顷、市亩与西方英亩的精密转换。';
+        break;
       case ConverterCategory.sandbox:
-        return Colors.purpleAccent;
+        title = '🧪 极客探索：公式沙盒 (Sandbox)';
+        desc = '您可以在此自主设计多重物理参数及兑换因子！输入自定义兑换率系数 (Multiplier) 和数学常数偏移量 (Offset)，本站将实时为您的自定义项目生成整套高精度沙盒对照。';
+        break;
     }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.006),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.02)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 8),
+          Text(
+            desc,
+            style: const TextStyle(color: Colors.white38, fontSize: 12, height: 1.5),
+          ),
+        ],
+      ),
+    );
   }
 }

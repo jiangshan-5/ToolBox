@@ -39,6 +39,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   dio: ^5.9.2
   flutter_secure_storage: ^10.2.0
+  sensors_plus: ^7.0.0
+  confetti: ^0.8.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
