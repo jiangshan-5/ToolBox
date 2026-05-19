@@ -7,12 +7,14 @@ class AuthState {
   final bool isAuthenticated;
   final bool isLoading;
   final String? email;
+  final String? nickname;
   final String? error;
 
   AuthState({
     required this.isAuthenticated,
     this.isLoading = false,
     this.email,
+    this.nickname,
     this.error,
   });
 
@@ -20,12 +22,14 @@ class AuthState {
     bool? isAuthenticated,
     bool? isLoading,
     String? email,
+    String? nickname,
     String? error,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isLoading: isLoading ?? this.isLoading,
       email: email ?? this.email,
+      nickname: nickname ?? this.nickname,
       error: error ?? this.error,
     );
   }
@@ -48,9 +52,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     if (token != null && email != null) {
       try {
-        // Ping /auth/me to verify token validity
-        await _apiClient.instance.get('/auth/me');
-        state = AuthState(isAuthenticated: true, email: email);
+        // Ping /auth/me to verify token validity and get profile
+        final response = await _apiClient.instance.get('/auth/me');
+        final userProfile = response.data['profile'];
+        final nickname = userProfile != null ? userProfile['nickname'] : null;
+        state = AuthState(isAuthenticated: true, email: email, nickname: nickname);
       } catch (e) {
         // If expired or network error fails auth checks, wipe session
         await TokenManager.clearSession();
@@ -85,11 +91,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = response.data['access_token'] as String;
       final refreshToken = response.data['refresh_token'] as String;
       final responseEmail = response.data['user']['email'] as String;
+      final userProfile = response.data['user']['profile'];
+      final nickname = userProfile != null ? userProfile['nickname'] : null;
 
       // Persist credentials securely
       await TokenManager.saveSession(accessToken: token, refreshToken: refreshToken, email: responseEmail);
 
-      state = AuthState(isAuthenticated: true, email: responseEmail);
+      state = AuthState(isAuthenticated: true, email: responseEmail, nickname: nickname);
     } on DioException catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -125,11 +133,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final token = response.data['access_token'] as String;
       final refreshToken = response.data['refresh_token'] as String;
       final responseEmail = response.data['user']['email'] as String;
+      final userProfile = response.data['user']['profile'];
+      final nickname = userProfile != null ? userProfile['nickname'] : null;
 
       // Persist session
       await TokenManager.saveSession(accessToken: token, refreshToken: refreshToken, email: responseEmail);
 
-      state = AuthState(isAuthenticated: true, email: responseEmail);
+      state = AuthState(isAuthenticated: true, email: responseEmail, nickname: nickname);
     } on DioException catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -137,6 +147,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: "系统异常: $e");
+    }
+  }
+
+  /// Update user profile attributes securely via the backend API
+  Future<bool> updateProfile({String? nickname}) async {
+    if (!state.isAuthenticated) return false;
+
+    try {
+      final payload = <String, dynamic>{};
+      if (nickname != null) payload['nickname'] = nickname;
+
+      if (payload.isEmpty) return true;
+
+      // Ensure API call succeeds
+      await _apiClient.instance.put('/auth/profile', data: payload);
+
+      // Update local state smoothly without full reload
+      state = state.copyWith(nickname: nickname ?? state.nickname);
+      return true;
+    } on DioException catch (e) {
+      state = state.copyWith(error: e.response?.data['detail'] ?? 'Failed to update profile');
+      return false;
+    } catch (e) {
+      state = state.copyWith(error: 'An unexpected error occurred.');
+      return false;
     }
   }
 

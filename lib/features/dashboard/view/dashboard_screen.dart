@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:ui';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -12,6 +16,8 @@ import '../../randomizer/view/randomizer_screen.dart';
 import '../../converter/view/converter_screen.dart';
 import '../../bmi/view/bmi_screen.dart';
 import '../../debug/view/debug_console_screen.dart';
+import '../provider/categories_provider.dart';
+import '../../settings/provider/settings_provider.dart';
 import '../provider/tools_provider.dart';
 import '../../converter/provider/converter_provider.dart';
 import '../../ai/view/ai_chat_screen.dart';
@@ -482,7 +488,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userEmail = ref.watch(authProvider).email ?? "User";
+    final userEmail = ref.watch(authProvider).email ?? "未绑定邮箱";
+    final userNickname = ref.watch(authProvider).nickname ?? "Toolbox User";
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 950;
 
@@ -518,7 +525,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-              child: _buildActiveTabContent(userEmail, isWide),
+              child: _buildActiveTabContent(userEmail, userNickname, isWide),
             ),
           ),
           _buildGlassBottomNavBar(context),
@@ -711,7 +718,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   /// High quality content routing based on selected tab index
-  Widget _buildActiveTabContent(String userEmail, bool isWide) {
+  Widget _buildActiveTabContent(String userEmail, String userNickname, bool isWide) {
     final categoriesState = ref.watch(categoriesProvider);
 
     switch (_currentIndex) {
@@ -774,10 +781,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProfileHeader(userEmail),
+            _buildProfileHeader(userEmail, userNickname),
             const SizedBox(height: 16),
             Expanded(
-              child: _buildProfileSettingsContent(context, userEmail),
+              child: _buildProfileSettingsContent(context, userEmail, userNickname),
             ),
             const SizedBox(height: 80),
           ],
@@ -998,28 +1005,291 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildProfileHeader(String email) {
+  Future<void> _exportData(BuildContext context) async {
+    // Show a modern glassmorphic loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.purpleAccent),
+      ),
+    );
+
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.instance.get('/analytics/export');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final Map<String, dynamic> data = response.data;
+        final List<dynamic> healthData = data['health'] ?? [];
+        final List<dynamic> aiData = data['ai'] ?? [];
+
+        final List<List<dynamic>> csvData = [];
+
+        // 1. Health Records Header & Rows
+        csvData.add(['--- 健康监测数据 (Health Records) ---']);
+        csvData.add(['时间', '体重 (kg)', '身高 (cm)', 'BMI']);
+        for (var record in healthData) {
+          csvData.add([
+            record['recorded_at'] ?? '',
+            record['weight_kg'] ?? '',
+            record['height_cm'] ?? '',
+            record['bmi'] ?? '',
+          ]);
+        }
+
+        csvData.add([]); // Blank line separator
+        csvData.add([]);
+
+        // 2. AI Telemetry Logs Header & Rows
+        csvData.add(['--- AI 使用监测数据 (AI Telemetry Logs) ---']);
+        csvData.add(['时间', '服务商', '模型名称', '生成词数', '节省时间 (秒)']);
+        for (var log in aiData) {
+          csvData.add([
+            log['created_at'] ?? '',
+            log['provider'] ?? '',
+            log['model_name'] ?? '',
+            log['words_generated'] ?? '',
+            log['time_saved_seconds'] ?? '',
+          ]);
+        }
+
+        // Convert to CSV string
+        final csvString = const ListToCsvConverter().convert(csvData);
+
+        // Get local path to write
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/toolbox_pro_export_${DateTime.now().millisecondsSinceEpoch}.csv');
+        await file.writeAsString(csvString);
+
+        if (context.mounted) {
+          Navigator.pop(context); // Dismiss loading
+          
+          // Share CSV using share_plus
+          await Share.shareXFiles(
+            [XFile(file.path)],
+            text: '这是从 Toolbox Pro 导出的健康与监控数据。',
+          );
+        }
+      } else {
+        throw Exception('Export failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Dismiss loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('数据导出失败: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showEditProfileDialog(BuildContext context, String currentNickname) {
+    final TextEditingController controller = TextEditingController(text: currentNickname);
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF140F2D),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+            ),
+            title: const Text(
+              '修改专属昵称',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  style: const TextStyle(color: Colors.white),
+                  cursorColor: Colors.purpleAccent,
+                  decoration: InputDecoration(
+                    hintText: '输入您的新昵称...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.purpleAccent, width: 1),
+                    ),
+                  ),
+                ),
+                if (isLoading) ...[
+                  const SizedBox(height: 16),
+                  const LinearProgressIndicator(color: Colors.purpleAccent),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(context),
+                child: const Text('取消', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purpleAccent.withOpacity(0.8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final newName = controller.text.trim();
+                        if (newName.isEmpty || newName == currentNickname) {
+                          Navigator.pop(context);
+                          return;
+                        }
+
+                        setState(() => isLoading = true);
+                        final success = await ref.read(authProvider.notifier).updateProfile(nickname: newName);
+                        setState(() => isLoading = false);
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('昵称已同步至云端！'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('网络开小差了，修改失败。'),
+                                backgroundColor: Colors.redAccent,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: const Text('保存至云端', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader(String email, String nickname) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '设置与个人中心',
+          const Text(
+            '个人主页',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
             ),
           ),
-          SizedBox(height: 4),
-          Text(
-            '管理您的云端账户凭证及自定义物理公式模板',
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: 12,
+          const SizedBox(height: 16),
+          // Premium User Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E1E2C), Color(0xFF2D2A4A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purpleAccent.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(colors: [Colors.purpleAccent, Colors.pinkAccent]),
+                  ),
+                  child: const CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Color(0xFF0F0C29),
+                    child: Icon(Icons.person_rounded, size: 36, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onTap: () => _showEditProfileDialog(context, nickname),
+                        child: Row(
+                          children: [
+                            Text(
+                              nickname,
+                              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.edit_rounded, color: Colors.white54, size: 16),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: const TextStyle(color: Colors.white60, fontSize: 13),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.amber.withOpacity(0.2), Colors.orange.withOpacity(0.2)],
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 14),
+                            SizedBox(width: 4),
+                            Text(
+                              'Premium 尊享会员',
+                              style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_rounded, color: Colors.white54),
+                  onPressed: () {},
+                ),
+              ],
             ),
           ),
         ],
@@ -1027,212 +1297,221 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildProfileSettingsContent(BuildContext context, String email) {
+  Widget _buildProfileSettingsContent(BuildContext context, String email, String nickname) {
     final converterState = ref.watch(converterProvider);
     final customConverters = converterState.customConverters;
+    final settingsState = ref.watch(settingsProvider);
+    final settingsNotifier = ref.read(settingsProvider.notifier);
 
     return ListView(
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.zero,
       children: [
-        // 1. Account Info Section
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.04)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.shield_rounded, color: Colors.purpleAccent, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    '账户凭证信息',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildSettingRow('注册邮箱', email),
-              const Divider(color: Colors.white10),
-              _buildSettingRow('权限组', 'Premium 尊享会员'),
-              const Divider(color: Colors.white10),
-              _buildSettingRow('服务器会话', 'Active · AES-256 加密'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // 2. Custom Sandbox Formulas Section
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.04)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.rule_folder_rounded, color: Colors.amberAccent, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Sandbox 自定义公式库',
-                        style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.amberAccent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${customConverters.length} 个模板',
-                      style: const TextStyle(color: Colors.amberAccent, fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              if (customConverters.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(
-                    child: Text(
-                      '暂无自定义物理公式\n您可在“单位转换”->“沙盒公式”中自由编写！',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white38, fontSize: 11, height: 1.5),
-                    ),
-                  ),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: customConverters.length,
-                  itemBuilder: (context, index) {
-                    final item = customConverters[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white.withOpacity(0.04)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '公式：1 ${item.fromUnit} = ${item.factor} ${item.toUnit} (偏置: +${item.offset})',
-                                  style: const TextStyle(color: Colors.white38, fontSize: 10.5),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
-                            onPressed: () {
-                              ref.read(converterProvider.notifier).removeCustomConverter(item.id);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('公式“${item.name}”已安全销毁'),
-                                  backgroundColor: const Color(0xFF0F0C29),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // 3. System Actions
-        GestureDetector(
-          onTap: () => ref.read(authProvider.notifier).logout(),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8A2387), Color(0xFFE94057)],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFE94057).withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        // 1. Preferences
+        _buildSettingsGroup(
+          '个性化与偏好设置',
+          [
+            _buildListTile(
+              Icons.palette_outlined, 
+              '深色护眼模式', 
+              Colors.pinkAccent, 
+              trailing: Switch(
+                value: settingsState.isDarkMode, 
+                onChanged: (v) => settingsNotifier.toggleDarkMode(v), 
+                activeColor: Colors.pinkAccent, 
+                activeTrackColor: Colors.pinkAccent.withOpacity(0.3)
+              )
             ),
-            child: const Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            _buildListTile(Icons.straighten_rounded, '默认度量单位制', Colors.cyanAccent, trailing: const Text('公制 (kg/cm)', style: TextStyle(color: Colors.white54, fontSize: 12))),
+            _buildListTile(
+              Icons.vibration_rounded, 
+              '触感反馈 (Haptics)', 
+              Colors.tealAccent, 
+              trailing: Switch(
+                value: settingsState.isHapticsEnabled, 
+                onChanged: (v) => settingsNotifier.toggleHaptics(v), 
+                activeColor: Colors.tealAccent, 
+                activeTrackColor: Colors.tealAccent.withOpacity(0.3)
+              )
+            ),
+          ],
+        ),
+
+        // 2. Account & Security
+        _buildSettingsGroup(
+          '账号与安全',
+          [
+            _buildListTile(Icons.devices_rounded, '设备与会话管理', Colors.blueAccent, subtitle: '当前在线: 1 台设备'),
+            _buildListTile(
+              Icons.fingerprint_rounded, 
+              '启用面容/指纹登录', 
+              Colors.lightGreenAccent, 
+              trailing: Switch(
+                value: settingsState.isBiometricsEnabled, 
+                onChanged: (v) => settingsNotifier.toggleBiometrics(v), 
+                activeColor: Colors.lightGreenAccent, 
+                activeTrackColor: Colors.lightGreenAccent.withOpacity(0.3)
+              )
+            ),
+            _buildListTile(Icons.lock_outline_rounded, '修改登录密码', Colors.orangeAccent),
+          ],
+        ),
+
+        // 3. Data & Cloud Sync
+        _buildSettingsGroup(
+          '数据与云端',
+          [
+            _buildListTile(Icons.cloud_sync_rounded, '全双工云端同步', Colors.lightBlueAccent, subtitle: '实时同步健康数据与 AI 对话', trailing: Switch(value: true, onChanged: (v) {}, activeColor: Colors.lightBlueAccent, activeTrackColor: Colors.lightBlueAccent.withOpacity(0.3))),
+            _buildListTile(
+              Icons.import_export_rounded, 
+              '导出健康与监控数据', 
+              Colors.greenAccent, 
+              subtitle: '导出为 CSV/Excel 格式',
+              onTap: () => _exportData(context),
+            ),
+            _buildListTile(Icons.cleaning_services_rounded, '清理本地缓存', Colors.redAccent, trailing: const Text('12.4 MB', style: TextStyle(color: Colors.white54, fontSize: 12))),
+          ],
+        ),
+
+        // 4. Custom Sandbox Formulas (Legacy logic preserved but wrapped nicely)
+        _buildSettingsGroup(
+          'Sandbox 沙盒引擎',
+          [
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.amberAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.rule_folder_rounded, color: Colors.amberAccent, size: 20),
+                ),
+                title: const Text('自定义公式库管理', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: Text('已加载 ${customConverters.length} 个模板', style: const TextStyle(color: Colors.white38, fontSize: 12)),
                 children: [
-                  Icon(Icons.logout_rounded, color: Colors.white, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    '安全退出登录会话',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  if (customConverters.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('暂无自定义公式，您可在“单位转换”->“沙盒公式”中自由编写！', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12)),
+                    )
+                  else
+                    ...customConverters.map((item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.only(left: 16, right: 0),
+                        title: Text(item.name, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                        subtitle: Text('1 ${item.fromUnit} = ${item.factor} ${item.toUnit} (+${item.offset})', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                          onPressed: () {
+                            ref.read(converterProvider.notifier).removeCustomConverter(item.id);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('公式“${item.name}”已安全销毁'), backgroundColor: const Color(0xFF0F0C29), duration: const Duration(seconds: 1)));
+                          },
+                        ),
+                      ),
+                    )).toList(),
                 ],
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: 12),
+
+        // 5. Subscription & Premium
+        _buildSettingsGroup(
+          '订阅与专属权益',
+          [
+            _buildListTile(Icons.card_membership_rounded, '我的权益包', Colors.amber, subtitle: 'Premium 尊享会员', trailing: const Text('2099-12-31 到期', style: TextStyle(color: Colors.white54, fontSize: 12))),
+            _buildListTile(Icons.api_rounded, 'AI Token 资源用量', Colors.deepPurpleAccent, subtitle: '本月剩余: 无限制 (Premium)'),
+          ],
+        ),
+
+        // 6. Support & Actions
+        _buildSettingsGroup(
+          '帮助与反馈',
+          [
+            _buildListTile(Icons.bug_report_outlined, '问题反馈与建议', Colors.white70),
+            _buildListTile(Icons.info_outline_rounded, '关于 Toolbox Pro', Colors.white70, trailing: const Text('v1.2.0', style: TextStyle(color: Colors.white54, fontSize: 12))),
+            _buildListTile(
+              Icons.logout_rounded, 
+              '安全退出登录', 
+              Colors.redAccent, 
+              titleColor: Colors.redAccent,
+              onTap: () => ref.read(authProvider.notifier).logout(),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
         const Center(
           child: Text(
-            'Toolbox Pro v1.2.0 · 工业标准级应用底座',
-            style: TextStyle(color: Colors.white24, fontSize: 10),
+            'Toolbox Pro v1.2.0 · 工业标准级应用底座\nPowered by Advanced Flutter Architecture',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white24, fontSize: 10, height: 1.5),
+          ),
+        ),
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Widget _buildSettingsGroup(String groupTitle, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 8.0, top: 12.0),
+          child: Text(
+            groupTitle,
+            style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(bottom: 16.0),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 56.0),
+                    child: Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                  ),
+              ]
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSettingRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 12)),
-          Text(value, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
+  Widget _buildListTile(
+    IconData icon, 
+    String title, 
+    Color iconColor, {
+    String? subtitle, 
+    Widget? trailing, 
+    VoidCallback? onTap,
+    Color titleColor = Colors.white,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
       ),
+      title: Text(title, style: TextStyle(color: titleColor, fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)) : null,
+      trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 20),
+      onTap: onTap ?? () {}, // Provide empty callback to enable ink ripple effect
     );
   }
 
