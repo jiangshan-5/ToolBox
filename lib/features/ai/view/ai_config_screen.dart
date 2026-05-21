@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/widgets/glass_card.dart';
-import '../../../core/network/api_client.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../provider/ai_config_provider.dart';
 

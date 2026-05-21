@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:ui';
 import '../provider/ai_provider.dart';
+import '../../utilities/provider/markdown_editor_provider.dart';
+import '../../utilities/view/markdown_editor_screen.dart';
 import 'ai_config_screen.dart';
 
 class TypewriterText extends StatefulWidget {
@@ -441,31 +443,71 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '⚡ ${msg.provider ?? '云端算力'} 驱动 · 消耗 ${msg.usageTokens ?? 0} Tokens',
+                              '⚡ ${msg.provider ?? '云端算力'} · ${msg.usageTokens ?? 0} Tokens',
                               style: TextStyle(
-                                color: Colors.purpleAccent.withOpacity(0.5),
+                                color: Colors.purpleAccent.withValues(alpha: 0.5),
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                Clipboard.setData(ClipboardData(text: msg.content));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('已成功复制到剪贴板'),
-                                    backgroundColor: Color(0xFF0F0C29),
-                                    duration: Duration(seconds: 1),
+                            Row(
+                              children: [
+                                // Save to Markdown notes (cross-tool linkage)
+                                GestureDetector(
+                                  onTap: () {
+                                    try {
+                                      final timestamp = DateTime.now().toString().substring(0, 16);
+                                      ref.read(markdownEditorCacheProvider.notifier).appendText(
+                                        '## AI 对话 ($timestamp)\n\n${msg.content}'
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('📝 已存入 Markdown 笔记本'),
+                                          backgroundColor: const Color(0xFF1E1B3A),
+                                          action: SnackBarAction(
+                                            label: '去看看',
+                                            textColor: Colors.purpleAccent,
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => const MarkdownEditorScreen()),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    } catch (_) {}
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.edit_note_rounded, color: Colors.cyanAccent, size: 11),
+                                      SizedBox(width: 4),
+                                      Text('存入笔记', style: TextStyle(color: Colors.cyanAccent, fontSize: 10)),
+                                    ],
                                   ),
-                                );
-                              },
-                              child: Row(
-                                children: const [
-                                  Icon(Icons.copy_rounded, color: Colors.white38, size: 11),
-                                  SizedBox(width: 4),
-                                  Text('复制', style: TextStyle(color: Colors.white38, fontSize: 10)),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Copy response
+                                GestureDetector(
+                                  onTap: () {
+                                    Clipboard.setData(ClipboardData(text: msg.content));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('已成功复制到剪贴板'),
+                                        backgroundColor: Color(0xFF0F0C29),
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.copy_rounded, color: Colors.white38, size: 11),
+                                      SizedBox(width: 4),
+                                      Text('复制', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

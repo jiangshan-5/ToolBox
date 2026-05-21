@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'token_manager.dart';
@@ -6,7 +7,7 @@ import 'token_manager.dart';
 class ApiClient {
   late final Dio _dio;
   late final Dio _refreshDio;
-  bool _isRefreshing = false;
+  Completer<String?>? _refreshCompleter;
 
   /// Callback triggered when authorization fails permanently
   VoidCallback? onAuthFailure;
@@ -71,8 +72,10 @@ class ApiClient {
             final email = await TokenManager.getEmail();
             
             if (refreshToken != null && email != null) {
-              if (!_isRefreshing) {
-                _isRefreshing = true;
+              var completer = _refreshCompleter;
+              if (completer == null) {
+                completer = Completer<String?>();
+                _refreshCompleter = completer;
                 try {
                   // Call refresh endpoint with the separate refresh Dio instance
                   final refreshResponse = await _refreshDio.post(
@@ -90,47 +93,36 @@ class ApiClient {
                     email: email,
                   );
                   
-                  _isRefreshing = false;
-                  
-                  // Replay the original failed request with the new access token
-                  final options = error.requestOptions;
-                  options.headers['Authorization'] = 'Bearer $newAccessToken';
-                  
-                  final response = await _dio.fetch(options);
-                  return handler.resolve(response);
+                  completer.complete(newAccessToken);
                 } catch (refreshError) {
-                  _isRefreshing = false;
+                  completer.complete(null);
                   
                   // Token refresh failed (e.g. revoked or expired) -> Wipe session
                   await TokenManager.clearSession();
                   
                   // Trigger global authentication failure callback
                   onAuthFailure?.call();
-                  
-                  final customException = DioException(
-                    requestOptions: error.requestOptions,
-                    response: error.response,
-                    type: error.type,
-                    error: "登录已失效，请重新登录",
-                  );
-                  return handler.next(customException);
+                } finally {
+                  _refreshCompleter = null;
                 }
-              } else {
-                // Another request is currently refreshing the token, wait for it to complete
-                int retries = 0;
-                while (_isRefreshing && retries < 10) {
-                  await Future.delayed(const Duration(milliseconds: 500));
-                  retries++;
-                }
+              }
+
+              final newAccessToken = await completer.future;
+              if (newAccessToken != null) {
+                // Replay the original failed request with the new access token
+                final options = error.requestOptions;
+                options.headers['Authorization'] = 'Bearer $newAccessToken';
                 
-                final newAccessToken = await TokenManager.getToken();
-                if (newAccessToken != null) {
-                  final options = error.requestOptions;
-                  options.headers['Authorization'] = 'Bearer $newAccessToken';
-                  
-                  final response = await _dio.fetch(options);
-                  return handler.resolve(response);
-                }
+                final response = await _dio.fetch(options);
+                return handler.resolve(response);
+              } else {
+                final customException = DioException(
+                  requestOptions: error.requestOptions,
+                  response: error.response,
+                  type: error.type,
+                  error: "登录已失效，请重新登录",
+                );
+                return handler.next(customException);
               }
             }
           }

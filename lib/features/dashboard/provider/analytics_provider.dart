@@ -38,6 +38,20 @@ class AnalyticsNotifier extends StateNotifier<AsyncValue<AnalyticsDashboardData>
   }
 
   Future<void> refresh() async {
+    final authState = _ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      final data = AnalyticsDashboardData(
+        aiWordsGenerated: 0,
+        aiTimeSavedHours: 0.0,
+        aiModelInvocations: 0,
+        healthBmiTrend: [],
+        healthTrendDates: [],
+        heatmapActivity: List.filled(24, 0.0),
+      );
+      state = AsyncValue.data(data);
+      return;
+    }
+
     state = const AsyncValue.loading();
     try {
       final apiClient = _ref.read(apiClientProvider);
@@ -51,5 +65,6 @@ class AnalyticsNotifier extends StateNotifier<AsyncValue<AnalyticsDashboardData>
 }
 
 final analyticsProvider = StateNotifierProvider<AnalyticsNotifier, AsyncValue<AnalyticsDashboardData>>((ref) {
+  ref.watch(authProvider);
   return AnalyticsNotifier(ref);
 });

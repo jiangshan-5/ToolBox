@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import '../../../core/widgets/glass_card.dart';
+import '../../../features/dashboard/provider/tools_provider.dart';
 
-class WhiteNoiseScreen extends StatefulWidget {
+class WhiteNoiseScreen extends ConsumerStatefulWidget {
   const WhiteNoiseScreen({super.key});
 
   @override
-  State<WhiteNoiseScreen> createState() => _WhiteNoiseScreenState();
+  ConsumerState<WhiteNoiseScreen> createState() => _WhiteNoiseScreenState();
 }
 
-class _WhiteNoiseScreenState extends State<WhiteNoiseScreen> with TickerProviderStateMixin {
+class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with TickerProviderStateMixin {
   String? _activeSoundId;
   bool _isPlaying = false;
   Timer? _countdownTimer;
@@ -71,12 +72,24 @@ class _WhiteNoiseScreenState extends State<WhiteNoiseScreen> with TickerProvider
         _isPlaying = !_isPlaying;
       });
     } else {
-      // Switch sound
+      // Switch sound — log telemetry for new selection
       setState(() {
         _activeSoundId = soundId;
         _isPlaying = true;
       });
+      _logSoundUsage(soundId);
     }
+  }
+
+  void _logSoundUsage(String soundId) {
+    try {
+      ref.read(toolsAnalyticsProvider).logUsage(
+        toolKey: 'white_noise',
+        parameters: {'sound_id': soundId},
+        status: 'success',
+        durationMs: 0,
+      );
+    } catch (_) {}
   }
 
   void _setTimer(int minutes) {

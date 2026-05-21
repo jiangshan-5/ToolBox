@@ -1,53 +1,96 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../../core/widgets/glass_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/global_clipboard_provider.dart';
+import '../provider/markdown_editor_provider.dart';
 
-class MarkdownEditorScreen extends StatefulWidget {
+class MarkdownEditorScreen extends ConsumerStatefulWidget {
   const MarkdownEditorScreen({super.key});
 
   @override
-  State<MarkdownEditorScreen> createState() => _MarkdownEditorScreenState();
+  ConsumerState<MarkdownEditorScreen> createState() => _MarkdownEditorScreenState();
 }
 
-class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> with SingleTickerProviderStateMixin {
+class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _editorController = TextEditingController();
+  String _initialText = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     
-    // Inject friendly initial markdown template
-    _editorController.text = '''# 欢迎使用极简 Markdown 编研站 🚀
+    final baseText = ref.read(markdownEditorCacheProvider);
+    final globalClipboardText = ref.read(globalClipboardProvider);
+    String text = baseText;
+    
+    if (globalClipboardText != null && globalClipboardText.trim().isNotEmpty) {
+      text = baseText.isEmpty ? globalClipboardText : '$baseText\n\n$globalClipboardText';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(markdownEditorCacheProvider.notifier).updateText(text);
+        ref.read(globalClipboardProvider.notifier).state = null;
+      });
+    }
 
-这是一套专为移动端打造的极简 **Markdown 编辑与渲染容器**。
+    _editorController.text = text;
+    _initialText = text;
 
-## 💡 功能亮点
+    _editorController.addListener(_onTextChanged);
+  }
 
-1. **实时双栏对照**：自由切换“源码编辑”与“深度渲染”；
-2. **快捷动作栏**：支持一键加粗、引用、代码块与链接插入；
-3. **沉浸式暗黑风格**：完美融入极客工作台主题。
-
----
-
-> “好记性不如烂笔头。用极简的排版，沉淀最具深度的思想。”
-
-### 💻 代码块模拟展示
-```javascript
-const greet = (name) => {
-  console.log(`Hello, \${name}!`);
-};
-greet("Toolbox Pro User");
-```
-''';
+  void _onTextChanged() {
+    ref.read(markdownEditorCacheProvider.notifier).updateText(_editorController.text);
   }
 
   @override
   void dispose() {
+    _editorController.removeListener(_onTextChanged);
     _tabController.dispose();
     _editorController.dispose();
     super.dispose();
+  }
+
+  Future<bool> _showExitConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF140F2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+        ),
+        title: const Text(
+          '放弃未保存的更改？',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          '您已对文档进行了修改，返回后本地缓存仍会保留，但确定退出吗？',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('继续编辑', style: TextStyle(color: Colors.purpleAccent)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent.withOpacity(0.8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确定退出', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<bool> _handlePop() async {
+    if (_editorController.text == _initialText) {
+      return true;
+    }
+    return await _showExitConfirmationDialog();
   }
 
   void _insertMarkdown(String prefix, String suffix) {
@@ -74,52 +117,73 @@ greet("Toolbox Pro User");
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
-          onPressed: () => Navigator.pop(context),
+    ref.listen<String>(markdownEditorCacheProvider, (previous, next) {
+      if (_editorController.text != next) {
+        _editorController.text = next;
+      }
+    });
+
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldPop = await _handlePop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+            onPressed: () async {
+              final shouldPop = await _handlePop();
+              if (shouldPop && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          title: const Text(
+            '极简 Markdown 工作站',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: Colors.purpleAccent,
+            labelColor: Colors.purpleAccent,
+            unselectedLabelColor: Colors.white38,
+            tabs: const [
+              Tab(text: '✏️ 源码编辑模式'),
+              Tab(text: '👁️ 渲染预览模式'),
+            ],
+          ),
         ),
-        title: const Text(
-          '极简 Markdown 工作站',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.purpleAccent,
-          labelColor: Colors.purpleAccent,
-          unselectedLabelColor: Colors.white38,
-          tabs: const [
-            Tab(text: '✏️ 源码编辑模式'),
-            Tab(text: '👁️ 渲染预览模式'),
-          ],
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0C091F), Color(0xFF140F2D), Color(0xFF06050C)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        body: Stack(
+          children: [
+            // Background
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0C091F), Color(0xFF140F2D), Color(0xFF06050C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
-          ),
-          SafeArea(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildEditorTab(),
-                _buildPreviewTab(),
-              ],
+            SafeArea(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildEditorTab(),
+                  _buildPreviewTab(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import '../../../features/dashboard/provider/tools_provider.dart';
 
-class WorldClockScreen extends StatefulWidget {
+class WorldClockScreen extends ConsumerStatefulWidget {
   const WorldClockScreen({super.key});
 
   @override
-  State<WorldClockScreen> createState() => _WorldClockScreenState();
+  ConsumerState<WorldClockScreen> createState() => _WorldClockScreenState();
 }
 
-class _WorldClockScreenState extends State<WorldClockScreen> with SingleTickerProviderStateMixin {
+class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late Timer _clockTimer;
   DateTime _now = DateTime.now();
@@ -78,6 +80,7 @@ class _WorldClockScreenState extends State<WorldClockScreen> with SingleTickerPr
 
   void _handleTimerCompletion() {
     _pomodoroTimer?.cancel();
+    final bool wasWorkCycle = !_isBreakTime;
     setState(() {
       _isTimerRunning = false;
       if (!_isBreakTime) {
@@ -91,6 +94,21 @@ class _WorldClockScreenState extends State<WorldClockScreen> with SingleTickerPr
         _secondsRemaining = 1500; // 25 mins work
       }
     });
+
+    // Log telemetry when a pomodoro WORK cycle completes
+    if (wasWorkCycle) {
+      try {
+        ref.read(toolsAnalyticsProvider).logUsage(
+          toolKey: 'world_clock',
+          parameters: {
+            'event': 'pomodoro_cycle_complete',
+            'total_cycles': _totalCompletedCycles,
+          },
+          status: 'success',
+          durationMs: 1500000, // 25 minutes in ms
+        );
+      } catch (_) {}
+    }
 
     // Notify user with standard snackbar
     ScaffoldMessenger.of(context).showSnackBar(

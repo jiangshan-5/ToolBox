@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../dashboard/provider/tools_provider.dart';
+import 'dart:async';
 
 /// Supported standard physical categories, adding Sandbox for custom user converters
 enum ConverterCategory { length, mass, temperature, area, sandbox }
@@ -260,6 +261,34 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
   void updateInputValue(double val) {
     state = state.copyWith(inputValue: val);
     _performConversionInstant();
+    _debounceLogUsage();
+  }
+
+  // Debounce timer to avoid spamming logs on every keystroke
+  Timer? _debounceTimer;
+
+  void _debounceLogUsage() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+      _logConversionUsage();
+    });
+  }
+
+  void _logConversionUsage() {
+    if (state.inputValue == 0.0) return;
+    final catName = state.category.name;
+    _ref.read(toolsAnalyticsProvider).logUsage(
+      toolKey: 'converter',
+      parameters: {
+        'category': catName,
+        'from': state.fromUnit,
+        'to': state.toUnit,
+        'input': state.inputValue,
+        'result': state.result,
+      },
+      status: 'success',
+      durationMs: 0,
+    );
   }
 
   void updateFromUnit(String unit) {

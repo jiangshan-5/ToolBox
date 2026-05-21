@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:ui';
 import '../provider/ai_provider.dart';
+import '../../../core/providers/global_clipboard_provider.dart';
+import '../../utilities/provider/markdown_editor_provider.dart';
+import '../../utilities/view/markdown_editor_screen.dart';
 import 'ai_config_screen.dart';
 
 class TypewriterText extends StatefulWidget {
@@ -94,7 +97,9 @@ class _TypewriterTextState extends State<TypewriterText> {
 }
 
 class AiTextProcessorScreen extends ConsumerStatefulWidget {
-  const AiTextProcessorScreen({super.key});
+  final String? initialText;
+
+  const AiTextProcessorScreen({super.key, this.initialText});
 
   @override
   ConsumerState<AiTextProcessorScreen> createState() => _AiTextProcessorScreenState();
@@ -114,7 +119,7 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
     },
     {
       'title': '🏢 商业汇报润色',
-      'text': '我们在今天对工具箱完成了所有模块的升级与重构，当前性能非常平稳，期待下周交付演示。',
+      'text': '我们在今天对工具箱完成了所有模块 of 升级与重构，当前性能非常平稳，期待下周交付演示。',
     },
   ];
 
@@ -130,6 +135,18 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
   @override
   void initState() {
     super.initState();
+    // Pre-fill text if passed from another tool (e.g. Word Counter)
+    if (widget.initialText != null && widget.initialText!.trim().isNotEmpty) {
+      _textController.text = widget.initialText!;
+    } else {
+      final globalClipboardText = ref.read(globalClipboardProvider);
+      if (globalClipboardText != null && globalClipboardText.trim().isNotEmpty) {
+        _textController.text = globalClipboardText;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(globalClipboardProvider.notifier).state = null;
+        });
+      }
+    }
     _textController.addListener(() {
       setState(() {
         _charCount = _textController.text.length;
@@ -426,26 +443,66 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '⚡ AI 写作节点驱动 · 运算耗时 0.2s',
-                              style: TextStyle(color: Colors.purpleAccent.withOpacity(0.5), fontSize: 9.5, fontWeight: FontWeight.bold),
+                              '⚡ AI 写作节点驱动',
+                              style: TextStyle(color: Colors.purpleAccent.withValues(alpha: 0.5), fontSize: 9.5, fontWeight: FontWeight.bold),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                Clipboard.setData(ClipboardData(text: processorState.result!));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('已复制处理后的结果'),
-                                    backgroundColor: Color(0xFF0F0C29),
+                            Row(
+                              children: [
+                                // Save to Markdown notes (cross-tool linkage)
+                                GestureDetector(
+                                  onTap: () {
+                                    try {
+                                      final timestamp = DateTime.now().toString().substring(0, 16);
+                                      ref.read(markdownEditorCacheProvider.notifier).appendText(
+                                        '## AI 改写结果 ($timestamp)\n\n${processorState.result!}'
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: const Text('📝 已追加至 Markdown 笔记本'),
+                                          backgroundColor: const Color(0xFF1E1B3A),
+                                          action: SnackBarAction(
+                                            label: '去看看',
+                                            textColor: Colors.purpleAccent,
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => const MarkdownEditorScreen()),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    } catch (_) {}
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.edit_note_rounded, color: Colors.cyanAccent, size: 14),
+                                      SizedBox(width: 4),
+                                      Text('存入笔记', style: TextStyle(color: Colors.cyanAccent, fontSize: 11)),
+                                    ],
                                   ),
-                                );
-                              },
-                              child: Row(
-                                children: const [
-                                  Icon(Icons.copy_all_rounded, color: Colors.purpleAccent, size: 14),
-                                  SizedBox(width: 4),
-                                  Text('复制渲染结果', style: TextStyle(color: Colors.purpleAccent, fontSize: 11)),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Copy result
+                                GestureDetector(
+                                  onTap: () {
+                                    Clipboard.setData(ClipboardData(text: processorState.result!));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('已复制处理后的结果'),
+                                        backgroundColor: Color(0xFF0F0C29),
+                                      ),
+                                    );
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.copy_all_rounded, color: Colors.purpleAccent, size: 14),
+                                      SizedBox(width: 4),
+                                      Text('复制结果', style: TextStyle(color: Colors.purpleAccent, fontSize: 11)),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

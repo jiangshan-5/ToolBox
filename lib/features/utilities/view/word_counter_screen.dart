@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../features/dashboard/provider/tools_provider.dart';
+import '../../../core/providers/global_clipboard_provider.dart';
+import '../../ai/view/ai_text_processor_screen.dart';
 
-class WordCounterScreen extends StatefulWidget {
+class WordCounterScreen extends ConsumerStatefulWidget {
   const WordCounterScreen({super.key});
 
   @override
-  State<WordCounterScreen> createState() => _WordCounterScreenState();
+  ConsumerState<WordCounterScreen> createState() => _WordCounterScreenState();
 }
 
-class _WordCounterScreenState extends State<WordCounterScreen> {
+class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
   final TextEditingController _controller = TextEditingController();
   int _charWithSpaces = 0;
   int _charNoSpaces = 0;
@@ -17,6 +21,8 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
   int _englishWords = 0;
   int _numbers = 0;
   int _lines = 0;
+
+  Timer? _logDebounce;
 
   @override
   void initState() {
@@ -26,6 +32,7 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
 
   @override
   void dispose() {
+    _logDebounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -44,37 +51,61 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
       return;
     }
 
-    // 1. Total characters with spaces
-    int charWithSpaces = text.length;
-
-    // 2. Characters without spaces
-    int charNoSpaces = text.replaceAll(RegExp(r'\s+'), '').length;
-
-    // 3. Chinese characters count
-    int chineseChars = RegExp(r'[\u4e00-\u9fa5]').allMatches(text).length;
-
-    // 4. English words count
-    int englishWords = RegExp(r'\b[a-zA-Z]+\b').allMatches(text).length;
-
-    // 5. Digits count
-    int numbers = RegExp(r'[0-9]').allMatches(text).length;
-
-    // 6. Lines count
-    int lines = text.split('\n').length;
-
     setState(() {
-      _charWithSpaces = charWithSpaces;
-      _charNoSpaces = charNoSpaces;
-      _chineseChars = chineseChars;
-      _englishWords = englishWords;
-      _numbers = numbers;
-      _lines = lines;
+      _charWithSpaces = text.length;
+      _charNoSpaces = text.replaceAll(RegExp(r'\s+'), '').length;
+      _chineseChars = RegExp(r'[\u4e00-\u9fa5]').allMatches(text).length;
+      _englishWords = RegExp(r'\b[a-zA-Z]+\b').allMatches(text).length;
+      _numbers = RegExp(r'[0-9]').allMatches(text).length;
+      _lines = text.split('\n').length;
     });
+
+    // Debounce telemetry logging to avoid spamming on each keystroke
+    _logDebounce?.cancel();
+    _logDebounce = Timer(const Duration(seconds: 2), () {
+      if (_charWithSpaces > 0) {
+        ref.read(toolsAnalyticsProvider).logUsage(
+          toolKey: 'word_counter',
+          parameters: {
+            'char_count': _charWithSpaces,
+            'chinese_chars': _chineseChars,
+            'english_words': _englishWords,
+          },
+          status: 'success',
+          durationMs: 0,
+        );
+      }
+    });
+  }
+
+  /// Send current text to AI Text Processor via globalClipboardProvider
+  void _sendToAiProcessor() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请先输入文本内容'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+    // Publish text to global clipboard so AI Processor can read it
+    ref.read(globalClipboardProvider.notifier).state = text;
+
+    // Navigate directly to AI Text Processor
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AiTextProcessorScreen(initialText: text),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final double readingTime = (_charWithSpaces / 350).ceilToDouble();
+    final double readingTime = _charWithSpaces > 0
+        ? (_charWithSpaces / 350).ceilToDouble()
+        : 0;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -116,9 +147,9 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.02),
+                    color: Colors.white.withValues(alpha: 0.02),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -153,7 +184,43 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // ✨ Send to AI Button (cross-tool linkage)
+                if (_charWithSpaces > 0)
+                  GestureDetector(
+                    onTap: _sendToAiProcessor,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7B2FBE), Color(0xFF5C4AE8)],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purpleAccent.withValues(alpha: 0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            '✨ 发送至 AI 写作引擎改写',
+                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 20),
 
                 // Comprehensive Stats Panel
                 const Text(
@@ -185,7 +252,7 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
 
                 // Reading time card
                 GlassCard(
-                  borderColor: Colors.purpleAccent.withOpacity(0.15),
+                  borderColor: Colors.purpleAccent.withValues(alpha: 0.15),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
@@ -193,7 +260,7 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.purpleAccent.withOpacity(0.1),
+                            color: Colors.purpleAccent.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.timer_outlined, color: Colors.purpleAccent, size: 20),
@@ -209,7 +276,9 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '按照标准语速 350 字/分钟，预计约需 $readingTime 分钟读完。',
+                                _charWithSpaces > 0
+                                    ? '按照标准语速 350 字/分钟，预计约需 $readingTime 分钟读完。'
+                                    : '输入文本后自动计算预计阅读时间。',
                                 style: const TextStyle(color: Colors.white54, fontSize: 11),
                               ),
                             ],
@@ -219,6 +288,7 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -231,9 +301,9 @@ class _WordCounterScreenState extends State<WordCounterScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.015),
+        color: Colors.white.withValues(alpha: 0.015),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

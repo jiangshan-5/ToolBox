@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,7 +15,6 @@ import '../../randomizer/view/randomizer_screen.dart';
 import '../../converter/view/converter_screen.dart';
 import '../../bmi/view/bmi_screen.dart';
 import '../../debug/view/debug_console_screen.dart';
-import '../provider/categories_provider.dart';
 import '../../settings/provider/settings_provider.dart';
 import '../provider/tools_provider.dart';
 import '../../converter/provider/converter_provider.dart';
@@ -27,6 +25,8 @@ import '../../utilities/view/password_generator_screen.dart';
 import '../../utilities/view/world_clock_screen.dart';
 import '../../utilities/view/white_noise_screen.dart';
 import '../../utilities/view/markdown_editor_screen.dart';
+import '../../utilities/view/led_banner_screen.dart';
+import '../../utilities/view/dev_encoder_screen.dart';
 import 'analytics_view.dart';
 
 /// Elite ultra-smooth fade transition route that eliminates page entry stutters
@@ -139,6 +139,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           title: '极简 Markdown 工作站',
           child: MarkdownEditorScreen(),
         );
+      case 'led_banner':
+        return const DeferredPage(
+          title: 'LED 手持弹幕',
+          child: LedBannerScreen(),
+        );
+      case 'dev_encoder':
+        return const DeferredPage(
+          title: '开发者沙盒编码盒',
+          child: DevEncoderScreen(),
+        );
       default:
         return null;
     }
@@ -167,6 +177,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return Icons.psychology_rounded;
       case 'ai_text_processor':
         return Icons.auto_awesome_rounded;
+      case 'led_banner':
+        return Icons.settings_input_hdmi_rounded;
+      case 'dev_encoder':
+        return Icons.code_rounded;
       default:
         return Icons.build_rounded;
     }
@@ -195,6 +209,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return Colors.purpleAccent;
       case 'ai_text_processor':
         return Colors.amberAccent;
+      case 'led_banner':
+        return Colors.pinkAccent;
+      case 'dev_encoder':
+        return Colors.cyanAccent;
       default:
         return Colors.deepPurpleAccent;
     }
@@ -223,6 +241,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return 'AI 智能多轮对话助理';
       case 'ai_text_processor':
         return 'AI 写作引擎';
+      case 'led_banner':
+        return 'LED 手持弹幕';
+      case 'dev_encoder':
+        return '开发者沙盒编码盒';
       default:
         return '常用系统工具';
     }
@@ -784,7 +806,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildProfileHeader(userEmail, userNickname),
             const SizedBox(height: 16),
             Expanded(
-              child: _buildProfileSettingsContent(context, userEmail, userNickname),
+              child: isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _buildProfileSettingsContent(context, userEmail, userNickname, isWide),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 2,
+                          child: _buildPersonalCenterPanel(context, ref, userEmail),
+                        ),
+                      ],
+                    )
+                  : _buildProfileSettingsContent(context, userEmail, userNickname, isWide),
             ),
             const SizedBox(height: 80),
           ],
@@ -1055,7 +1092,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         }
 
         // Convert to CSV string
-        final csvString = const ListToCsvConverter().convert(csvData);
+        final csvString = Csv().encode(csvData);
 
         // Get local path to write
         final tempDir = await getTemporaryDirectory();
@@ -1297,7 +1334,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildProfileSettingsContent(BuildContext context, String email, String nickname) {
+  Widget _buildProfileSettingsContent(BuildContext context, String email, String nickname, bool isWide) {
     final converterState = ref.watch(converterProvider);
     final customConverters = converterState.customConverters;
     final settingsState = ref.watch(settingsProvider);
@@ -1370,6 +1407,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               onTap: () => _exportData(context),
             ),
             _buildListTile(Icons.cleaning_services_rounded, '清理本地缓存', Colors.redAccent, trailing: const Text('12.4 MB', style: TextStyle(color: Colors.white54, fontSize: 12))),
+            if (!isWide)
+              _buildListTile(
+                Icons.analytics_outlined,
+                '个人中心与数据日志',
+                Colors.purpleAccent,
+                subtitle: '查看个人状态及数据库 Telemetry 实况',
+                onTap: () => _showPersonalCenterBottomSheet(context, email),
+              ),
           ],
         ),
 
@@ -1409,7 +1454,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           },
                         ),
                       ),
-                    )).toList(),
+                    )),
                 ],
               ),
             ),
@@ -1451,6 +1496,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: 32),
       ],
+    );
+  }
+
+  void _showPersonalCenterBottomSheet(BuildContext context, String email) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0C091F).withOpacity(0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(
+              top: BorderSide(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Top drag indicator
+              Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 28, left: 20, right: 20, bottom: 20),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: _buildPersonalCenterContent(context, ref, email),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1654,8 +1744,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       {'title': '多时区时钟与番茄钟', 'key': 'world_clock', 'desc': '多时区对照与高精度番茄专注时钟', 'page': null},
       {'title': '白噪音专注冥想', 'key': 'white_noise', 'desc': '精选自然白噪音辅助冥想与高效专注', 'page': null},
       {'title': '极极简 Markdown 编辑器', 'key': 'markdown_editor', 'desc': '极简 Markdown 实时预览排版与字数统计', 'page': null},
-      {'title': 'AI 智能多轮对话助理', 'key': 'ai_chat', 'desc': '结合大语言模型的高强度多轮文本分析', 'page': null},
+      {'title': 'AI 智能多轮对话助理', 'key': 'ai_chat', 'desc': '结合大语言模型的高强度多轮文本 analysis', 'page': null},
       {'title': 'AI 写作引擎', 'key': 'ai_text_processor', 'desc': '一键精准翻译、句式优雅润色与摘要提取', 'page': null},
+      {'title': 'LED 手持弹幕', 'key': 'led_banner', 'desc': '炫彩手持霓虹灯弹幕，支持多种闪烁与滚动特效', 'page': null},
+      {'title': '开发者沙盒编码盒', 'key': 'dev_encoder', 'desc': '支持 Base64、URL 编码转换，MD5/SHA256 哈希与 JSON 格式化', 'page': null},
     ];
 
     return ListView(
@@ -1672,7 +1764,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: Colors.deepPurpleAccent,
                 size: 18,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 '常用工具',
                 style: TextStyle(
@@ -1762,35 +1854,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           },
         ),
       ],
-    );
-  }
-
-  /// High quality skeleton loader for dynamic content
-  Widget _buildLoadingSkeleton(bool isWide) {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isWide ? 3 : 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 2.3,
-      ),
-      itemCount: 4,
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.04)),
-          ),
-          child: const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.deepPurpleAccent),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -1978,125 +2041,132 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: 4),
 
-        Expanded(
-          child: telemetryLogs.when(
-            data: (logs) {
-              if (logs.isEmpty) {
-                return const Center(
+        telemetryLogs.when(
+          data: (logs) {
+            if (logs.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24.0),
                   child: Text(
                     '暂无 Telemetry 上报日志\n运行任何工具，数据将瞬间存盘！',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white38, fontSize: 11),
                   ),
-                );
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                physics: const BouncingScrollPhysics(),
-                itemCount: logs.length > 5 ? 5 : logs.length,
-                itemBuilder: (context, index) {
-                  final log = logs[index];
-                  final String toolKey = log['tool_key'] ?? '';
-                  final String status = log['status'] ?? 'success';
-                  final int duration = log['duration_ms'] ?? 0;
-                  final String createdAt = log['created_at'] ?? '';
-                  final Color color = _getToolColor(toolKey);
+                ),
+              );
+            }
+            return ListView.builder(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: logs.length > 5 ? 5 : logs.length,
+              itemBuilder: (context, index) {
+                final log = logs[index];
+                final String toolKey = log['tool_key'] ?? '';
+                final String status = log['status'] ?? 'success';
+                final int duration = log['duration_ms'] ?? 0;
+                final String createdAt = log['created_at'] ?? '';
+                final Color color = _getToolColor(toolKey);
 
-                  return IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Vertical Timeline indicator
-                        Column(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: color.withOpacity(0.6),
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (index != (logs.length > 5 ? 4 : logs.length - 1))
-                              Expanded(
-                                child: Container(
-                                  width: 1.5,
-                                  color: Colors.white10,
-                                  ),
-                                ),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        // Log Detail
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _getToolChineseName(toolKey),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      _formatTime(createdAt),
-                                      style: const TextStyle(
-                                        color: Colors.white30,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 3),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      status == 'success' ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
-                                      color: status == 'success' ? Colors.greenAccent : Colors.redAccent,
-                                      size: 11,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      status == 'success' ? '计算完成 · ${duration}ms' : '运算异常',
-                                      style: TextStyle(
-                                        color: status == 'success' ? Colors.greenAccent.withOpacity(0.8) : Colors.redAccent,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Vertical Timeline indicator
+                      Column(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withOpacity(0.6),
+                                  blurRadius: 6,
                                 ),
                               ],
                             ),
                           ),
+                          if (index != (logs.length > 5 ? 4 : logs.length - 1))
+                            Expanded(
+                              child: Container(
+                                width: 1.5,
+                                color: Colors.white10,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      // Log Detail
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _getToolChineseName(toolKey),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatTime(createdAt),
+                                    style: const TextStyle(
+                                      color: Colors.white30,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Icon(
+                                    status == 'success' ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
+                                    color: status == 'success' ? Colors.greenAccent : Colors.redAccent,
+                                    size: 11,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    status == 'success' ? '计算完成 · ${duration}ms' : '运算异常',
+                                    style: TextStyle(
+                                      color: status == 'success' ? Colors.greenAccent.withOpacity(0.8) : Colors.redAccent,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-            loading: () => const Center(
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
               child: SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.purpleAccent),
               ),
             ),
-            error: (err, stack) => const Center(
+          ),
+          error: (err, stack) => const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
               child: Text(
                 'Telemetry 数据流拉取失败',
                 style: TextStyle(color: Colors.white38, fontSize: 11),

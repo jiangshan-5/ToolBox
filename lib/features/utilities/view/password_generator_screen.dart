@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
-import '../../../core/widgets/glass_card.dart';
+import '../../../features/dashboard/provider/tools_provider.dart';
 
-class PasswordGeneratorScreen extends StatefulWidget {
+class PasswordGeneratorScreen extends ConsumerStatefulWidget {
   const PasswordGeneratorScreen({super.key});
 
   @override
-  State<PasswordGeneratorScreen> createState() => _PasswordGeneratorScreenState();
+  ConsumerState<PasswordGeneratorScreen> createState() => _PasswordGeneratorScreenState();
 }
 
-class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
+class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScreen> {
   double _passwordLength = 16.0;
   bool _includeUppercase = true;
   bool _includeLowercase = true;
@@ -102,8 +103,25 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
       _generatedPassword = password;
       _strengthLabel = label;
       _strengthColor = color;
-      _strengthProgress = min(strength, 1.0);
+      _strengthProgress = strength.clamp(0.0, 1.0);
     });
+
+    // Telemetry: log password generation event
+    try {
+      ref.read(toolsAnalyticsProvider).logUsage(
+        toolKey: 'password_generator',
+        parameters: {
+          'length': length,
+          'has_uppercase': _includeUppercase,
+          'has_lowercase': _includeLowercase,
+          'has_numbers': _includeNumbers,
+          'has_symbols': _includeSymbols,
+          'strength': label,
+        },
+        status: 'success',
+        durationMs: 0,
+      );
+    } catch (_) {}
   }
 
   @override

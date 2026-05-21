@@ -212,6 +212,24 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
         isLoading: false,
         result: resultText,
       );
+
+      // Async upload AI Telemetry to Cloud — mirrors AiChatNotifier
+      try {
+        final wordsGenerated = resultText.length;
+        final timeSavedSeconds = (wordsGenerated * 1.5).round();
+        await apiClient.instance.post(
+          '/analytics/telemetry',
+          data: {
+            'provider': aiConfig.provider,
+            'model_name': aiConfig.model,
+            'words_generated': wordsGenerated,
+            'time_saved_seconds': timeSavedSeconds,
+          },
+        );
+        _ref.invalidate(analyticsProvider);
+      } catch (telemetryError) {
+        print('TextProcessor telemetry sync failed: $telemetryError');
+      }
     } on DioException catch (e) {
       state = AiTextProcessorState(
         isLoading: false,

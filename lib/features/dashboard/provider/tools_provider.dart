@@ -15,6 +15,10 @@ class ToolsAnalyticsService {
     required String status,
     required int durationMs,
   }) async {
+    final authState = _ref.read(authProvider);
+    if (!authState.isAuthenticated) {
+      return;
+    }
     try {
       await _apiClient.instance.post(
         '/tools/usage-logs',
@@ -49,6 +53,10 @@ final categoriesProvider = FutureProvider<List<dynamic>>((ref) async {
 
 /// Asynchronous API provider to retrieve latest usage logs of active user
 final telemetryLogsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
   final apiClient = ref.watch(apiClientProvider);
   try {
     final response = await apiClient.instance.get('/tools/usage-logs');

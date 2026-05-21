@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../../../core/widgets/dynamic_background.dart';
 import '../provider/bmi_provider.dart';
+import '../../utilities/provider/markdown_editor_provider.dart';
+import '../../utilities/view/markdown_editor_screen.dart';
 
 /// Sandboxed clinical Body Fitness and Macronutrient Analyzer Screen with premium visual assets
 class BmiScreen extends ConsumerStatefulWidget {
@@ -1035,6 +1037,73 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // ✨ Export to Markdown Notes (cross-tool linkage)
+        GestureDetector(
+          onTap: () {
+            try {
+              final storage = ref.read(localStorageServiceProvider);
+              final ts = DateTime.now().toString().substring(0, 16);
+              final report = '''
+## 🏥 健康报告 ($ts)
+
+| 指标 | 数据 |
+|------|------|
+| **BMI 身体质量指数** | ${state.bmi!.toStringAsFixed(2)} |
+| **BMR 基础新陈代谢** | ${state.bmr!.toStringAsFixed(0)} kcal |
+| **每日卡路里目标** | ${state.finalCalorieGoal!.toStringAsFixed(0)} kcal |
+| **理想体重** | ${state.idealWeight!.toStringAsFixed(1)} ${state.isMetric ? 'kg' : 'lb'} |
+| **预计达标周数** | ${state.weeksToTarget!.toStringAsFixed(1)} 周 |
+
+### 宏量营养素分配
+- 🥚 蛋白质：${state.proteinGrams!.toStringAsFixed(1)} g / 天
+- 🍞 碳水化合物：${state.carbGrams!.toStringAsFixed(1)} g / 天
+- 🥑 脂肪：${state.fatGrams!.toStringAsFixed(1)} g / 天
+
+> ${state.message}
+''';
+              ref.read(markdownEditorCacheProvider.notifier).appendText(report);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('📝 健康报告已导出到 Markdown 笔记本'),
+                  backgroundColor: const Color(0xFF1E1B3A),
+                  action: SnackBarAction(
+                    label: '去看看',
+                    textColor: Colors.purpleAccent,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MarkdownEditorScreen()),
+                      );
+                    },
+                  ),
+                ),
+              );
+            } catch (_) {}
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [const Color(0xFF00E5FF).withValues(alpha: 0.15), const Color(0xFF00E676).withValues(alpha: 0.1)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.edit_note_rounded, color: Color(0xFF00E5FF), size: 18),
+                SizedBox(width: 8),
+                Text(
+                  '📊 导出健康报告到 Markdown 笔记本',
+                  style: TextStyle(color: Color(0xFF00E5FF), fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
           ),
         ),
