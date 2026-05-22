@@ -33,15 +33,20 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
   @override
   Widget build(BuildContext context) {
     final isLowPower = ref.watch(settingsProvider).isLowPowerMode;
+    final theme = Theme.of(context);
+    final surfaceColor = theme.colorScheme.surface;
+    final primaryColor = theme.colorScheme.primary;
+    final secondaryColor = theme.colorScheme.secondary;
+
     if (isLowPower) {
       if (_controller.isAnimating) {
         _controller.stop();
       }
       return Stack(
         children: [
-          // Solid Dark Base
+          // Solid Backdrop
           Container(
-            color: const Color(0xFF0A0714),
+            color: surfaceColor,
           ),
           
           // Floating Mesh Gradients (Static positions)
@@ -53,10 +58,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.blueAccent.withOpacity(0.08),
+                color: primaryColor.withOpacity(0.08),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blueAccent.withOpacity(0.12),
+                    color: primaryColor.withOpacity(0.12),
                     blurRadius: 200,
                     spreadRadius: 150,
                   ),
@@ -72,10 +77,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.purpleAccent.withOpacity(0.08),
+                color: secondaryColor.withOpacity(0.08),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.purpleAccent.withOpacity(0.12),
+                    color: secondaryColor.withOpacity(0.12),
                     blurRadius: 200,
                     spreadRadius: 150,
                   ),
@@ -94,9 +99,9 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
       }
       return Stack(
         children: [
-          // Solid Dark Base
+          // Solid Backdrop
           Container(
-            color: const Color(0xFF0A0714),
+            color: surfaceColor,
           ),
           
           // Floating Mesh Gradients
@@ -113,10 +118,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
                       height: 400,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.blueAccent.withOpacity(0.08),
+                        color: primaryColor.withOpacity(0.08),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blueAccent.withOpacity(0.12),
+                            color: primaryColor.withOpacity(0.12),
                             blurRadius: 200,
                             spreadRadius: 150,
                           ),
@@ -132,10 +137,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
                       height: 400,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.purpleAccent.withOpacity(0.08),
+                        color: secondaryColor.withOpacity(0.08),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purpleAccent.withOpacity(0.12),
+                            color: secondaryColor.withOpacity(0.12),
                             blurRadius: 200,
                             spreadRadius: 150,
                           ),

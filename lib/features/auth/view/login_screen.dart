@@ -5,7 +5,6 @@ import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/auth_provider.dart';
 import 'register_screen.dart';
-import '../../dashboard/view/dashboard_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});

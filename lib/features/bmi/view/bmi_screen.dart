@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../../../core/widgets/dynamic_background.dart';
@@ -1046,7 +1045,6 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
         GestureDetector(
           onTap: () {
             try {
-              final storage = ref.read(localStorageServiceProvider);
               final ts = DateTime.now().toString().substring(0, 16);
               final report = '''
 ## 🏥 健康报告 ($ts)

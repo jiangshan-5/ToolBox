@@ -1,40 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+enum AppThemeType {
+  cyberpunkDark,
+  neonMidnight,
+  volcanoCyber,
+  forestMatrix,
+  oceanCyber,
+  sakuraDream,
+  cyberpunkLight,
+  custom,
+}
+
+class AppThemePreset {
+  final AppThemeType type;
+  final String name;
+  final Color primary;
+  final Color secondary;
+  final Color surface;
+  final Color surfaceContainer;
+  final bool isDark;
+
+  const AppThemePreset({
+    required this.type,
+    required this.name,
+    required this.primary,
+    required this.secondary,
+    required this.surface,
+    required this.surfaceContainer,
+    required this.isDark,
+  });
+}
+
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData buildTheme(AppThemePreset preset) {
+    final brightness = preset.isDark ? Brightness.dark : Brightness.light;
+    final textThemeBase = preset.isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme;
+    final isDark = preset.isDark;
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: brightness,
       
-      // Cohesive Cyberpunk Dark Color Scheme
+      // Cohesive Theme Color Scheme
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.deepPurpleAccent,
-        brightness: Brightness.dark,
-        surface: const Color(0xFF0A0714), // Perfect dark backdrop matching DynamicBackground
-        surfaceContainer: const Color(0xFF130F24), // Sleek secondary container
-        primary: Colors.deepPurpleAccent,
-        secondary: Colors.cyanAccent,
+        seedColor: preset.primary,
+        brightness: brightness,
+        surface: preset.surface,
+        surfaceContainer: preset.surfaceContainer,
+        primary: preset.primary,
+        secondary: preset.secondary,
       ),
       
       // Outfit typography as the primary typeface
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+      textTheme: GoogleFonts.outfitTextTheme(textThemeBase),
       
       // Frosted card guidelines
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        color: Colors.white.withOpacity(0.04),
+        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
       ),
       
-      // Elite Cyberpunk Slider Theme
+      // Dynamic Slider Theme
       sliderTheme: SliderThemeData(
-        activeTrackColor: Colors.deepPurpleAccent,
-        inactiveTrackColor: Colors.white.withOpacity(0.1),
-        thumbColor: Colors.cyanAccent,
-        overlayColor: Colors.cyanAccent.withOpacity(0.15),
-        valueIndicatorColor: Colors.deepPurpleAccent,
-        valueIndicatorTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        activeTrackColor: preset.primary,
+        inactiveTrackColor: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+        thumbColor: preset.secondary,
+        overlayColor: preset.secondary.withOpacity(0.15),
+        valueIndicatorColor: preset.primary,
+        valueIndicatorTextStyle: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
         overlayShape: const RoundSliderOverlayShape(overlayRadius: 20.0),
         trackHeight: 4.0,
@@ -44,15 +79,15 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
           if (states.contains(WidgetState.selected)) {
-            return Colors.cyanAccent;
+            return preset.secondary;
           }
-          return Colors.grey.shade400;
+          return isDark ? Colors.grey.shade400 : Colors.grey.shade600;
         }),
         trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
           if (states.contains(WidgetState.selected)) {
-            return Colors.deepPurpleAccent.withOpacity(0.5);
+            return preset.primary.withOpacity(0.5);
           }
-          return Colors.white12;
+          return isDark ? Colors.white12 : Colors.black12;
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
@@ -60,12 +95,25 @@ class AppTheme {
       // Interactive Button Theme Defaulting
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurpleAccent,
-          foregroundColor: Colors.white,
+          backgroundColor: preset.primary,
+          foregroundColor: isDark ? Colors.white : Colors.black87,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );
+  }
+
+  // Fallback default theme for raw usage if needed
+  static ThemeData get darkTheme {
+    return buildTheme(const AppThemePreset(
+      type: AppThemeType.cyberpunkDark,
+      name: '赛博霓虹 (暗)',
+      primary: Color(0xFF7C4DFF),
+      secondary: Color(0xFF18FFFF),
+      surface: Color(0xFF0A0714),
+      surfaceContainer: Color(0xFF130F24),
+      isDark: true,
+    ));
   }
 }

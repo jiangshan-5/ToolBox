@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
+import '../../../core/providers/theme_provider.dart';
+import '../../../core/app_theme.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -55,6 +57,9 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  Color get primaryColor => Theme.of(context).colorScheme.primary;
+  Color get secondaryColor => Theme.of(context).colorScheme.secondary;
+
   int _currentIndex = 0;
   List<String> _recentlyUsed = ['randomizer', 'converter']; // Tracks active user utilities in real-time
 
@@ -200,13 +205,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'password_generator':
         return Colors.greenAccent;
       case 'world_clock':
-        return Colors.purpleAccent;
+        return primaryColor;
       case 'white_noise':
         return Colors.tealAccent;
       case 'markdown_editor':
         return Colors.amberAccent;
       case 'ai_chat':
-        return Colors.purpleAccent;
+        return primaryColor;
       case 'ai_text_processor':
         return Colors.amberAccent;
       case 'led_banner':
@@ -214,7 +219,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'dev_encoder':
         return Colors.cyanAccent;
       default:
-        return Colors.deepPurpleAccent;
+        return secondaryColor;
     }
   }
 
@@ -275,7 +280,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: GlassCard(
-            borderColor: Colors.deepPurpleAccent.withOpacity(0.3),
+            borderColor: secondaryColor.withOpacity(0.3),
             child: Padding(
               padding: const EdgeInsets.all(28.0),
               child: Column(
@@ -309,7 +314,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
+                      backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(120, 44),
                       shape: RoundedRectangleBorder(
@@ -391,11 +396,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.notifications_active_rounded, color: Colors.purpleAccent, size: 24),
-                            SizedBox(width: 10),
-                            Text(
+                            Icon(Icons.notifications_active_rounded, color: primaryColor, size: 24),
+                            const SizedBox(width: 10),
+                            const Text(
                               '安全公告与通告中心',
                               style: TextStyle(
                                 fontSize: 20,
@@ -433,7 +438,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             time: '2026-05-19 11:30',
                             content: '全新 v1.2.0 版本已全面打通 Sandbox 公式系统！现在，您可以在“个人中心”非常方便地实时查看、审查以及一键销毁（一键垃圾桶）已过期或作废的自定义计算因子。',
                             badge: '新功能',
-                            badgeColor: Colors.purpleAccent,
+                            badgeColor: primaryColor,
                           ),
                           _buildNotificationCard(
                             title: '⚙️ 阿里云深圳多活高防服务器已对接',
@@ -560,7 +565,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.purpleAccent.withOpacity(0.4),
+                    color: primaryColor.withOpacity(0.4),
                     blurRadius: 16,
                     spreadRadius: 2,
                   ),
@@ -582,9 +587,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.purpleAccent.withOpacity(0.5), width: 1.5),
+                  side: BorderSide(color: primaryColor.withOpacity(0.5), width: 1.5),
                 ),
-                child: const Icon(Icons.terminal_rounded, color: Colors.purpleAccent),
+                child: Icon(Icons.terminal_rounded, color: primaryColor),
               ),
             )
           : null,
@@ -641,7 +646,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-    final color = isSelected ? Colors.purpleAccent : Colors.white60;
+    final color = isSelected ? primaryColor : Colors.white60;
 
     return GestureDetector(
       onTap: () {
@@ -657,7 +662,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.purpleAccent.withOpacity(0.1) : Colors.transparent,
+              color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -753,12 +758,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildConnectionIndicator(categoriesState),
             const SizedBox(height: 12),
             _buildRecentlyUsedSection(context),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
               child: Row(
                 children: [
-                  Icon(Icons.grid_view_rounded, color: Colors.purpleAccent, size: 16),
-                  SizedBox(width: 8),
+                  Icon(Icons.grid_view_rounded, color: primaryColor, size: 16),
+                  const SizedBox(width: 8),
                   Text(
                     '全部工具分类库',
                     style: TextStyle(
@@ -845,10 +850,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Container(
             width: 48,
             height: 48,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
+                colors: [primaryColor, secondaryColor],
               ),
             ),
             child: Center(
@@ -910,12 +915,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
           child: Row(
             children: [
-              Icon(Icons.history_rounded, color: Colors.purpleAccent, size: 16),
-              SizedBox(width: 8),
+              Icon(Icons.history_rounded, color: primaryColor, size: 16),
+              const SizedBox(width: 8),
               Text(
                 '最近使用的工具',
                 style: TextStyle(
@@ -1047,8 +1052,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Colors.purpleAccent),
+      builder: (context) => Center(
+        child: CircularProgressIndicator(color: primaryColor),
       ),
     );
 
@@ -1137,7 +1142,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             backgroundColor: const Color(0xFF140F2D),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+              side: BorderSide(color: primaryColor.withOpacity(0.3), width: 1.5),
             ),
             title: const Text(
               '修改专属昵称',
@@ -1149,7 +1154,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 TextField(
                   controller: controller,
                   style: const TextStyle(color: Colors.white),
-                  cursorColor: Colors.purpleAccent,
+                  cursorColor: primaryColor,
                   decoration: InputDecoration(
                     hintText: '输入您的新昵称...',
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
@@ -1161,13 +1166,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.purpleAccent, width: 1),
+                      borderSide: BorderSide(color: primaryColor, width: 1),
                     ),
                   ),
                 ),
                 if (isLoading) ...[
                   const SizedBox(height: 16),
-                  const LinearProgressIndicator(color: Colors.purpleAccent),
+                  LinearProgressIndicator(color: primaryColor),
                 ],
               ],
             ),
@@ -1178,7 +1183,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purpleAccent.withOpacity(0.8),
+                  backgroundColor: primaryColor.withOpacity(0.8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: isLoading
@@ -1251,10 +1256,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+              border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.purpleAccent.withOpacity(0.15),
+                  color: primaryColor.withOpacity(0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -1264,9 +1269,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: [Colors.purpleAccent, Colors.pinkAccent]),
+                    gradient: LinearGradient(colors: [primaryColor, secondaryColor]),
                   ),
                   child: const CircleAvatar(
                     radius: 32,
@@ -1350,14 +1355,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           [
             _buildListTile(
               Icons.palette_outlined, 
-              '深色护眼模式', 
+              '主题风格设置', 
               Colors.pinkAccent, 
-              trailing: Switch(
-                value: settingsState.isDarkMode, 
-                onChanged: (v) => settingsNotifier.toggleDarkMode(v), 
-                activeThumbColor: Colors.pinkAccent, 
-                activeTrackColor: Colors.pinkAccent.withOpacity(0.3)
-              )
+              subtitle: '当前主题: ${ref.watch(themePresetProvider).name}',
+              onTap: () => _showThemeSelectionBottomSheet(context),
             ),
             _buildListTile(Icons.straighten_rounded, '默认度量单位制', Colors.cyanAccent, trailing: const Text('公制 (kg/cm)', style: TextStyle(color: Colors.white54, fontSize: 12))),
             _buildListTile(
@@ -1423,7 +1424,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               _buildListTile(
                 Icons.analytics_outlined,
                 '个人中心与数据日志',
-                Colors.purpleAccent,
+                primaryColor,
                 subtitle: '查看个人状态及数据库 Telemetry 实况',
                 onTap: () => _showPersonalCenterBottomSheet(context, email),
               ),
@@ -1478,7 +1479,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           '订阅与专属权益',
           [
             _buildListTile(Icons.card_membership_rounded, '我的权益包', Colors.amber, subtitle: 'Premium 尊享会员', trailing: const Text('2099-12-31 到期', style: TextStyle(color: Colors.white54, fontSize: 12))),
-            _buildListTile(Icons.api_rounded, 'AI Token 资源用量', Colors.deepPurpleAccent, subtitle: '本月剩余: 无限制 (Premium)'),
+            _buildListTile(Icons.api_rounded, 'AI Token 资源用量', secondaryColor, subtitle: '本月剩余: 无限制 (Premium)'),
           ],
         ),
 
@@ -1511,6 +1512,520 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  String _colorToHex(Color color) {
+    return '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+  }
+
+  Color? _hexToColor(String hex) {
+    try {
+      String cleanHex = hex.trim().replaceAll('#', '');
+      if (cleanHex.length == 6) {
+        cleanHex = 'FF$cleanHex';
+      }
+      if (cleanHex.length == 8) {
+        return Color(int.parse(cleanHex, radix: 16));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Widget _buildColorIndicatorCircle(Color color) {
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white24, width: 1),
+      ),
+    );
+  }
+
+  Widget _buildCustomColorPickerSection({
+    required String title,
+    required Color selectedColor,
+    required List<Color> presets,
+    required Function(Color) onColorSelected,
+  }) {
+    final TextEditingController controller = TextEditingController(text: _colorToHex(selectedColor));
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: presets.map((color) {
+                    final isPresetSelected = color.value == selectedColor.value;
+                    return GestureDetector(
+                      onTap: () => onColorSelected(color),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isPresetSelected ? Colors.white : Colors.white24,
+                            width: isPresetSelected ? 2.5 : 1,
+                          ),
+                          boxShadow: isPresetSelected ? [
+                            BoxShadow(
+                              color: color.withOpacity(0.5),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            )
+                          ] : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Custom Hex input
+            Container(
+              width: 95,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withOpacity(0.12)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                        border: InputBorder.none,
+                        hintText: '#HEX',
+                        hintStyle: TextStyle(color: Colors.white30, fontSize: 11),
+                      ),
+                      onSubmitted: (value) {
+                        final parsed = _hexToColor(value);
+                        if (parsed != null) {
+                          onColorSelected(parsed);
+                        }
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.check_rounded, color: Colors.greenAccent, size: 14),
+                    onPressed: () {
+                      final parsed = _hexToColor(controller.text);
+                      if (parsed != null) {
+                        onColorSelected(parsed);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  void _showThemeSelectionBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final themeConfig = ref.watch(themeProvider);
+            final currentPreset = ref.watch(themePresetProvider);
+            final theme = Theme.of(context);
+            final primaryColor = theme.colorScheme.primary;
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                decoration: BoxDecoration(
+                  color: currentPreset.surface.withOpacity(0.95),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  border: Border(
+                    top: BorderSide(color: primaryColor.withOpacity(0.3), width: 1.5),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.1),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top drag indicator
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.palette_rounded, color: Colors.pinkAccent, size: 24),
+                              SizedBox(width: 10),
+                              Text(
+                                '个性化主题风格定制',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Text(
+                        '选择内置预设主题，或开启自定义极客配色方案',
+                        style: TextStyle(color: Colors.white38, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Preset Themes List
+                    Flexible(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '精选内置预设主题',
+                              style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 12),
+                            // Horizontal preset cards list
+                            SizedBox(
+                              height: 105,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: appThemePresets.length + 1, // 7 presets + 1 custom
+                                itemBuilder: (context, index) {
+                                  final isCustomCard = index == appThemePresets.length;
+                                  final AppThemeType cardType = isCustomCard ? AppThemeType.custom : appThemePresets[index].type;
+                                  final String cardName = isCustomCard ? '自定义主题' : appThemePresets[index].name;
+                                  final bool isSelected = themeConfig.type == cardType;
+                                  
+                                  final Color pColor = isCustomCard ? themeConfig.customPrimary : appThemePresets[index].primary;
+                                  final Color sColor = isCustomCard ? themeConfig.customSecondary : appThemePresets[index].secondary;
+                                  final Color surfColor = isCustomCard ? themeConfig.customSurface : appThemePresets[index].surface;
+                                  final bool isDark = isCustomCard ? themeConfig.customIsDark : appThemePresets[index].isDark;
+                                  
+                                  return GestureDetector(
+                                    onTap: () {
+                                      if (isCustomCard) {
+                                        ref.read(themeProvider.notifier).updateCustomTheme();
+                                      } else {
+                                        ref.read(themeProvider.notifier).setThemeType(cardType);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 130,
+                                      margin: const EdgeInsets.only(right: 12),
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: isSelected 
+                                            ? pColor.withOpacity(0.12) 
+                                            : Colors.white.withOpacity(0.02),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isSelected 
+                                              ? pColor 
+                                              : Colors.white.withOpacity(0.06),
+                                          width: isSelected ? 1.5 : 1,
+                                        ),
+                                        boxShadow: isSelected ? [
+                                          BoxShadow(
+                                            color: pColor.withOpacity(0.1),
+                                            blurRadius: 6,
+                                            spreadRadius: 1,
+                                          )
+                                        ] : null,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  cardName,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 11.5,
+                                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                  ),
+                                                ),
+                                              ),
+                                              Icon(
+                                                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                                                color: Colors.white54,
+                                                size: 12,
+                                              ),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: [
+                                              _buildColorIndicatorCircle(pColor),
+                                              const SizedBox(width: 4),
+                                              _buildColorIndicatorCircle(sColor),
+                                              const SizedBox(width: 4),
+                                              _buildColorIndicatorCircle(surfColor),
+                                            ],
+                                          ),
+                                          Text(
+                                            isSelected ? '已激活' : '点击使用',
+                                            style: TextStyle(
+                                              color: isSelected ? pColor : Colors.white30,
+                                              fontSize: 9.5,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Custom Panel section (only visible when type == AppThemeType.custom)
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              child: themeConfig.type == AppThemeType.custom
+                                  ? Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Divider(color: Colors.white12, height: 1),
+                                        const SizedBox(height: 20),
+                                        const Row(
+                                          children: [
+                                            Icon(Icons.tune_rounded, color: Colors.cyanAccent, size: 16),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              '自定义配色与模式控制',
+                                              style: TextStyle(
+                                                color: Colors.cyanAccent,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          '主板明暗模式',
+                                          style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () => ref.read(themeProvider.notifier).updateCustomTheme(isDark: true),
+                                                child: Container(
+                                                  height: 38,
+                                                  decoration: BoxDecoration(
+                                                    color: themeConfig.customIsDark 
+                                                        ? themeConfig.customPrimary.withOpacity(0.15) 
+                                                        : Colors.white.withOpacity(0.02),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    border: Border.all(
+                                                      color: themeConfig.customIsDark 
+                                                          ? themeConfig.customPrimary 
+                                                          : Colors.white.withOpacity(0.08),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.dark_mode_rounded,
+                                                        color: themeConfig.customIsDark ? themeConfig.customPrimary : Colors.white54,
+                                                        size: 16,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        '深色极客模式',
+                                                        style: TextStyle(
+                                                          color: themeConfig.customIsDark ? Colors.white : Colors.white54,
+                                                          fontSize: 12,
+                                                          fontWeight: themeConfig.customIsDark ? FontWeight.bold : FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: () => ref.read(themeProvider.notifier).updateCustomTheme(isDark: false),
+                                                child: Container(
+                                                  height: 38,
+                                                  decoration: BoxDecoration(
+                                                    color: !themeConfig.customIsDark 
+                                                        ? themeConfig.customPrimary.withOpacity(0.15) 
+                                                        : Colors.white.withOpacity(0.02),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    border: Border.all(
+                                                      color: !themeConfig.customIsDark 
+                                                          ? themeConfig.customPrimary 
+                                                          : Colors.white.withOpacity(0.08),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.light_mode_rounded,
+                                                        color: !themeConfig.customIsDark ? themeConfig.customPrimary : Colors.white54,
+                                                        size: 16,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        '明亮极客模式',
+                                                        style: TextStyle(
+                                                          color: !themeConfig.customIsDark ? Colors.white : Colors.white54,
+                                                          fontSize: 12,
+                                                          fontWeight: !themeConfig.customIsDark ? FontWeight.bold : FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 20),
+                                        // Primary Color
+                                        _buildCustomColorPickerSection(
+                                          title: '系统主色 (Primary Color)',
+                                          selectedColor: themeConfig.customPrimary,
+                                          presets: const [
+                                            Color(0xFF7C4DFF),
+                                            Color(0xFF2979FF),
+                                            Color(0xFF00E676),
+                                            Color(0xFFFF3D00),
+                                            Color(0xFFFF4081),
+                                            Color(0xFFFFD600),
+                                            Color(0xFF00E5FF),
+                                          ],
+                                          onColorSelected: (color) => ref.read(themeProvider.notifier).updateCustomTheme(primary: color),
+                                        ),
+                                        // Secondary Color
+                                        _buildCustomColorPickerSection(
+                                          title: '系统辅色 (Secondary Color)',
+                                          selectedColor: themeConfig.customSecondary,
+                                          presets: const [
+                                            Color(0xFF18FFFF),
+                                            Color(0xFFFF007F),
+                                            Color(0xFFFFD600),
+                                            Color(0xFF1DE9B6),
+                                            Color(0xFFE040FB),
+                                            Color(0xFFFF3D00),
+                                            Color(0xFF2979FF),
+                                          ],
+                                          onColorSelected: (color) => ref.read(themeProvider.notifier).updateCustomTheme(secondary: color),
+                                        ),
+                                        // Surface Color
+                                        _buildCustomColorPickerSection(
+                                          title: '底板底色 (Surface Color)',
+                                          selectedColor: themeConfig.customSurface,
+                                          presets: themeConfig.customIsDark 
+                                              ? const [
+                                                  Color(0xFF0A0714),
+                                                  Color(0xFF040B14),
+                                                  Color(0xFF0F0606),
+                                                  Color(0xFF040A06),
+                                                  Color(0xFF000000),
+                                                ]
+                                              : const [
+                                                  Color(0xFFF5F4FA),
+                                                  Color(0xFFE8F5E9),
+                                                  Color(0xFFE3F2FD),
+                                                  Color(0xFFFFF3E0),
+                                                  Color(0xFFFFFFFF),
+                                                ],
+                                          onColorSelected: (color) => ref.read(themeProvider.notifier).updateCustomTheme(surface: color),
+                                        ),
+                                      ],
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showPersonalCenterBottomSheet(BuildContext context, String email) {
     showModalBottomSheet(
       context: context,
@@ -1524,7 +2039,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             color: const Color(0xFF0C091F).withOpacity(0.95),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(
-              top: BorderSide(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+              top: BorderSide(color: primaryColor.withOpacity(0.3), width: 1.5),
             ),
           ),
           child: Stack(
@@ -1646,7 +2161,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 children: [
                   Icon(
                     _getCategoryIcon(category['icon']),
-                    color: Colors.deepPurpleAccent,
+                    color: secondaryColor,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -1770,10 +2285,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Padding(
           padding: const EdgeInsets.only(top: 16.0, bottom: 10.0),
           child: Row(
-            children: const [
+            children: [
               Icon(
                 Icons.handyman_rounded,
-                color: Colors.deepPurpleAccent,
+                color: secondaryColor,
                 size: 18,
               ),
               SizedBox(width: 8),
@@ -1887,7 +2402,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// Right side Floating Personal Center Panel Container
   Widget _buildPersonalCenterPanel(BuildContext context, WidgetRef ref, String email) {
     return GlassCard(
-      borderColor: Colors.deepPurpleAccent.withOpacity(0.15),
+      borderColor: secondaryColor.withOpacity(0.15),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: _buildPersonalCenterContent(context, ref, email),
@@ -1911,12 +2426,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
+                  gradient: LinearGradient(
+                    colors: [primaryColor, secondaryColor],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.purpleAccent.withOpacity(0.3),
+                      color: primaryColor.withOpacity(0.3),
                       blurRadius: 16,
                       spreadRadius: 2,
                     ),
@@ -2031,10 +2546,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.timeline_rounded, color: Colors.purpleAccent, size: 16),
-                SizedBox(width: 6),
+                Icon(Icons.timeline_rounded, color: primaryColor, size: 16),
+                const SizedBox(width: 6),
                 Text(
                   '📊 数据库 Telemetry 实况',
                   style: TextStyle(
@@ -2166,13 +2681,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               },
             );
           },
-          loading: () => const Center(
+          loading: () => Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.0),
+              padding: const EdgeInsets.symmetric(vertical: 24.0),
               child: SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.purpleAccent),
+                child: CircularProgressIndicator(strokeWidth: 1.5, color: primaryColor),
               ),
             ),
           ),
