@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/token_manager.dart';
+import '../../../core/providers/api_config_provider.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -108,8 +109,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Register endpoint caller
-  Future<void> register(String email, String password) async {
+  /// Register endpoint caller with email verification code
+  Future<void> register(String email, String password, String code) async {
     state = state.copyWith(isLoading: true, error: null);
 
     if (email.isEmpty || !email.contains('@')) {
@@ -120,6 +121,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: false, error: "密码长度不能少于 6 位");
       return;
     }
+    if (code.isEmpty) {
+      state = state.copyWith(isLoading: false, error: "请输入验证码");
+      return;
+    }
 
     try {
       final response = await _apiClient.instance.post(
@@ -127,6 +132,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         data: {
           'email': email,
           'password': password,
+          'code': code,
         },
       );
 
@@ -175,6 +181,75 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Send registration verification code email
+  Future<String?> sendRegisterCode(String email) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    if (email.isEmpty || !email.contains('@')) {
+      state = state.copyWith(isLoading: false, error: "邮箱格式不正确");
+      return null;
+    }
+
+    try {
+      final response = await _apiClient.instance.post(
+        '/auth/register/send-code',
+        data: {
+          'email': email,
+        },
+      );
+      state = state.copyWith(isLoading: false);
+      return response.data['detail'] as String?;
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.error?.toString() ?? "发送验证码失败，请稍后重试",
+      );
+      return null;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: "系统异常: $e");
+      return null;
+    }
+  }
+
+  /// Change user password securely
+  Future<bool> changePassword(String oldPassword, String newPassword) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    if (oldPassword.isEmpty || newPassword.isEmpty) {
+      state = state.copyWith(isLoading: false, error: "密码不能为空");
+      return false;
+    }
+    if (newPassword.length < 6) {
+      state = state.copyWith(isLoading: false, error: "新密码长度不能少于 6 位");
+      return false;
+    }
+    if (oldPassword == newPassword) {
+      state = state.copyWith(isLoading: false, error: "新密码不能与原密码相同");
+      return false;
+    }
+
+    try {
+      await _apiClient.instance.put(
+        '/auth/change-password',
+        data: {
+          'old_password': oldPassword,
+          'new_password': newPassword,
+        },
+      );
+      state = state.copyWith(isLoading: false);
+      return true;
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.error?.toString() ?? "修改密码失败，请稍后重试",
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: "系统异常: $e");
+      return false;
+    }
+  }
+
   /// Guest bypass session activation
   Future<void> loginAsGuest() async {
     // Clear old registered user sessions to prevent header pollution
@@ -203,7 +278,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 // 1. Register API Client provider
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient();
+  final baseUrl = ref.watch(apiBaseUrlProvider);
+  return ApiClient(baseUrl: baseUrl);
 });
 
 // 2. Auth State Provider linking to ApiClient

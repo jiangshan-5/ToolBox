@@ -1,17 +1,96 @@
-# toolbox_app
+# 🌌 ToolBox Pro - Next-Generation Cyberpunk Utility Platform
 
-A new Flutter project.
+一个集 **极致赛博霓虹美学** 与 **硬核多功能生产力** 于一身的跨平台全能工具箱前端客户端。
 
-## Getting Started
+本项目基于 **Flutter (Material 3)** 构建，采用响应式状态管理与高级玻璃拟物化设计，深度契合赛博朋克极客美学。
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 🎨 视觉与设计系统：赛博朋克玻璃拟物化 (Cyberpunk Glassmorphism)
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+应用整体严格遵循高级赛博暗黑（Cyberpunk Dark）风格，为用户带来沉浸式感官体验：
+*   **高模糊玻璃卡片 (Sigma 16)**：多层物理阴影与半透明磨砂玻璃卡片（Backdrop Filter），让层次感跃然屏上。
+*   **霓虹流光边框 (Neon Dropshow)**：卡片及交互组件外沿融合双层渐变发光霓虹，边界与背景完美自然过渡。
+*   **动态流动粒子画布 (Mesh Gradients)**：主页、登录及大部分页面底层流动着 60fps 缓动彩色渐变光晕，其色彩自动跟随当前应用主题而变化。
+*   **多主题自由定义与持久化**：
+    *   内置 7 款风格各异的主题（午夜蓝紫、烈焰火山、矩阵森林、樱花极光、赛博极客明亮版等）。
+    *   支持高度自由的**自定义主题**：自由指定主色、辅色、背景卡片色及明暗护眼模式。
+    *   状态基于 **Riverpod** 实时响应，并通过 `SharedPreferences` 实现**全平台本地配置持久化**，重开应用完美还原。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🚀 核心功能模块
+
+### 1. 🤖 AI 智能交互中心 (AI Center)
+*   **极速 GPT-5.5 引擎接入**：首发第一原生接入 **FreeModel AI**，开箱即用体验 GPT-5.5、GPT-5.4 顶级大模型。
+*   **多轮会话与上下文保存**：
+    *   *登录用户*：对话历史实时异步持久化同步至云端数据库。
+    *   *游客模式*：历史数据完美保留在本地 `SharedPreferences`，隐私安全无忧。
+*   **AI 文本大师 (Advanced Processor)**：一键对杂乱文本进行专业级**润色、翻译、格式整理、长文总结或结构分析**。
+*   **智能拦截与自动续发**：检测到云端配置缺失或为 Mock 模式时，自动弹出玻璃态高斯模糊拦截对话框；用户点击“暂不配置”后，系统**自动携带原输入重新发送**，带来零等待无缝体验。
+*   **安全防泄露密钥面板**：API Key 输入框支持密码级别一键明暗切换，完美规避浏览器密码管理器自动填充对 API 输入框的污染。
+
+### 2. 🧘 呼吸律动冥想与多路声景混音箱 (Meditation & Soundscapes)
+*   **科学呼吸指导仪**：内置 **4-7-8 呼吸、Box 盒子呼吸、等比呼吸** 三大科学训练法。呼吸泡泡伴随 40ms 级微步定时器进行精细缩放，并随吸气（青蓝）、屏气（绿）、呼气（紫）动态切换流光色彩与律动光圈。
+*   **多路自然声景调音台**：提供雨声、海浪、森林微风、营火、溪流、夏夜虫鸣 6 路高保真白噪音。支持多路同启，配备独立音量滑块（0% - 100%）。
+*   **流光音谱动态灯效**：24 根立体霓虹频谱柱实时随混音总音量高度跳动，声光电一体化完美同步。
+*   **睡眠定时与自然淡出**：支持 15m/30m/45m 定时关停，定时结束自动停止呼吸仪，音频自然降量 fade-out 关停，守护电量与设备状态。
+
+### 3. 💬 LED 手持炫彩弹幕 (LED Handheld Banner)
+*   **高平滑滚动动画**：采用 60fps 高帧率横向平移渲染引擎，从最右端至最左端完全出屏循环滚动，零卡顿。
+*   **赛博霓虹定制面板**：可实时调整滚动文本、字号比例、滑行速度、发光晕半径、以及选配**网格点阵复古霓虹背景**。
+*   **沉浸式横屏锁定**：一键开启隐藏控制面板与系统导航栏，强行旋转设备为横屏模式（`SystemChrome.setPreferredOrientations`），双击或轻触任意空白处退出沉浸。
+
+### 4. 🧮 开发者沙盒编码盒 (Developer Sandbox)
+*   **全能转换组件**：Base64 编解码、URL 编解码、MD5 / SHA-256 密码哈希、JSON 精致格式化（支持多级缩进）与 JSON 极限压缩。
+*   **Hex 进制编解码器**：字符转十六进制，以及支持自动剔除空格、前缀（`0x`/`0X`）并包含错误格式正则校验的十六进制高容错解码。
+*   **Unix 时间戳转换仪**：一键进行时间戳与人读本地时间、ISO-8601 UTC 时间的双向高精度解析，自动兼容 10 位（秒）与 13 位（毫秒）。
+*   **极客双栏布局**：针对大屏幕与平板适配 `800px` 响应式分栏，左栏编辑与查看统计指标，右栏超宽视野展示解析结果，移动端自动切换为竖屏流式布局。
+
+### 5. 🏥 其它精美小工具
+*   **BMI 健康计算器**：动态色彩刻度仪表盘，包含蛋白质、碳水、脂肪摄入比例计算器，历史测量趋势图直接同步后端。
+*   **密码生成器 & 随机数选择器**：支持高定制字符开关、长度拖拉。
+*   **统一游客模式 (Guest Access)**：全站免登录一键快捷进入，所有动态 API 请求（如数据分析看板、健康历史记录、AI 会话历史）自动降级为本地独立安全隔离缓存，彻底避免 `401 Unauthorized` 异常。
+
+---
+
+## 🏗️ 前端技术选型
+
+*   **Core Framework**: Flutter SDK 3.31+ & Dart 3.5+
+*   **State Management**: Riverpod (Notifier & StateProvider)
+*   **Navigation & Deferred Routing**: Native Navigation (配置延时加载，提升冷启动效率)
+*   **Local Storage**: `SharedPreferences` (偏好设置、本地历史、离线缓存)
+*   **Network Client**: `Dio` (全局 BaseURL 拦截器、SSL 加密信道)
+
+---
+
+## 🚀 快速开始
+
+### 开发环境配置
+
+1.  **安装 Flutter SDK**：请确保本地已安装并配置好 Flutter 3.31 或更高版本开发环境。
+2.  **获取依赖包**：
+    ```bash
+    flutter pub get
+    ```
+3.  **代码静态扫描**（验证无 Error & Warning）：
+    ```bash
+    flutter analyze
+    ```
+4.  **本地联调运行**：
+    ```bash
+    flutter run
+    ```
+
+---
+
+## 📦 生产打包发布 (Release Compilation)
+
+如果您想发布安装包（APK）或发布在 GitHub Release 上供真机体验，请在项目根目录下执行：
+
+```bash
+flutter build apk --release
+```
+
+*   **输出路径**：`build/app/outputs/flutter-apk/app-release.apk`
+*   **真机测试**：将生成的 APK 文件发送到您的 Android 手机上，点击直接安装即可开启赛博极客之旅！

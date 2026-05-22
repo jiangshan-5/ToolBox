@@ -16,10 +16,11 @@ class ApiClient {
   static const String liveServerUrl = 'http://47.106.119.62:1234/api/v1';
 
   /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
-  static const bool useLiveServer = false;
+  /// Defaults to [kReleaseMode] to use the live cloud server for release builds.
+  static const bool useLiveServer = kReleaseMode;
 
   /// Dynamic Base URL detection for seamless emulator/simulator local debugging
-  static String get baseUrl {
+  static String get defaultBaseUrl {
     if (useLiveServer) {
       return liveServerUrl;
     }
@@ -34,16 +35,18 @@ class ApiClient {
     return 'http://127.0.0.1:8000/api/v1';
   }
 
-  ApiClient() {
+  final String _baseUrl;
+
+  ApiClient({String? baseUrl}) : _baseUrl = baseUrl ?? defaultBaseUrl {
     _refreshDio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: _baseUrl,
         contentType: Headers.jsonContentType,
       ),
     );
     _dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: _baseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         contentType: Headers.jsonContentType,

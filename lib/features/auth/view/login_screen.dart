@@ -5,6 +5,7 @@ import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/auth_provider.dart';
 import 'register_screen.dart';
+import '../../../core/widgets/server_config_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -61,6 +62,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _isLoading = authState.isLoading;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.dns_rounded, color: Colors.cyanAccent),
+            tooltip: '服务器配置',
+            onPressed: () => ServerConfigDialog.show(context),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
       body: DynamicBackground(
         child: Center(
           child: SingleChildScrollView(
@@ -88,7 +103,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         '登录您的 Toolbox Pro 账户', 
                         style: TextStyle(color: Colors.white60, fontSize: 14),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.cyanAccent.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Colors.cyanAccent, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "📱 真机调试提示：请确保手机与电脑在同一 Wi-Fi，并点击右上角 🌐 图标配置电脑局域网后端 IP 以正常连接。",
+                                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       _CyberInput(
                         controller: _emailController,
                         label: '邮箱地址',

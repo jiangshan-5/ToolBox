@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/app_theme.dart';
 import 'package:csv/csv.dart';
@@ -8,7 +9,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:ui';
 import '../../../core/storage/local_storage.dart';
+import '../../../core/providers/api_config_provider.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/widgets/update_dialog.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/server_config_dialog.dart';
 import '../../../core/widgets/parallax_glass_card.dart';
 import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/deferred_page.dart';
@@ -67,6 +72,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void initState() {
     super.initState();
     _loadRecentlyUsed();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+    });
+  }
+
+  /// Perform system update validation
+  Future<void> _checkForUpdates() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.instance.get('/system/version');
+      final data = response.data;
+      if (data != null) {
+        final latestVersion = data['latest_version'] as String;
+        final versionCode = data['version_code'] as int;
+        final changelog = data['changelog'] as String;
+        final downloadUrl = data['download_url'] as String;
+        final forceUpdate = data['force_update'] as bool;
+        
+        const currentVersionCode = 1;
+        if (versionCode > currentVersionCode) {
+          if (mounted) {
+            UpdateDialog.show(
+              context,
+              latestVersion: latestVersion,
+              changelog: changelog,
+              downloadUrl: downloadUrl,
+              forceUpdate: forceUpdate,
+            );
+          }
+        }
+      }
+    } catch (_) {
+      // Graceful local bypass for offline operation or connection drops
+    }
   }
 
   /// Load persistent recently used tools list from disk cache
@@ -1229,6 +1268,188 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  void _showChangePasswordDialog(BuildContext context) {
+    final user = ref.read(authProvider);
+    if (user.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ 游客模式下无法修改密码，请先注册/登录！'),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final oldController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool isLoading = false;
+    String? localError;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF140F2D),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: primaryColor.withOpacity(0.3), width: 1.5),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.security_rounded, color: Colors.orangeAccent, size: 24),
+                const SizedBox(width: 10),
+                const Text(
+                  '安全修改密码',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '建议设置 8 位以上，包含大小写字母与特殊字符的强密码',
+                    style: TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDialogTextField(
+                    controller: oldController,
+                    hintText: '输入原密码',
+                    icon: Icons.lock_outline_rounded,
+                    isObscure: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDialogTextField(
+                    controller: newController,
+                    hintText: '输入新密码 (最少 6 位)',
+                    icon: Icons.lock_reset_rounded,
+                    isObscure: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDialogTextField(
+                    controller: confirmController,
+                    hintText: '再次输入新密码以确认',
+                    icon: Icons.verified_user_outlined,
+                    isObscure: true,
+                  ),
+                  if (localError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      localError!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ],
+                  if (isLoading) ...[
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(color: primaryColor),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(context),
+                child: const Text('取消', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final oldPass = oldController.text.trim();
+                        final newPass = newController.text.trim();
+                        final confirmPass = confirmController.text.trim();
+
+                        if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+                          setState(() => localError = '请填写所有密码字段');
+                          return;
+                        }
+                        if (newPass.length < 6) {
+                          setState(() => localError = '新密码长度不能少于 6 位');
+                          return;
+                        }
+                        if (newPass == oldPass) {
+                          setState(() => localError = '新密码不能与原密码相同');
+                          return;
+                        }
+                        if (newPass != confirmPass) {
+                          setState(() => localError = '两次输入的新密码不一致');
+                          return;
+                        }
+
+                        setState(() {
+                          isLoading = true;
+                          localError = null;
+                        });
+
+                        final success = await ref.read(authProvider.notifier).changePassword(oldPass, newPass);
+                        setState(() => isLoading = false);
+
+                        if (success) {
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('密码修改成功，新密码已生效！'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } else {
+                          final error = ref.read(authProvider).error ?? '修改密码失败，请重试';
+                          setState(() => localError = error);
+                        }
+                      },
+                child: const Text('确认修改', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDialogTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool isObscure = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isObscure,
+      style: const TextStyle(color: Colors.white, fontSize: 14),
+      cursorColor: primaryColor,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+        prefixIcon: Icon(icon, color: Colors.white54, size: 18),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryColor, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+
   Widget _buildProfileHeader(String email, String nickname) {
     return Container(
       width: double.infinity,
@@ -1403,7 +1624,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 activeTrackColor: Colors.lightGreenAccent.withOpacity(0.3)
               )
             ),
-            _buildListTile(Icons.lock_outline_rounded, '修改登录密码', Colors.orangeAccent),
+            _buildListTile(
+              Icons.lock_outline_rounded, 
+              '修改登录密码', 
+              Colors.orangeAccent,
+              onTap: () => _showChangePasswordDialog(context),
+            ),
+            _buildListTile(
+              Icons.dns_rounded,
+              '服务器连接设置',
+              Colors.cyanAccent,
+              subtitle: '自定义 API 地址与延迟测试',
+              onTap: () => ServerConfigDialog.show(context),
+            ),
           ],
         ),
 
@@ -2413,6 +2646,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// Interactive Personal Center inner layout displaying real database telemetry
   Widget _buildPersonalCenterContent(BuildContext context, WidgetRef ref, String email) {
     final telemetryLogs = ref.watch(telemetryLogsProvider);
+    final currentApiUrl = ref.watch(apiBaseUrlProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2521,20 +2755,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      '数据库已连接 (阿里云深圳)',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      '服务地址: $currentApiUrl',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('云端存储延迟', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                  Text('< 15ms', style: TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                  const Text('状态', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text(currentApiUrl.contains('47.106.119.62') ? '公网节点 (深圳)' : '自定义节点', style: const TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.bold)),
                 ],
               ),
             ],
