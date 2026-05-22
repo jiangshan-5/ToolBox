@@ -175,6 +175,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Guest bypass session activation
+  Future<void> loginAsGuest() async {
+    // Clear old registered user sessions to prevent header pollution
+    await TokenManager.clearSession();
+    state = AuthState(
+      isAuthenticated: true,
+      email: null,
+      nickname: "游客",
+    );
+  }
+
   /// Session teardown
   Future<void> logout() async {
     // Clear state and storage immediately for instant UI feedback

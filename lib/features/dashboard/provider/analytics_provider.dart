@@ -39,7 +39,7 @@ class AnalyticsNotifier extends StateNotifier<AsyncValue<AnalyticsDashboardData>
 
   Future<void> refresh() async {
     final authState = _ref.read(authProvider);
-    if (!authState.isAuthenticated) {
+    if (!authState.isAuthenticated || authState.email == null) {
       final data = AnalyticsDashboardData(
         aiWordsGenerated: 0,
         aiTimeSavedHours: 0.0,

@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:toolbox_app/features/settings/provider/settings_provider.dart';
 
-class DynamicBackground extends StatefulWidget {
+class DynamicBackground extends ConsumerStatefulWidget {
   final Widget child;
 
   const DynamicBackground({super.key, required this.child});
 
   @override
-  State<DynamicBackground> createState() => _DynamicBackgroundState();
+  ConsumerState<DynamicBackground> createState() => _DynamicBackgroundState();
 }
 
-class _DynamicBackgroundState extends State<DynamicBackground> with SingleTickerProviderStateMixin {
+class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -30,65 +32,126 @@ class _DynamicBackgroundState extends State<DynamicBackground> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Solid Dark Base
-        Container(
-          color: const Color(0xFF0A0714),
-        ),
-        
-        // Floating Mesh Gradients
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                Positioned(
-                  top: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
-                  left: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 1.2,
-                    height: 400,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.blueAccent.withOpacity(0.08),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blueAccent.withOpacity(0.12),
-                          blurRadius: 200,
-                          spreadRadius: 150,
-                        ),
-                      ],
+    final isLowPower = ref.watch(settingsProvider).isLowPowerMode;
+    if (isLowPower) {
+      if (_controller.isAnimating) {
+        _controller.stop();
+      }
+      return Stack(
+        children: [
+          // Solid Dark Base
+          Container(
+            color: const Color(0xFF0A0714),
+          ),
+          
+          // Floating Mesh Gradients (Static positions)
+          Positioned(
+            top: -50,
+            left: -100,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 1.2,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blueAccent.withOpacity(0.08),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blueAccent.withOpacity(0.12),
+                    blurRadius: 200,
+                    spreadRadius: 150,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -100,
+            right: -50,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 1.2,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.purpleAccent.withOpacity(0.08),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purpleAccent.withOpacity(0.12),
+                    blurRadius: 200,
+                    spreadRadius: 150,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Foreground Content
+          widget.child,
+        ],
+      );
+    } else {
+      if (!_controller.isAnimating) {
+        _controller.repeat();
+      }
+      return Stack(
+        children: [
+          // Solid Dark Base
+          Container(
+            color: const Color(0xFF0A0714),
+          ),
+          
+          // Floating Mesh Gradients
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  Positioned(
+                    top: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
+                    left: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 1.2,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blueAccent.withOpacity(0.08),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blueAccent.withOpacity(0.12),
+                            blurRadius: 200,
+                            spreadRadius: 150,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Positioned(
-                  bottom: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
-                  right: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 1.2,
-                    height: 400,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.purpleAccent.withOpacity(0.08),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.purpleAccent.withOpacity(0.12),
-                          blurRadius: 200,
-                          spreadRadius: 150,
-                        ),
-                      ],
+                  Positioned(
+                    bottom: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
+                    right: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 1.2,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.purpleAccent.withOpacity(0.08),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purpleAccent.withOpacity(0.12),
+                            blurRadius: 200,
+                            spreadRadius: 150,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-        
-        // Foreground Content
-        widget.child,
-      ],
-    );
+                ],
+              );
+            },
+          ),
+          
+          // Foreground Content
+          widget.child,
+        ],
+      );
+    }
   }
 }

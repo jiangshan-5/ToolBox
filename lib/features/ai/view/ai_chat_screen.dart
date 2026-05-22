@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:ui';
 import '../provider/ai_provider.dart';
+import '../provider/ai_config_provider.dart';
 import '../../utilities/provider/markdown_editor_provider.dart';
 import '../../utilities/view/markdown_editor_screen.dart';
+import '../../../core/widgets/glass_card.dart';
 import 'ai_config_screen.dart';
 
 class TypewriterText extends StatefulWidget {
@@ -105,6 +107,8 @@ class AiChatScreen extends ConsumerStatefulWidget {
 class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  late final FocusNode _chatFocusNode;
+  bool _hasPromptedConfig = false;
 
   // Preset Prompt suggestions
   final List<Map<String, String>> _presets = [
@@ -131,9 +135,36 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _chatFocusNode = FocusNode(
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+          final isControlOrCommandPressed =
+              HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.controlLeft) ||
+              HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.controlRight) ||
+              HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.metaLeft) ||
+              HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.metaRight);
+          if (isControlOrCommandPressed) {
+            final chatState = ref.read(aiChatProvider);
+            if (!chatState.isLoading) {
+              _sendCurrentMessage();
+            }
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _chatFocusNode.dispose();
     super.dispose();
   }
 
@@ -150,6 +181,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   void _sendPreset(String prompt) {
+    if (!_checkAiModelConfigured(pendingText: prompt, isPreset: true)) return;
     ref.read(aiChatProvider.notifier).sendMessage(prompt);
   }
 
@@ -651,6 +683,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
+                      focusNode: _chatFocusNode,
                       enabled: !isLoading,
                       maxLines: null,
                       style: const TextStyle(color: Colors.white, fontSize: 13.5),
@@ -659,11 +692,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                         hintStyle: TextStyle(color: Colors.white24, fontSize: 13.5),
                         border: InputBorder.none,
                       ),
-                      onSubmitted: (_) {
-                        if (!isLoading) {
-                          _sendCurrentMessage();
-                        }
-                      },
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -689,9 +717,138 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
+  bool _checkAiModelConfigured({String? pendingText, bool isPreset = false}) {
+    final config = ref.read(aiConfigProvider);
+    if ((config.provider == 'mock' || config.apiKey.trim().isEmpty) && !_hasPromptedConfig) {
+      _showConfigureModelDialog(pendingText: pendingText, isPreset: isPreset);
+      return false;
+    }
+    return true;
+  }
+
+  void _showConfigureModelDialog({String? pendingText, bool isPreset = false}) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: GlassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.purpleAccent.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.purpleAccent.withOpacity(0.2), width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.settings_suggest_rounded,
+                      color: Colors.purpleAccent,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '配置您的 AI 智能助理',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '目前尚未检测到云端 AI 模型配置。Toolbox AI 助手现已全面接入 FreeModel AI (极速 GPT-5.5)、SiliconFlow、DeepSeek 和 Gemini 等顶尖云端模型。\n\n'
+                    '只需一分钟，填入您的 API Key，即可开启真实、极速、无限制的云端模型深度多轮对话！',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _hasPromptedConfig = true;
+                            });
+                            Navigator.pop(context);
+                            if (pendingText != null && pendingText.trim().isNotEmpty) {
+                              ref.read(aiChatProvider.notifier).sendMessage(pendingText);
+                              if (!isPreset) {
+                                _messageController.clear();
+                              }
+                            }
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          child: const Text(
+                            '暂不配置',
+                            style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
+                            ),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const AiConfigScreen()),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text(
+                              '去配置',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _sendCurrentMessage() {
     final text = _messageController.text;
     if (text.trim().isEmpty) return;
+
+    if (!_checkAiModelConfigured(pendingText: text, isPreset: false)) return;
 
     ref.read(aiChatProvider.notifier).sendMessage(text);
     _messageController.clear();

@@ -16,7 +16,7 @@ class ApiClient {
   static const String liveServerUrl = 'http://47.106.119.62:1234/api/v1';
 
   /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
-  static const bool useLiveServer = true;
+  static const bool useLiveServer = false;
 
   /// Dynamic Base URL detection for seamless emulator/simulator local debugging
   static String get baseUrl {
@@ -24,7 +24,7 @@ class ApiClient {
       return liveServerUrl;
     }
     if (kIsWeb) {
-      return 'http://localhost:8000/api/v1';
+      return 'http://127.0.0.1:8000/api/v1';
     }
     // Android Emulator bridges to local host loopback via 10.0.2.2
     if (Platform.isAndroid) {

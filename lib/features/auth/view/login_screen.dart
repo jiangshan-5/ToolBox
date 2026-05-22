@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/dynamic_background.dart';
+import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/auth_provider.dart';
 import 'register_screen.dart';
 import '../../dashboard/view/dashboard_screen.dart';
@@ -60,104 +62,102 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _isLoading = authState.isLoading;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          _buildBackground(),
-          Center(
-            child: SingleChildScrollView(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                padding: const EdgeInsets.all(24.0),
-                child: GlassCard(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '欢迎回来',
-                          style: TextStyle(
-                            fontSize: 28, 
-                            fontWeight: FontWeight.bold, 
-                            color: Colors.white,
-                          ),
+      body: DynamicBackground(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              padding: const EdgeInsets.all(24.0),
+              child: GlassCard(
+                glowColor: Colors.deepPurpleAccent,
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '欢迎回来',
+                        style: TextStyle(
+                          fontSize: 28, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.white,
+                          letterSpacing: 1.5,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          '登录您的 Toolbox Pro 账户', 
-                          style: TextStyle(color: Colors.white60),
-                        ),
-                        const SizedBox(height: 40),
-                        _buildTextField(_emailController, '邮箱地址', Icons.email_outlined),
-                        const SizedBox(height: 16),
-                        _buildTextField(_passwordController, '密码', Icons.lock_outline, obscure: true),
-                        const SizedBox(height: 32),
-                        _buildLoginButton(),
-                        const SizedBox(height: 24),
-                        _buildRegisterLink(),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '登录您的 Toolbox Pro 账户', 
+                        style: TextStyle(color: Colors.white60, fontSize: 14),
+                      ),
+                      const SizedBox(height: 40),
+                      _CyberInput(
+                        controller: _emailController,
+                        label: '邮箱地址',
+                        icon: Icons.email_outlined,
+                      ),
+                      const SizedBox(height: 16),
+                      _CyberInput(
+                        controller: _passwordController,
+                        label: '密码',
+                        icon: Icons.lock_outline,
+                        obscure: true,
+                      ),
+                      const SizedBox(height: 32),
+                      _buildLoginButton(),
+                      const SizedBox(height: 28),
+                      _buildRegisterLink(),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackground() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool obscure = false}) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white60),
-        prefixIcon: Icon(icon, color: Colors.deepPurpleAccent),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.deepPurpleAccent),
         ),
       ),
     );
   }
 
   Widget _buildLoginButton() {
-    return ElevatedButton(
-      onPressed: _isLoading ? null : _handleLogin,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.deepPurpleAccent,
-        foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return ScaleOnTap(
+      onTap: _isLoading ? null : _handleLogin,
+      child: Container(
+        height: 56,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              Colors.deepPurpleAccent,
+              Colors.purpleAccent.shade400,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurpleAccent.withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: _isLoading 
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              ) 
+            : const Text(
+                '登 录', 
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 2.0,
+                ),
+              ),
       ),
-      child: _isLoading 
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-            ) 
-          : const Text('登 录', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -165,30 +165,139 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextButton(
-          onPressed: () => Navigator.push(
+        ScaleOnTap(
+          onTap: () => Navigator.push(
             context, 
             MaterialPageRoute(builder: (_) => const RegisterScreen()),
           ),
-          child: const Text("还没有账户？立即注册", style: TextStyle(color: Colors.white70)),
-        ),
-        const SizedBox(height: 10),
-        TextButton(
-          onPressed: () => Navigator.pushReplacement(
-            context, 
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              "还没有账户？立即注册", 
+              style: TextStyle(
+                color: Colors.white70, 
+                fontSize: 14,
+                decoration: TextDecoration.underline,
+              ),
+            ),
           ),
-          child: const Text(
-            "⚡ 游客快捷体验 (免登录)", 
-            style: TextStyle(
-              color: Colors.cyanAccent, 
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              letterSpacing: 0.5,
+        ),
+        const SizedBox(height: 16),
+        ScaleOnTap(
+          onTap: () => ref.read(authProvider.notifier).loginAsGuest(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.cyanAccent.withOpacity(0.3),
+                width: 1.0,
+              ),
+              color: Colors.cyanAccent.withOpacity(0.04),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bolt_rounded, color: Colors.cyanAccent, size: 18),
+                SizedBox(width: 6),
+                Text(
+                  "游客快捷体验 (免登录)", 
+                  style: TextStyle(
+                    color: Colors.cyanAccent, 
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CyberInput extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool obscure;
+
+  const _CyberInput({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.obscure = false,
+  });
+
+  @override
+  State<_CyberInput> createState() => _CyberInputState();
+}
+
+class _CyberInputState extends State<_CyberInput> {
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(_isFocused ? 0.07 : 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isFocused 
+              ? Colors.deepPurpleAccent.withOpacity(0.8) 
+              : Colors.white.withOpacity(0.06),
+          width: _isFocused ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          if (_isFocused)
+            BoxShadow(
+              color: Colors.deepPurpleAccent.withOpacity(0.20),
+              blurRadius: 14,
+              spreadRadius: 1,
+            ),
+        ],
+      ),
+      child: TextField(
+        controller: widget.controller,
+        focusNode: _focusNode,
+        obscureText: widget.obscure,
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        cursorColor: Colors.deepPurpleAccent,
+        decoration: InputDecoration(
+          labelText: widget.label,
+          labelStyle: TextStyle(
+            color: _isFocused ? Colors.deepPurpleAccent : Colors.white60,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            widget.icon,
+            color: _isFocused ? Colors.deepPurpleAccent : Colors.white54,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
     );
   }
 }

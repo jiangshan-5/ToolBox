@@ -5,32 +5,75 @@ class GlassCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
   final Color? borderColor;
+  final Color? glowColor;
+  final double borderRadius;
 
   const GlassCard({
     super.key,
     required this.child,
     this.onTap,
     this.borderColor,
+    this.glowColor,
+    this.borderRadius = 24.0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveBorderRadius = BorderRadius.circular(borderRadius);
+    
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: borderColor ?? Colors.white.withOpacity(0.1),
-                width: 1.5,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: effectiveBorderRadius,
+          boxShadow: [
+            if (glowColor != null) ...[
+              // Vibrant Cyberpunk Breathing Glow
+              BoxShadow(
+                color: glowColor!.withOpacity(0.12),
+                blurRadius: 24,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
               ),
+              BoxShadow(
+                color: glowColor!.withOpacity(0.06),
+                blurRadius: 40,
+                spreadRadius: -4,
+                offset: const Offset(0, 16),
+              ),
+            ] else ...[
+              // Premium ambient dark drop shadow for maximum physical depth
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: Colors.deepPurpleAccent.withOpacity(0.03),
+                blurRadius: 30,
+                spreadRadius: 1,
+              ),
+            ],
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: effectiveBorderRadius,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), // Increased blur for a premium frosted look
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.04), // Slightly more translucent for better mesh visibility
+                borderRadius: effectiveBorderRadius,
+                border: Border.all(
+                  color: borderColor ?? 
+                      (glowColor != null 
+                          ? glowColor!.withOpacity(0.25) 
+                          : Colors.white.withOpacity(0.08)),
+                  width: 1.2,
+                ),
+              ),
+              child: child,
             ),
-            child: child,
           ),
         ),
       ),

@@ -31,8 +31,11 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     {'key': 'base64_decode', 'label': 'Base64 解码', 'icon': Icons.no_encryption_gmailerrorred_rounded, 'color': Colors.cyanAccent},
     {'key': 'url_encode', 'label': 'URL 编码', 'icon': Icons.link_rounded, 'color': Colors.greenAccent},
     {'key': 'url_decode', 'label': 'URL 解码', 'icon': Icons.link_off_rounded, 'color': Colors.greenAccent},
+    {'key': 'hex_encode', 'label': 'Hex 编码', 'icon': Icons.grid_3x3_rounded, 'color': Colors.tealAccent},
+    {'key': 'hex_decode', 'label': 'Hex 解码', 'icon': Icons.grid_off_rounded, 'color': Colors.tealAccent},
     {'key': 'md5', 'label': 'MD5 哈希', 'icon': Icons.fingerprint_rounded, 'color': Colors.orangeAccent},
     {'key': 'sha256', 'label': 'SHA-256 哈希', 'icon': Icons.security_rounded, 'color': Colors.pinkAccent},
+    {'key': 'timestamp_conv', 'label': '时间戳转换', 'icon': Icons.schedule_rounded, 'color': Colors.deepOrangeAccent},
     {'key': 'json_format', 'label': 'JSON 格式化', 'icon': Icons.format_align_left_rounded, 'color': Colors.purpleAccent},
     {'key': 'json_minify', 'label': 'JSON 压缩', 'icon': Icons.compress_rounded, 'color': Colors.amberAccent},
   ];
@@ -84,6 +87,29 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
         case 'url_decode':
           result = Uri.decodeComponent(input);
           break;
+        case 'hex_encode':
+          final bytes = utf8.encode(input);
+          result = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+          break;
+        case 'hex_decode':
+          var cleanedHex = input.replaceAll(RegExp(r'[\s:]+'), '');
+          if (cleanedHex.startsWith('0x') || cleanedHex.startsWith('0X')) {
+            cleanedHex = cleanedHex.substring(2);
+          }
+          if (cleanedHex.length % 2 != 0) {
+            throw const FormatException('Hex 字符串长度必须是偶数');
+          }
+          if (!RegExp(r'^[0-9a-fA-F]*$').hasMatch(cleanedHex)) {
+            throw const FormatException('输入包含非法的十六进制字符');
+          }
+          final decodedBytes = <int>[];
+          for (var i = 0; i < cleanedHex.length; i += 2) {
+            final byteString = cleanedHex.substring(i, i + 2);
+            final byte = int.parse(byteString, radix: 16);
+            decodedBytes.add(byte);
+          }
+          result = utf8.decode(decodedBytes);
+          break;
         case 'md5':
           final bytes = utf8.encode(input);
           result = md5.convert(bytes).toString();
@@ -91,6 +117,28 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
         case 'sha256':
           final bytes = utf8.encode(input);
           result = sha256.convert(bytes).toString();
+          break;
+        case 'timestamp_conv':
+          final trimmed = input.trim();
+          final isNumeric = RegExp(r'^\d+$').hasMatch(trimmed);
+          if (isNumeric) {
+            final val = int.parse(trimmed);
+            DateTime dt;
+            if (trimmed.length <= 10) {
+              dt = DateTime.fromMillisecondsSinceEpoch(val * 1000);
+            } else {
+              dt = DateTime.fromMillisecondsSinceEpoch(val);
+            }
+            result = '本地时间 (Local Time):\n${dt.toLocal().toString()}\n\nUTC 时间 (UTC Time):\n${dt.toUtc().toIso8601String()}';
+          } else {
+            final parsed = DateTime.tryParse(trimmed);
+            if (parsed == null) {
+              throw const FormatException('非法的日期格式');
+            }
+            final sec = parsed.millisecondsSinceEpoch ~/ 1000;
+            final ms = parsed.millisecondsSinceEpoch;
+            result = '秒级时间戳 (Seconds):\n$sec\n\n毫秒级时间戳 (Milliseconds):\n$ms\n\nISO 8601 格式:\n${parsed.toUtc().toIso8601String()}';
+          }
           break;
         case 'json_format':
           final parsed = json.decode(input);
@@ -124,6 +172,18 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     if (errStr.contains('FormatException')) {
       if (_activeOperation == 'base64_decode') {
         return '错误：无效的 Base64 编码文本，无法正确还原。';
+      }
+      if (_activeOperation == 'hex_decode') {
+        if (errStr.contains('偶数')) {
+          return '错误：十六进制编码字符长度必须为偶数（每个字节 2 个字符）。';
+        }
+        if (errStr.contains('非法')) {
+          return '错误：输入中包含非法的十六进制字符（仅允许 0-9、a-f、A-F）。';
+        }
+        return '错误：无效的 Hex 编码文本，无法正确还原。';
+      }
+      if (_activeOperation == 'timestamp_conv') {
+        return '错误：非法的日期格式。请输入 Unix 时间戳（秒或毫秒），或标准日期时间格式（例如 2026-05-22 10:00:00）。';
       }
       if (_activeOperation.startsWith('json_')) {
         return '错误：输入的 JSON 格式不合法，请检查拼写、括号或双引号。';
@@ -161,382 +221,347 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     Share.share(text, subject: '开发者编码转换结果');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final inputLen = _inputController.text.length;
-    final outputLen = _outputController.text.length;
-    final inputBytes = utf8.encode(_inputController.text).length;
-    final outputBytes = utf8.encode(_outputController.text).length;
-
-    // Calculate dynamic stats
-    double deltaRatio = 0;
-    if (inputBytes > 0 && outputBytes > 0) {
-      deltaRatio = ((outputBytes - inputBytes) / inputBytes) * 100;
-    }
-
-    final activeOpColor = _operations.firstWhere((element) => element['key'] == _activeOperation)['color'] as Color;
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
-          onPressed: () => Navigator.pop(context),
+  Widget _buildSelectorChips(Color activeOpColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '🛠️ 选择编码或哈希函数',
+          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
         ),
-        title: const Text(
-          '开发者沙盒编码盒',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 48,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: _operations.length,
+            itemBuilder: (context, idx) {
+              final op = _operations[idx];
+              final isSelected = op['key'] == _activeOperation;
+              final opColor = op['color'] as Color;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _activeOperation = op['key'];
+                  });
+                  _processInput();
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? opColor.withOpacity(0.12)
+                        : Colors.white.withOpacity(0.015),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? opColor : Colors.white.withOpacity(0.05),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      if (isSelected)
+                        BoxShadow(
+                          color: opColor.withOpacity(0.2),
+                          blurRadius: 8,
+                        ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        op['icon'],
+                        color: isSelected ? opColor : Colors.white60,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        op['label'],
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.white60,
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJsonSpacingOptions() {
+    return GlassCard(
+      borderColor: Colors.purpleAccent.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.space_bar_rounded, color: Colors.purpleAccent, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  "JSON 缩进空格数",
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+            Row(
+              children: [2, 4, 8].map((spaces) {
+                final active = _jsonSpacing == spaces;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _jsonSpacing = spaces;
+                    });
+                    _processInput();
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: active ? Colors.purpleAccent.withOpacity(0.15) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: active ? Colors.purpleAccent : Colors.white10,
+                      ),
+                    ),
+                    child: Text(
+                      "$spaces 个空格",
+                      style: TextStyle(
+                        color: active ? Colors.purpleAccent : Colors.white30,
+                        fontSize: 11,
+                        fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ),
       ),
-      body: Stack(
-        children: [
-          // Theme Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF070B19), Color(0xFF0F1532), Color(0xFF04060C)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
+    );
+  }
+
+  Widget _buildInputBox(int inputLen, int inputBytes, bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '📥 贴入原始文本',
+          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
           ),
-          SafeArea(
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              children: [
-                // 1. Selector Chips Toolbar
-                const Text(
-                  '🛠️ 选择编码或哈希函数',
-                  style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              TextField(
+                controller: _inputController,
+                maxLines: isWide ? 12 : 5,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  height: 1.4,
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 48,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: _operations.length,
-                    itemBuilder: (context, idx) {
-                      final op = _operations[idx];
-                      final isSelected = op['key'] == _activeOperation;
-                      final opColor = op['color'] as Color;
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _activeOperation = op['key'];
-                          });
-                          _processInput();
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? opColor.withOpacity(0.12)
-                                : Colors.white.withOpacity(0.015),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected ? opColor : Colors.white.withOpacity(0.05),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              if (isSelected)
-                                BoxShadow(
-                                  color: opColor.withOpacity(0.2),
-                                  blurRadius: 8,
-                                ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                op['icon'],
-                                color: isSelected ? opColor : Colors.white60,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                op['label'],
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.white60,
-                                  fontSize: 12,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                decoration: const InputDecoration(
+                  hintText: '请贴入待处理的字符串或JSON数据...',
+                  hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+                  border: InputBorder.none,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      _inputController.clear();
+                      _outputController.clear();
+                      setState(() {
+                        _errorMessage = null;
+                      });
                     },
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // JSON Formatting custom options (conditional)
-                if (_activeOperation == 'json_format') ...[
-                  GlassCard(
-                    borderColor: Colors.purpleAccent.withOpacity(0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.space_bar_rounded, color: Colors.purpleAccent, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                "JSON 缩进空格数",
-                                style: TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [2, 4, 8].map((spaces) {
-                              final active = _jsonSpacing == spaces;
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _jsonSpacing = spaces;
-                                  });
-                                  _processInput();
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: active ? Colors.purpleAccent.withOpacity(0.15) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: active ? Colors.purpleAccent : Colors.white10,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    "$spaces 个空格",
-                                    style: TextStyle(
-                                      color: active ? Colors.purpleAccent : Colors.white30,
-                                      fontSize: 11,
-                                      fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
+                    child: const Text(
+                      '清空输入',
+                      style: TextStyle(color: Colors.redAccent, fontSize: 11.5, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
-
-                // 2. Input Glass Card Box
-                const Text(
-                  '📥 贴入原始文本',
-                  style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.02),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      TextField(
-                        controller: _inputController,
-                        maxLines: 5,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontFamily: 'monospace',
-                          height: 1.4,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: '请贴入待处理的字符串或JSON数据...',
-                          hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              _inputController.clear();
-                              _outputController.clear();
-                              setState(() {
-                                _errorMessage = null;
-                              });
-                            },
-                            child: const Text(
-                              '清空输入',
-                              style: TextStyle(color: Colors.redAccent, fontSize: 11.5, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Text(
-                            '共 $inputLen 字符 | $inputBytes 字节',
-                            style: const TextStyle(color: Colors.white30, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 3. Error warning box (if any)
-                if (_errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.redAccent.withOpacity(0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // 4. Output Glass Card Box
-                const Text(
-                  '📤 变换输出结果',
-                  style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.02),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      TextField(
-                        controller: _outputController,
-                        maxLines: 8,
-                        readOnly: true,
-                        style: TextStyle(
-                          color: activeOpColor,
-                          fontSize: 13,
-                          fontFamily: 'monospace',
-                          height: 1.4,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: '格式化或编码后的结果将在这里自动展示...',
-                          hintStyle: TextStyle(color: Colors.white12, fontSize: 13),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.copy_rounded, color: activeOpColor, size: 18),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: '复制结果',
-                                onPressed: outputLen == 0
-                                    ? null
-                                    : () {
-                                        Clipboard.setData(ClipboardData(text: _outputController.text));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: const Text('转换结果已成功复制'),
-                                            backgroundColor: activeOpColor.withOpacity(0.2),
-                                          ),
-                                        );
-                                      },
-                              ),
-                              const SizedBox(width: 16),
-                              IconButton(
-                                icon: Icon(Icons.share_rounded, color: activeOpColor, size: 18),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                tooltip: '分享结果',
-                                onPressed: outputLen == 0 ? null : _shareResult,
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '共 $outputLen 字符 | $outputBytes 字节',
-                            style: const TextStyle(color: Colors.white30, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // 5. Comparison & Compression Stats Panel
-                if (inputLen > 0 && outputLen > 0) ...[
-                  const Text(
-                    '📊 转换统计指标',
-                    style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetricCard(
-                          "字节数增幅",
-                          "${deltaRatio >= 0 ? '+' : ''}${deltaRatio.toStringAsFixed(1)}%",
-                          deltaRatio == 0
-                              ? Colors.white54
-                              : (deltaRatio < 0 ? Colors.greenAccent : Colors.amberAccent),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildMetricCard(
-                          "数据压缩率",
-                          _calculateRatio(inputBytes, outputBytes),
-                          deltaRatio < 0 ? Colors.greenAccent : Colors.white70,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '共 $inputLen 字符 | $inputBytes 字节',
+                    style: const TextStyle(color: Colors.white30, fontSize: 11),
                   ),
                 ],
-                const SizedBox(height: 24),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorBox() {
+    if (_errorMessage == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.redAccent.withOpacity(0.05),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildOutputBox(int outputLen, int outputBytes, Color activeOpColor, bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '📤 变换输出结果',
+          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              TextField(
+                controller: _outputController,
+                maxLines: isWide ? 12 : 8,
+                readOnly: true,
+                style: TextStyle(
+                  color: activeOpColor,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  height: 1.4,
+                ),
+                decoration: const InputDecoration(
+                  hintText: '格式化或编码后的结果将在这里自动展示...',
+                  hintStyle: TextStyle(color: Colors.white12, fontSize: 13),
+                  border: InputBorder.none,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.copy_rounded, color: activeOpColor, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: '复制结果',
+                        onPressed: outputLen == 0
+                            ? null
+                            : () {
+                                Clipboard.setData(ClipboardData(text: _outputController.text));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('转换结果已成功复制'),
+                                    backgroundColor: activeOpColor.withOpacity(0.2),
+                                  ),
+                                );
+                              },
+                      ),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: Icon(Icons.share_rounded, color: activeOpColor, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: '分享结果',
+                        onPressed: outputLen == 0 ? null : _shareResult,
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '共 $outputLen 字符 | $outputBytes 字节',
+                    style: const TextStyle(color: Colors.white30, fontSize: 11),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsPanel(int inputBytes, int outputBytes, double deltaRatio) {
+    if (_inputController.text.isEmpty || _outputController.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '📊 转换统计指标',
+          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard(
+                "字节数增幅",
+                "${deltaRatio >= 0 ? '+' : ''}${deltaRatio.toStringAsFixed(1)}%",
+                deltaRatio == 0
+                    ? Colors.white54
+                    : (deltaRatio < 0 ? Colors.greenAccent : Colors.amberAccent),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMetricCard(
+                "数据压缩率",
+                _calculateRatio(inputBytes, outputBytes),
+                deltaRatio < 0 ? Colors.greenAccent : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -577,5 +602,108 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
       final increased = (ratio - 1.0) * 100;
       return '扩充 ${increased.toStringAsFixed(1)}%';
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inputLen = _inputController.text.length;
+    final outputLen = _outputController.text.length;
+    final inputBytes = utf8.encode(_inputController.text).length;
+    final outputBytes = utf8.encode(_outputController.text).length;
+
+    double deltaRatio = 0;
+    if (inputBytes > 0 && outputBytes > 0) {
+      deltaRatio = ((outputBytes - inputBytes) / inputBytes) * 100;
+    }
+
+    final activeOpColor = _operations.firstWhere((element) => element['key'] == _activeOperation)['color'] as Color;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isWide = screenWidth > 800;
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          '开发者沙盒编码盒',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF070B19), Color(0xFF0F1532), Color(0xFF04060C)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              children: [
+                _buildSelectorChips(activeOpColor),
+                const SizedBox(height: 18),
+                if (_activeOperation == 'json_format') ...[
+                  _buildJsonSpacingOptions(),
+                  const SizedBox(height: 16),
+                ],
+                if (isWide) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildInputBox(inputLen, inputBytes, true),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: 16),
+                              _buildErrorBox(),
+                            ],
+                            if (inputLen > 0 && outputLen > 0) ...[
+                              const SizedBox(height: 20),
+                              _buildStatsPanel(inputBytes, outputBytes, deltaRatio),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildOutputBox(outputLen, outputBytes, activeOpColor, true),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  _buildInputBox(inputLen, inputBytes, false),
+                  const SizedBox(height: 16),
+                  if (_errorMessage != null) ...[
+                    _buildErrorBox(),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildOutputBox(outputLen, outputBytes, activeOpColor, false),
+                  const SizedBox(height: 20),
+                  _buildStatsPanel(inputBytes, outputBytes, deltaRatio),
+                ],
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

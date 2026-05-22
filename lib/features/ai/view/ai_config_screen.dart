@@ -19,8 +19,14 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
   late TextEditingController _urlController;
   late TextEditingController _modelController;
   bool _testingConnection = false;
+  bool _obscureApiKey = true;
 
   final Map<String, List<String>> _modelSuggestions = {
+    'freemodel': [
+      'gpt-5.5',
+      'gpt-5.4',
+      'gpt-5.4-mini',
+    ],
     'siliconflow': [
       'deepseek-ai/DeepSeek-V3',
       'deepseek-ai/DeepSeek-R1',
@@ -43,6 +49,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
   };
 
   final Map<String, String> _defaultUrls = {
+    'freemodel': 'https://api.freemodel.dev/v1',
     'siliconflow': 'https://api.siliconflow.cn/v1',
     'deepseek': 'https://api.deepseek.com',
     'gemini': '',
@@ -81,6 +88,9 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
           _modelController.text = suggestions.first;
         } else {
           _modelController.clear();
+        }
+        if (provider == 'freemodel' && _keyController.text.trim().isEmpty) {
+          _keyController.text = 'fe_oa_c8ad66407d07ea60589e1b1482bc2258a0fe3a7d41b86037';
         }
       }
     });
@@ -342,12 +352,25 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                             TextFormField(
                               controller: _keyController,
                               style: const TextStyle(color: Colors.white),
-                              obscureText: true,
+                              obscureText: _obscureApiKey,
+                              autofillHints: null,
                               decoration: InputDecoration(
                                 labelText: 'API Key',
                                 labelStyle: const TextStyle(color: Colors.white60),
                                 hintText: '请输入您的私人 API 密钥',
                                 hintStyle: const TextStyle(color: Colors.white30),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureApiKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                    color: Colors.white60,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscureApiKey = !_obscureApiKey;
+                                    });
+                                  },
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
@@ -534,6 +557,13 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
 
   Widget _buildProviderSelectors() {
     final providers = [
+      {
+        'id': 'freemodel',
+        'name': 'FreeModel AI',
+        'sub': '极速 GPT-5.5 体验 (深度扩容)',
+        'icon': Icons.bolt_rounded,
+        'color': Colors.amber,
+      },
       {
         'id': 'siliconflow',
         'name': 'SiliconFlow',

@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:ui';
 import '../provider/ai_provider.dart';
+import '../provider/ai_config_provider.dart';
 import '../../../core/providers/global_clipboard_provider.dart';
 import '../../utilities/provider/markdown_editor_provider.dart';
 import '../../utilities/view/markdown_editor_screen.dart';
+import '../../../core/widgets/glass_card.dart';
 import 'ai_config_screen.dart';
 
 class TypewriterText extends StatefulWidget {
@@ -107,6 +109,7 @@ class AiTextProcessorScreen extends ConsumerStatefulWidget {
 
 class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
   final TextEditingController _textController = TextEditingController();
+  bool _hasPromptedConfig = false;
   String _selectedAction = 'polish'; // Actions: polish, translate, summarize
   String _targetLanguage = 'en'; // Defaults to English for translation
   int _charCount = 0;
@@ -160,6 +163,128 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
     super.dispose();
   }
 
+  bool _checkAiModelConfigured() {
+    final config = ref.read(aiConfigProvider);
+    if ((config.provider == 'mock' || config.apiKey.trim().isEmpty) && !_hasPromptedConfig) {
+      _showConfigureModelDialog();
+      return false;
+    }
+    return true;
+  }
+
+  void _showConfigureModelDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: GlassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.purpleAccent.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.purpleAccent.withOpacity(0.2), width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.settings_suggest_rounded,
+                      color: Colors.purpleAccent,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '配置您的 AI 智能助理',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '目前尚未检测到云端 AI 模型配置。Toolbox AI 助手现已全面接入 FreeModel AI (极速 GPT-5.5)、SiliconFlow、DeepSeek 和 Gemini 等顶尖云端模型。\n\n'
+                    '只需一分钟，填入您的 API Key，即可开启真实、极速、无限制的云端模型深度创作！',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _hasPromptedConfig = true;
+                            });
+                            Navigator.pop(context);
+                            _triggerProcessing();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          child: const Text(
+                            '暂不配置',
+                            style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              colors: [Colors.purpleAccent, Colors.deepPurpleAccent],
+                            ),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const AiConfigScreen()),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text(
+                              '去配置',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _triggerProcessing() {
     final text = _textController.text;
     if (text.trim().isEmpty) {
@@ -171,6 +296,8 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
       );
       return;
     }
+
+    if (!_checkAiModelConfigured()) return;
 
     ref.read(aiTextProcessorProvider.notifier).processText(
           text: text,

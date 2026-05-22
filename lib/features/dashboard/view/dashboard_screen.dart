@@ -131,7 +131,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       case 'white_noise':
         return const DeferredPage(
-          title: '白噪音专注冥想',
+          title: '律动呼吸与多声道白噪音',
           child: WhiteNoiseScreen(),
         );
       case 'markdown_editor':
@@ -234,7 +234,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'world_clock':
         return '多时区时钟与番茄钟';
       case 'white_noise':
-        return '白噪音专注冥想';
+        return '律动呼吸与多声道白噪音';
       case 'markdown_editor':
         return '极简 Markdown 编辑器';
       case 'ai_chat':
@@ -774,10 +774,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: AnimatedCrossFade(
                 duration: const Duration(milliseconds: 400),
                 firstChild: _buildStaticGrid(context, isWide),
-                secondChild: categoriesState.value != null
+                secondChild: (categoriesState.value != null && categoriesState.value!.isNotEmpty)
                     ? _buildDynamicGrid(context, categoriesState.value!, isWide)
                     : const SizedBox.shrink(),
-                crossFadeState: categoriesState.value == null
+                crossFadeState: (categoriesState.value == null || categoriesState.value!.isEmpty)
                     ? CrossFadeState.showFirst
                     : CrossFadeState.showSecond,
               ),
@@ -1355,7 +1355,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               trailing: Switch(
                 value: settingsState.isDarkMode, 
                 onChanged: (v) => settingsNotifier.toggleDarkMode(v), 
-                activeColor: Colors.pinkAccent, 
+                activeThumbColor: Colors.pinkAccent, 
                 activeTrackColor: Colors.pinkAccent.withOpacity(0.3)
               )
             ),
@@ -1367,8 +1367,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               trailing: Switch(
                 value: settingsState.isHapticsEnabled, 
                 onChanged: (v) => settingsNotifier.toggleHaptics(v), 
-                activeColor: Colors.tealAccent, 
+                activeThumbColor: Colors.tealAccent, 
                 activeTrackColor: Colors.tealAccent.withOpacity(0.3)
+              )
+            ),
+            _buildListTile(
+              Icons.bolt_rounded, 
+              '低功耗性能模式', 
+              Colors.amberAccent, 
+              subtitle: '静止背景粒子以极佳节省电量与CPU',
+              trailing: Switch(
+                value: settingsState.isLowPowerMode, 
+                onChanged: (v) => settingsNotifier.toggleLowPowerMode(v), 
+                activeThumbColor: Colors.amberAccent, 
+                activeTrackColor: Colors.amberAccent.withOpacity(0.3)
               )
             ),
           ],
@@ -1386,7 +1398,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               trailing: Switch(
                 value: settingsState.isBiometricsEnabled, 
                 onChanged: (v) => settingsNotifier.toggleBiometrics(v), 
-                activeColor: Colors.lightGreenAccent, 
+                activeThumbColor: Colors.lightGreenAccent, 
                 activeTrackColor: Colors.lightGreenAccent.withOpacity(0.3)
               )
             ),
@@ -1398,7 +1410,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _buildSettingsGroup(
           '数据与云端',
           [
-            _buildListTile(Icons.cloud_sync_rounded, '全双工云端同步', Colors.lightBlueAccent, subtitle: '实时同步健康数据与 AI 对话', trailing: Switch(value: true, onChanged: (v) {}, activeColor: Colors.lightBlueAccent, activeTrackColor: Colors.lightBlueAccent.withOpacity(0.3))),
+            _buildListTile(Icons.cloud_sync_rounded, '全双工云端同步', Colors.lightBlueAccent, subtitle: '实时同步健康数据与 AI 对话', trailing: Switch(value: true, onChanged: (v) {}, activeThumbColor: Colors.lightBlueAccent, activeTrackColor: Colors.lightBlueAccent.withOpacity(0.3))),
             _buildListTile(
               Icons.import_export_rounded, 
               '导出健康与监控数据', 

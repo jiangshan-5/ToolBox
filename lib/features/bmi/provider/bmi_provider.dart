@@ -329,20 +329,23 @@ class BmiNotifier extends StateNotifier<BmiState> {
     );
 
     // Sync physical health metrics to the new analytics Cloud Database
-    try {
-      final apiClient = _ref.read(apiClientProvider);
-      await apiClient.instance.post(
-        '/analytics/health',
-        data: {
-          'weight_kg': double.parse(weightInKg.toStringAsFixed(2)),
-          'height_cm': double.parse(heightInCm.toStringAsFixed(2)),
-          'bmi': double.parse(bmi.toStringAsFixed(2)),
-        },
-      );
-      // Invalidate to refresh the chart immediately
-      _ref.invalidate(analyticsProvider);
-    } catch (e) {
-      print('Failed to sync health telemetry: $e');
+    final authState = _ref.read(authProvider);
+    if (authState.isAuthenticated && authState.email != null) {
+      try {
+        final apiClient = _ref.read(apiClientProvider);
+        await apiClient.instance.post(
+          '/analytics/health',
+          data: {
+            'weight_kg': double.parse(weightInKg.toStringAsFixed(2)),
+            'height_cm': double.parse(heightInCm.toStringAsFixed(2)),
+            'bmi': double.parse(bmi.toStringAsFixed(2)),
+          },
+        );
+        // Invalidate to refresh the chart immediately
+        _ref.invalidate(analyticsProvider);
+      } catch (e) {
+        print('Failed to sync health telemetry: $e');
+      }
     }
 
     return true;

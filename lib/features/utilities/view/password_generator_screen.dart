@@ -322,7 +322,7 @@ class _PasswordGeneratorScreenState extends ConsumerState<PasswordGeneratorScree
         style: const TextStyle(color: Colors.white70, fontSize: 12.5),
       ),
       value: value,
-      activeColor: Colors.purpleAccent,
+      activeThumbColor: Colors.purpleAccent,
       activeTrackColor: Colors.purpleAccent.withOpacity(0.2),
       inactiveThumbColor: Colors.white30,
       inactiveTrackColor: Colors.white10,

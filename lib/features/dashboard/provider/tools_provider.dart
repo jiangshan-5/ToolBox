@@ -16,7 +16,7 @@ class ToolsAnalyticsService {
     required int durationMs,
   }) async {
     final authState = _ref.read(authProvider);
-    if (!authState.isAuthenticated) {
+    if (!authState.isAuthenticated || authState.email == null) {
       return;
     }
     try {
@@ -46,6 +46,10 @@ final toolsAnalyticsProvider = Provider<ToolsAnalyticsService>((ref) {
 
 /// Asynchronous API provider to retrieve dynamic category catalogue
 final categoriesProvider = FutureProvider<List<dynamic>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (authState.email == null) {
+    return [];
+  }
   final apiClient = ref.watch(apiClientProvider);
   final response = await apiClient.instance.get('/tools/categories');
   return response.data as List<dynamic>;
@@ -54,7 +58,7 @@ final categoriesProvider = FutureProvider<List<dynamic>>((ref) async {
 /// Asynchronous API provider to retrieve latest usage logs of active user
 final telemetryLogsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
   final authState = ref.watch(authProvider);
-  if (!authState.isAuthenticated) {
+  if (!authState.isAuthenticated || authState.email == null) {
     return [];
   }
   final apiClient = ref.watch(apiClientProvider);

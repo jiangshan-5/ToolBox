@@ -361,7 +361,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                         const Text('允许结果出现重复项:', style: TextStyle(color: Colors.white54, fontSize: 12)),
                         Switch(
                           value: allowDuplicates,
-                          activeColor: Colors.cyanAccent,
+                          activeThumbColor: Colors.cyanAccent,
                           activeTrackColor: Colors.cyanAccent.withOpacity(0.2),
                           onChanged: notifier.setAllowDuplicates,
                         ),
