@@ -20,6 +20,7 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveBorderRadius = BorderRadius.circular(borderRadius);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return GestureDetector(
       onTap: onTap,
@@ -30,13 +31,13 @@ class GlassCard extends StatelessWidget {
             if (glowColor != null) ...[
               // Vibrant Cyberpunk Breathing Glow
               BoxShadow(
-                color: glowColor!.withOpacity(0.12),
+                color: glowColor!.withOpacity(isDark ? 0.12 : 0.08),
                 blurRadius: 24,
                 spreadRadius: 2,
                 offset: const Offset(0, 8),
               ),
               BoxShadow(
-                color: glowColor!.withOpacity(0.06),
+                color: glowColor!.withOpacity(isDark ? 0.06 : 0.04),
                 blurRadius: 40,
                 spreadRadius: -4,
                 offset: const Offset(0, 16),
@@ -44,12 +45,12 @@ class GlassCard extends StatelessWidget {
             ] else ...[
               // Premium ambient dark drop shadow for maximum physical depth
               BoxShadow(
-                color: Colors.black.withOpacity(0.4),
+                color: isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.08),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
               BoxShadow(
-                color: Colors.deepPurpleAccent.withOpacity(0.03),
+                color: isDark ? Colors.deepPurpleAccent.withOpacity(0.03) : Colors.black.withOpacity(0.01),
                 blurRadius: 30,
                 spreadRadius: 1,
               ),
@@ -62,13 +63,15 @@ class GlassCard extends StatelessWidget {
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), // Increased blur for a premium frosted look
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.04), // Slightly more translucent for better mesh visibility
+                color: isDark 
+                    ? Colors.white.withOpacity(0.04) 
+                    : Colors.white.withOpacity(0.65), // Standard frosted glass look for light mode
                 borderRadius: effectiveBorderRadius,
                 border: Border.all(
                   color: borderColor ?? 
                       (glowColor != null 
-                          ? glowColor!.withOpacity(0.25) 
-                          : Colors.white.withOpacity(0.08)),
+                          ? glowColor!.withOpacity(isDark ? 0.25 : 0.18) 
+                          : (isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06))),
                   width: 1.2,
                 ),
               ),

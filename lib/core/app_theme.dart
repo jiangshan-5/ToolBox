@@ -9,6 +9,11 @@ enum AppThemeType {
   oceanCyber,
   sakuraDream,
   cyberpunkLight,
+  neonMidnightLight,
+  volcanoCyberLight,
+  forestMatrixLight,
+  oceanCyberLight,
+  sakuraDreamLight,
   custom,
 }
 
@@ -52,14 +57,26 @@ class AppTheme {
         secondary: preset.secondary,
       ),
       
-      // Outfit typography as the primary typeface
-      textTheme: GoogleFonts.outfitTextTheme(textThemeBase),
+      // Outfit typography with explicit high contrast text colors for all themes
+      textTheme: GoogleFonts.outfitTextTheme(
+        textThemeBase.copyWith(
+          bodyLarge: TextStyle(color: isDark ? Colors.white : Colors.black87),
+          bodyMedium: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+          bodySmall: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+          titleLarge: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold),
+          titleMedium: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold),
+          titleSmall: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+          labelLarge: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold),
+          labelMedium: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+          labelSmall: TextStyle(color: isDark ? Colors.white60 : Colors.black45),
+        ),
+      ),
       
       // Frosted card guidelines
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+        color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.03),
       ),
       
       // Dynamic Slider Theme
@@ -111,8 +128,8 @@ class AppTheme {
       name: '赛博霓虹 (暗)',
       primary: Color(0xFF7C4DFF),
       secondary: Color(0xFF18FFFF),
-      surface: Color(0xFF0A0714),
-      surfaceContainer: Color(0xFF130F24),
+      surface: Color(0xFF0E0B1E),
+      surfaceContainer: Color(0xFF181335),
       isDark: true,
     ));
   }

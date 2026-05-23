@@ -1,11 +1,19 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:crypto/crypto.dart';
-import 'package:share_plus/share_plus.dart';
-import '../../../core/widgets/glass_card.dart';
+
 import '../../../features/dashboard/provider/tools_provider.dart';
+import 'widgets/dev_encoder_constants.dart';
+import 'widgets/dev_selector_chips.dart';
+import 'widgets/dev_json_spacing_options.dart';
+import 'widgets/dev_input_panel.dart';
+import 'widgets/dev_output_panel.dart';
+import 'widgets/dev_stats_panel.dart';
+import 'widgets/dev_error_box.dart';
 
 class DevEncoderScreen extends ConsumerStatefulWidget {
   const DevEncoderScreen({super.key});
@@ -17,28 +25,13 @@ class DevEncoderScreen extends ConsumerStatefulWidget {
 class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
   final TextEditingController _inputController = TextEditingController();
   final TextEditingController _outputController = TextEditingController();
-
   String _activeOperation = 'base64_encode'; // default
   String? _errorMessage;
   int _jsonSpacing = 2; // For JSON Formatting spacing
-  
+
   // Analytics Logging Debounce
   DateTime? _lastLoggedTime;
   String? _lastLoggedOp;
-
-  final List<Map<String, dynamic>> _operations = [
-    {'key': 'base64_encode', 'label': 'Base64 编码', 'icon': Icons.enhanced_encryption_rounded, 'color': Colors.cyanAccent},
-    {'key': 'base64_decode', 'label': 'Base64 解码', 'icon': Icons.no_encryption_gmailerrorred_rounded, 'color': Colors.cyanAccent},
-    {'key': 'url_encode', 'label': 'URL 编码', 'icon': Icons.link_rounded, 'color': Colors.greenAccent},
-    {'key': 'url_decode', 'label': 'URL 解码', 'icon': Icons.link_off_rounded, 'color': Colors.greenAccent},
-    {'key': 'hex_encode', 'label': 'Hex 编码', 'icon': Icons.grid_3x3_rounded, 'color': Colors.tealAccent},
-    {'key': 'hex_decode', 'label': 'Hex 解码', 'icon': Icons.grid_off_rounded, 'color': Colors.tealAccent},
-    {'key': 'md5', 'label': 'MD5 哈希', 'icon': Icons.fingerprint_rounded, 'color': Colors.orangeAccent},
-    {'key': 'sha256', 'label': 'SHA-256 哈希', 'icon': Icons.security_rounded, 'color': Colors.pinkAccent},
-    {'key': 'timestamp_conv', 'label': '时间戳转换', 'icon': Icons.schedule_rounded, 'color': Colors.deepOrangeAccent},
-    {'key': 'json_format', 'label': 'JSON 格式化', 'icon': Icons.format_align_left_rounded, 'color': Colors.purpleAccent},
-    {'key': 'json_minify', 'label': 'JSON 压缩', 'icon': Icons.compress_rounded, 'color': Colors.amberAccent},
-  ];
 
   @override
   void initState() {
@@ -65,11 +58,9 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
       });
       return;
     }
-
     setState(() {
       _errorMessage = null;
     });
-
     try {
       String result = '';
       switch (_activeOperation) {
@@ -77,7 +68,6 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
           result = base64.encode(utf8.encode(input));
           break;
         case 'base64_decode':
-          // Strip white space if any to prevent false parsing errors
           final cleaned = input.replaceAll(RegExp(r'\s+'), '');
           result = utf8.decode(base64.decode(cleaned));
           break;
@@ -100,7 +90,7 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
             throw const FormatException('Hex 字符串长度必须是偶数');
           }
           if (!RegExp(r'^[0-9a-fA-F]*$').hasMatch(cleanedHex)) {
-            throw const FormatException('输入包含非法的十六进制字符');
+            throw FormatException('输入包含非法的十六进制字符');
           }
           final decodedBytes = <int>[];
           for (var i = 0; i < cleanedHex.length; i += 2) {
@@ -133,7 +123,7 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
           } else {
             final parsed = DateTime.tryParse(trimmed);
             if (parsed == null) {
-              throw const FormatException('非法的日期格式');
+              throw FormatException('非法的日期格式');
             }
             final sec = parsed.millisecondsSinceEpoch ~/ 1000;
             final ms = parsed.millisecondsSinceEpoch;
@@ -150,15 +140,11 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
           result = json.encode(parsed);
           break;
       }
-
       setState(() {
         _outputController.text = result;
         _errorMessage = null;
       });
-
-      // Debounce and log telemetry
       _debounceTelemetry();
-
     } catch (e) {
       setState(() {
         _outputController.clear();
@@ -215,408 +201,19 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     }
   }
 
-  void _shareResult() {
-    final text = _outputController.text.trim();
-    if (text.isEmpty) return;
-    Share.share(text, subject: '开发者编码转换结果');
-  }
-
-  Widget _buildSelectorChips(Color activeOpColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '🛠️ 选择编码或哈希函数',
-          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 48,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: _operations.length,
-            itemBuilder: (context, idx) {
-              final op = _operations[idx];
-              final isSelected = op['key'] == _activeOperation;
-              final opColor = op['color'] as Color;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _activeOperation = op['key'];
-                  });
-                  _processInput();
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? opColor.withOpacity(0.12)
-                        : Colors.white.withOpacity(0.015),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? opColor : Colors.white.withOpacity(0.05),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      if (isSelected)
-                        BoxShadow(
-                          color: opColor.withOpacity(0.2),
-                          blurRadius: 8,
-                        ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        op['icon'],
-                        color: isSelected ? opColor : Colors.white60,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        op['label'],
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white60,
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildJsonSpacingOptions() {
-    return GlassCard(
-      borderColor: Colors.purpleAccent.withOpacity(0.1),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.space_bar_rounded, color: Colors.purpleAccent, size: 18),
-                SizedBox(width: 8),
-                Text(
-                  "JSON 缩进空格数",
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-            Row(
-              children: [2, 4, 8].map((spaces) {
-                final active = _jsonSpacing == spaces;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _jsonSpacing = spaces;
-                    });
-                    _processInput();
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: active ? Colors.purpleAccent.withOpacity(0.15) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: active ? Colors.purpleAccent : Colors.white10,
-                      ),
-                    ),
-                    child: Text(
-                      "$spaces 个空格",
-                      style: TextStyle(
-                        color: active ? Colors.purpleAccent : Colors.white30,
-                        fontSize: 11,
-                        fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputBox(int inputLen, int inputBytes, bool isWide) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '📥 贴入原始文本',
-          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              TextField(
-                controller: _inputController,
-                maxLines: isWide ? 12 : 5,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
-                  height: 1.4,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '请贴入待处理的字符串或JSON数据...',
-                  hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
-                  border: InputBorder.none,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      _inputController.clear();
-                      _outputController.clear();
-                      setState(() {
-                        _errorMessage = null;
-                      });
-                    },
-                    child: const Text(
-                      '清空输入',
-                      style: TextStyle(color: Colors.redAccent, fontSize: 11.5, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text(
-                    '共 $inputLen 字符 | $inputBytes 字节',
-                    style: const TextStyle(color: Colors.white30, fontSize: 11),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorBox() {
-    if (_errorMessage == null) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.redAccent.withOpacity(0.05),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOutputBox(int outputLen, int outputBytes, Color activeOpColor, bool isWide) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '📤 变换输出结果',
-          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.02),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              TextField(
-                controller: _outputController,
-                maxLines: isWide ? 12 : 8,
-                readOnly: true,
-                style: TextStyle(
-                  color: activeOpColor,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
-                  height: 1.4,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '格式化或编码后的结果将在这里自动展示...',
-                  hintStyle: TextStyle(color: Colors.white12, fontSize: 13),
-                  border: InputBorder.none,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.copy_rounded, color: activeOpColor, size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: '复制结果',
-                        onPressed: outputLen == 0
-                            ? null
-                            : () {
-                                Clipboard.setData(ClipboardData(text: _outputController.text));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('转换结果已成功复制'),
-                                    backgroundColor: activeOpColor.withOpacity(0.2),
-                                  ),
-                                );
-                              },
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: Icon(Icons.share_rounded, color: activeOpColor, size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        tooltip: '分享结果',
-                        onPressed: outputLen == 0 ? null : _shareResult,
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '共 $outputLen 字符 | $outputBytes 字节',
-                    style: const TextStyle(color: Colors.white30, fontSize: 11),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatsPanel(int inputBytes, int outputBytes, double deltaRatio) {
-    if (_inputController.text.isEmpty || _outputController.text.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '📊 转换统计指标',
-          style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMetricCard(
-                "字节数增幅",
-                "${deltaRatio >= 0 ? '+' : ''}${deltaRatio.toStringAsFixed(1)}%",
-                deltaRatio == 0
-                    ? Colors.white54
-                    : (deltaRatio < 0 ? Colors.greenAccent : Colors.amberAccent),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildMetricCard(
-                "数据压缩率",
-                _calculateRatio(inputBytes, outputBytes),
-                deltaRatio < 0 ? Colors.greenAccent : Colors.white70,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.015),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _calculateRatio(int originalBytes, int finalBytes) {
-    if (originalBytes == 0) return '0.0%';
-    final ratio = (finalBytes / originalBytes);
-    if (ratio < 1.0) {
-      final saved = (1.0 - ratio) * 100;
-      return '节约 ${saved.toStringAsFixed(1)}%';
-    } else {
-      final increased = (ratio - 1.0) * 100;
-      return '扩充 ${increased.toStringAsFixed(1)}%';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final inputLen = _inputController.text.length;
     final outputLen = _outputController.text.length;
     final inputBytes = utf8.encode(_inputController.text).length;
     final outputBytes = utf8.encode(_outputController.text).length;
-
     double deltaRatio = 0;
     if (inputBytes > 0 && outputBytes > 0) {
       deltaRatio = ((outputBytes - inputBytes) / inputBytes) * 100;
     }
-
-    final activeOpColor = _operations.firstWhere((element) => element['key'] == _activeOperation)['color'] as Color;
+    
+    final activeOp = devOperations.firstWhere((element) => element.key == _activeOperation);
+    final activeOpColor = activeOp.color;
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWide = screenWidth > 800;
 
@@ -650,10 +247,26 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               children: [
-                _buildSelectorChips(activeOpColor),
+                DevSelectorChips(
+                  activeOperation: _activeOperation,
+                  onOperationChanged: (op) {
+                    setState(() {
+                      _activeOperation = op;
+                    });
+                    _processInput();
+                  },
+                ),
                 const SizedBox(height: 18),
                 if (_activeOperation == 'json_format') ...[
-                  _buildJsonSpacingOptions(),
+                  DevJsonSpacingOptions(
+                    jsonSpacing: _jsonSpacing,
+                    onJsonSpacingChanged: (spaces) {
+                      setState(() {
+                        _jsonSpacing = spaces;
+                      });
+                      _processInput();
+                    },
+                  ),
                   const SizedBox(height: 16),
                 ],
                 if (isWide) ...[
@@ -664,14 +277,30 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildInputBox(inputLen, inputBytes, true),
+                            DevInputPanel(
+                              inputController: _inputController,
+                              inputLen: inputLen,
+                              inputBytes: inputBytes,
+                              isWide: true,
+                              onClear: () {
+                                _inputController.clear();
+                                _outputController.clear();
+                                setState(() {
+                                  _errorMessage = null;
+                                });
+                              },
+                            ),
                             if (_errorMessage != null) ...[
                               const SizedBox(height: 16),
-                              _buildErrorBox(),
+                              DevErrorBox(errorMessage: _errorMessage!),
                             ],
                             if (inputLen > 0 && outputLen > 0) ...[
                               const SizedBox(height: 20),
-                              _buildStatsPanel(inputBytes, outputBytes, deltaRatio),
+                              DevStatsPanel(
+                                inputBytes: inputBytes,
+                                outputBytes: outputBytes,
+                                deltaRatio: deltaRatio,
+                              ),
                             ],
                           ],
                         ),
@@ -681,22 +310,51 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildOutputBox(outputLen, outputBytes, activeOpColor, true),
+                            DevOutputPanel(
+                              outputController: _outputController,
+                              outputLen: outputLen,
+                              outputBytes: outputBytes,
+                              activeOpColor: activeOpColor,
+                              isWide: true,
+                            ),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ] else ...[
-                  _buildInputBox(inputLen, inputBytes, false),
+                  DevInputPanel(
+                    inputController: _inputController,
+                    inputLen: inputLen,
+                    inputBytes: inputBytes,
+                    isWide: false,
+                    onClear: () {
+                      _inputController.clear();
+                      _outputController.clear();
+                      setState(() {
+                        _errorMessage = null;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 16),
                   if (_errorMessage != null) ...[
-                    _buildErrorBox(),
+                    DevErrorBox(errorMessage: _errorMessage!),
                     const SizedBox(height: 16),
                   ],
-                  _buildOutputBox(outputLen, outputBytes, activeOpColor, false),
+                  DevOutputPanel(
+                    outputController: _outputController,
+                    outputLen: outputLen,
+                    outputBytes: outputBytes,
+                    activeOpColor: activeOpColor,
+                    isWide: false,
+                  ),
                   const SizedBox(height: 20),
-                  _buildStatsPanel(inputBytes, outputBytes, deltaRatio),
+                  if (inputLen > 0 && outputLen > 0)
+                    DevStatsPanel(
+                      inputBytes: inputBytes,
+                      outputBytes: outputBytes,
+                      deltaRatio: deltaRatio,
+                    ),
                 ],
                 const SizedBox(height: 24),
               ],

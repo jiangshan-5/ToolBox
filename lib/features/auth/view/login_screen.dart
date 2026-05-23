@@ -60,6 +60,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     _isLoading = authState.isLoading;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -69,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.dns_rounded, color: Colors.cyanAccent),
+            icon: Icon(Icons.dns_rounded, color: colors.secondary),
             tooltip: '服务器配置',
             onPressed: () => ServerConfigDialog.show(context),
           ),
@@ -83,42 +85,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               constraints: const BoxConstraints(maxWidth: 400),
               padding: const EdgeInsets.all(24.0),
               child: GlassCard(
-                glowColor: Colors.deepPurpleAccent,
+                glowColor: colors.primary,
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         '欢迎回来',
                         style: TextStyle(
                           fontSize: 28, 
                           fontWeight: FontWeight.bold, 
-                          color: Colors.white,
+                          color: colors.onSurface,
                           letterSpacing: 1.5,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         '登录您的 Toolbox Pro 账户', 
-                        style: TextStyle(color: Colors.white60, fontSize: 14),
+                        style: TextStyle(color: colors.onSurface.withOpacity(0.6), fontSize: 14),
                       ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.cyanAccent.withOpacity(0.06),
+                          color: colors.secondary.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)),
+                          border: Border.all(color: colors.secondary.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.info_outline_rounded, color: Colors.cyanAccent, size: 18),
+                            Icon(Icons.info_outline_rounded, color: colors.secondary, size: 18),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 "📱 真机调试提示：请确保手机与电脑在同一 Wi-Fi，并点击右上角 🌐 图标配置电脑局域网后端 IP 以正常连接。",
-                                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, height: 1.4),
+                                style: TextStyle(color: colors.onSurface.withOpacity(0.75), fontSize: 11, height: 1.4),
                               ),
                             ),
                           ],
@@ -138,9 +140,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obscure: true,
                       ),
                       const SizedBox(height: 32),
-                      _buildLoginButton(),
+                      _buildLoginButton(colors),
                       const SizedBox(height: 28),
-                      _buildRegisterLink(),
+                      _buildRegisterLink(colors),
                     ],
                   ),
                 ),
@@ -152,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(ColorScheme colors) {
     return ScaleOnTap(
       onTap: _isLoading ? null : _handleLogin,
       child: Container(
@@ -162,15 +164,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
             colors: [
-              Colors.deepPurpleAccent,
-              Colors.purpleAccent.shade400,
+              colors.primary,
+              colors.secondary,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.deepPurpleAccent.withOpacity(0.3),
+              color: colors.primary.withOpacity(0.3),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -178,17 +180,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         alignment: Alignment.center,
         child: _isLoading 
-            ? const SizedBox(
+            ? SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(color: colors.onPrimary, strokeWidth: 2),
               ) 
-            : const Text(
+            : Text(
                 '登 录', 
                 style: TextStyle(
                   fontSize: 16, 
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: colors.onPrimary,
                   letterSpacing: 2.0,
                 ),
               ),
@@ -196,7 +198,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _buildRegisterLink() {
+  Widget _buildRegisterLink(ColorScheme colors) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -205,12 +207,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             context, 
             MaterialPageRoute(builder: (_) => const RegisterScreen()),
           ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               "还没有账户？立即注册", 
               style: TextStyle(
-                color: Colors.white70, 
+                color: colors.onSurface.withOpacity(0.7), 
                 fontSize: 14,
                 decoration: TextDecoration.underline,
               ),
@@ -225,20 +227,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.cyanAccent.withOpacity(0.3),
+                color: colors.secondary.withOpacity(0.3),
                 width: 1.0,
               ),
-              color: Colors.cyanAccent.withOpacity(0.04),
+              color: colors.secondary.withOpacity(0.04),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.bolt_rounded, color: Colors.cyanAccent, size: 18),
-                SizedBox(width: 6),
+                Icon(Icons.bolt_rounded, color: colors.secondary, size: 18),
+                const SizedBox(width: 6),
                 Text(
                   "游客快捷体验 (免登录)", 
                   style: TextStyle(
-                    color: Colors.cyanAccent, 
+                    color: colors.secondary, 
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     letterSpacing: 0.5,
@@ -292,22 +294,25 @@ class _CyberInputState extends State<_CyberInput> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(_isFocused ? 0.07 : 0.03),
+        color: colors.onSurface.withOpacity(_isFocused ? 0.08 : 0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isFocused 
-              ? Colors.deepPurpleAccent.withOpacity(0.8) 
-              : Colors.white.withOpacity(0.06),
+              ? colors.primary
+              : colors.onSurface.withOpacity(0.08),
           width: _isFocused ? 1.5 : 1.0,
         ),
         boxShadow: [
           if (_isFocused)
             BoxShadow(
-              color: Colors.deepPurpleAccent.withOpacity(0.20),
+              color: colors.primary.withOpacity(0.15),
               blurRadius: 14,
               spreadRadius: 1,
             ),
@@ -317,17 +322,17 @@ class _CyberInputState extends State<_CyberInput> {
         controller: widget.controller,
         focusNode: _focusNode,
         obscureText: widget.obscure,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
-        cursorColor: Colors.deepPurpleAccent,
+        style: TextStyle(color: colors.onSurface, fontSize: 15),
+        cursorColor: colors.primary,
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: _isFocused ? Colors.deepPurpleAccent : Colors.white60,
+            color: _isFocused ? colors.primary : colors.onSurface.withOpacity(0.55),
             fontSize: 14,
           ),
           prefixIcon: Icon(
             widget.icon,
-            color: _isFocused ? Colors.deepPurpleAccent : Colors.white54,
+            color: _isFocused ? colors.primary : colors.onSurface.withOpacity(0.50),
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

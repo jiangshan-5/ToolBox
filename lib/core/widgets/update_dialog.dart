@@ -1,10 +1,14 @@
 import 'dart:ui';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 import 'glass_card.dart';
 import 'dynamic_effects.dart';
 
-class UpdateDialog extends StatelessWidget {
+class UpdateDialog extends StatefulWidget {
   final String latestVersion;
   final String changelog;
   final String downloadUrl;
@@ -40,12 +44,126 @@ class UpdateDialog extends StatelessWidget {
   }
 
   @override
+  State<UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<UpdateDialog> {
+  bool _isDownloading = false;
+  double _progress = 0.0;
+  String _statusText = '';
+  CancelToken? _cancelToken;
+
+  @override
+  void dispose() {
+    _cancelToken?.cancel("Dialog dismissed");
+    super.dispose();
+  }
+
+  Future<void> _startDownload() async {
+    setState(() {
+      _isDownloading = true;
+      _progress = 0.0;
+      _statusText = '准备下载...';
+    });
+
+    try {
+      final storageDir = await getTemporaryDirectory();
+      final savePath = '${storageDir.path}/toolbox_update.apk';
+
+      // Clean up pre-existing download file
+      final file = File(savePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      _cancelToken = CancelToken();
+
+      final dio = Dio();
+      await dio.download(
+        widget.downloadUrl,
+        savePath,
+        cancelToken: _cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            setState(() {
+              _progress = received / total;
+              final percent = (_progress * 100).toStringAsFixed(1);
+              _statusText = '正在下载: $percent%';
+            });
+          } else {
+            setState(() {
+              _statusText = '已下载: ${(received / 1024 / 1024).toStringAsFixed(1)} MB';
+            });
+          }
+        },
+      );
+
+      setState(() {
+        _progress = 1.0;
+        _statusText = '下载完成，正在唤醒安装...';
+      });
+
+      // Prompt OS package installer with explicit APK MIME type
+      final result = await OpenFile.open(
+        savePath,
+        type: "application/vnd.android.package-archive",
+      );
+      
+      if (result.type != ResultType.done) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('启动系统安装失败: ${result.message}。请长按下方复制链接手动下载。'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() {
+            _isDownloading = false;
+          });
+        }
+      } else {
+        if (mounted && !widget.forceUpdate) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _progress = 0.0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('下载更新失败: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _copyLinkAndNotify() {
+    Clipboard.setData(ClipboardData(text: widget.downloadUrl));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('下载链接已复制到剪贴板，您可在手机浏览器中手动粘贴下载！'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Intercept back button gestures on Android/iOS if this is a force update
-    return PopScope(
-      canPop: !forceUpdate,
-      child: Dialog(
-        backgroundColor: Colors.transparent,
+    // Intercept back button gestures on Android/iOS if this is a force update or downloading
+    final canPop = !widget.forceUpdate && !_isDownloading;
+    
+    return Theme(
+      data: ThemeData.dark(),
+      child: PopScope(
+        canPop: canPop,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
         child: Container(
@@ -132,7 +250,7 @@ class UpdateDialog extends StatelessWidget {
                             color: Colors.purpleAccent.shade400.withOpacity(0.1),
                           ),
                           child: Text(
-                            'v$latestVersion',
+                            'v${widget.latestVersion}',
                             style: TextStyle(
                               color: Colors.purpleAccent.shade100,
                               fontWeight: FontWeight.bold,
@@ -172,7 +290,7 @@ class UpdateDialog extends StatelessWidget {
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Text(
-                                  changelog.replaceAll('\\n', '\n'),
+                                  widget.changelog.replaceAll('\\n', '\n'),
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.7),
                                     fontSize: 13.5,
@@ -186,27 +304,115 @@ class UpdateDialog extends StatelessWidget {
                       ),
                       const SizedBox(height: 28),
 
-                      // Buttons
-                      Row(
-                        children: [
-                          if (!forceUpdate) ...[
+                      // Action Layout (Downloading Progress vs Buttons)
+                      if (_isDownloading) ...[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _statusText,
+                                  style: TextStyle(
+                                    color: Colors.purpleAccent.shade100,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${(_progress * 100).toStringAsFixed(0)}%',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                height: 8,
+                                child: LinearProgressIndicator(
+                                  value: _progress,
+                                  backgroundColor: Colors.white.withOpacity(0.08),
+                                  color: Colors.deepPurpleAccent,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Center(
+                              child: Text(
+                                widget.forceUpdate ? '正在极速下载安装包，请勿关闭应用' : '正在后台下载，您可以稍等片刻...',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.3),
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        // Action Buttons
+                        Row(
+                          children: [
+                            if (!widget.forceUpdate) ...[
+                              Expanded(
+                                child: ScaleOnTap(
+                                  onTap: () => Navigator.pop(context),
+                                  child: Container(
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                      color: Colors.white.withOpacity(0.04),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      '暂不更新',
+                                      style: TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
                             Expanded(
                               child: ScaleOnTap(
-                                onTap: () => Navigator.pop(context),
+                                onTap: _startDownload,
                                 child: Container(
                                   height: 48,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.1),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.deepPurpleAccent,
+                                        Colors.purpleAccent.shade400,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
                                     ),
-                                    color: Colors.white.withOpacity(0.04),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.deepPurpleAccent.withOpacity(0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
                                   alignment: Alignment.center,
                                   child: const Text(
-                                    '暂不更新',
+                                    '立即极速更新',
                                     style: TextStyle(
-                                      color: Colors.white60,
+                                      color: Colors.white,
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -214,64 +420,31 @@ class UpdateDialog extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
                           ],
-                          Expanded(
-                            child: ScaleOnTap(
-                              onTap: () => _copyLinkAndNotify(context),
-                              child: Container(
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.deepPurpleAccent,
-                                      Colors.purpleAccent.shade400,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.deepPurpleAccent.withOpacity(0.3),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  '复制下载链接',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                        ),
+                        
+                        // Copy URL option in small text
+                        const SizedBox(height: 16),
+                        GestureDetector(
+                          onTap: _copyLinkAndNotify,
+                          child: Center(
+                            child: Text(
+                              '手动复制下载链接',
+                              style: TextStyle(
+                                color: Colors.purpleAccent.shade100.withOpacity(0.7),
+                                fontSize: 12,
+                                decoration: TextDecoration.underline,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                      
-                      // Helpful fallback instructions
-                      const SizedBox(height: 12),
-                      Center(
-                        child: Text(
-                          forceUpdate ? '此版本为强制更新，复制链接后在浏览器中打开即可下载安装。' : '复制下载链接后，可在浏览器中粘贴打开下载。',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 10,
-                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
                 
-                // Absolute Close Button (Only for optional updates)
-                if (!forceUpdate)
+                // Absolute Close Button (Only for optional updates, and not currently downloading)
+                if (!widget.forceUpdate && !_isDownloading)
                   Positioned(
                     top: 12,
                     right: 12,
@@ -285,20 +458,7 @@ class UpdateDialog extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  void _copyLinkAndNotify(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: downloadUrl));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('下载链接已复制到剪贴板，请在浏览器中打开下载！'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 4),
-      ),
-    );
-    if (!forceUpdate) {
-      Navigator.pop(context);
-    }
-  }
+    ),
+  );
+}
 }

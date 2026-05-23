@@ -37,6 +37,12 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
     final surfaceColor = theme.colorScheme.surface;
     final primaryColor = theme.colorScheme.primary;
     final secondaryColor = theme.colorScheme.secondary;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final double primaryOpacity = isDark ? 0.18 : 0.04;
+    final double secondaryOpacity = isDark ? 0.15 : 0.03;
+    final double primaryGlowOpacity = isDark ? 0.22 : 0.06;
+    final double secondaryGlowOpacity = isDark ? 0.20 : 0.05;
 
     if (isLowPower) {
       if (_controller.isAnimating) {
@@ -58,10 +64,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primaryColor.withOpacity(0.08),
+                color: primaryColor.withOpacity(primaryOpacity),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.12),
+                    color: primaryColor.withOpacity(primaryGlowOpacity),
                     blurRadius: 200,
                     spreadRadius: 150,
                   ),
@@ -77,10 +83,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: secondaryColor.withOpacity(0.08),
+                color: secondaryColor.withOpacity(secondaryOpacity),
                 boxShadow: [
                   BoxShadow(
-                    color: secondaryColor.withOpacity(0.12),
+                    color: secondaryColor.withOpacity(secondaryGlowOpacity),
                     blurRadius: 200,
                     spreadRadius: 150,
                   ),
@@ -118,10 +124,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
                       height: 400,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: primaryColor.withOpacity(0.08),
+                        color: primaryColor.withOpacity(primaryOpacity),
                         boxShadow: [
                           BoxShadow(
-                            color: primaryColor.withOpacity(0.12),
+                            color: primaryColor.withOpacity(primaryGlowOpacity),
                             blurRadius: 200,
                             spreadRadius: 150,
                           ),
@@ -137,10 +143,10 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
                       height: 400,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: secondaryColor.withOpacity(0.08),
+                        color: secondaryColor.withOpacity(secondaryOpacity),
                         boxShadow: [
                           BoxShadow(
-                            color: secondaryColor.withOpacity(0.12),
+                            color: secondaryColor.withOpacity(secondaryGlowOpacity),
                             blurRadius: 200,
                             spreadRadius: 150,
                           ),

@@ -48,6 +48,8 @@ class MarkdownEditorCacheNotifier extends StateNotifier<String> {
     state = appended;
     await _storage.setString(_markdownCacheKey, appended);
   }
+
+  Future<void> appendNote(String text) => appendText(text);
 }
 
 final markdownEditorCacheProvider = StateNotifierProvider<MarkdownEditorCacheNotifier, String>((ref) {

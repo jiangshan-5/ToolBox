@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dynamic_background.dart';
 
 /// Elite custom widget that defers the initialization of heavy child page trees
 /// until route transition animations are completed.
@@ -69,13 +70,17 @@ class _DeferredPageState extends State<DeferredPage> with SingleTickerProviderSt
   }
 
   Widget _buildSkeletonPlaceholder(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF090714),
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Text(
           widget.title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontWeight: FontWeight.bold,
             fontSize: 18,
             letterSpacing: 0.8,
@@ -84,25 +89,14 @@ class _DeferredPageState extends State<DeferredPage> with SingleTickerProviderSt
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: textColor),
       ),
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Elegant Dark Glassmorphism Background
           Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0C091F),
-                    Color(0xFF140F2D),
-                    Color(0xFF06050C),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
+            child: DynamicBackground(
+              child: const SizedBox.expand(),
             ),
           ),
           // Skeleton placeholders
@@ -203,6 +197,7 @@ class _ShimmerContainerState extends State<_ShimmerContainer> with SingleTickerP
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -210,10 +205,12 @@ class _ShimmerContainerState extends State<_ShimmerContainer> with SingleTickerP
           height: widget.height,
           margin: widget.margin,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(_animation.value),
+            color: isDark 
+                ? Colors.white.withOpacity(_animation.value)
+                : Colors.black.withOpacity(_animation.value),
             borderRadius: widget.borderRadius,
             border: Border.all(
-              color: Colors.white.withOpacity(0.04),
+              color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
               width: 1.0,
             ),
           ),

@@ -1,9 +1,15 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/widgets/glass_card.dart';
+
 import '../../../features/dashboard/provider/tools_provider.dart';
+import 'widgets/led_marquee_widget.dart';
+import 'widgets/led_grid_painter.dart';
+import 'widgets/led_control_panel.dart';
 
 class LedBannerScreen extends ConsumerStatefulWidget {
   const LedBannerScreen({super.key});
@@ -13,8 +19,13 @@ class LedBannerScreen extends ConsumerStatefulWidget {
 }
 
 class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerProviderStateMixin {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get textColor => isDark ? Colors.white : Colors.black87;
+  Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
+  Color get borderDividerColor => isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+
   final TextEditingController _textController = TextEditingController(text: "CYBERPUNK NEON LED BANNER 🚀");
-  
+
   double _fontSize = 64.0;
   double _scrollSpeed = 3.0; // 1 (Slow) to 10 (Fast)
   double _glowRadius = 15.0; // 0 to 30
@@ -29,7 +40,6 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
     [const Color(0xFFFAD961), const Color(0xFFF76B1C)], // Amber Orange
     [const Color(0xFF7000FF), const Color(0xFFE200FF)], // Electric Purple/Pink
   ];
-
   final List<String> _colorNames = ["赛博青蓝", "荧光翠绿", "极光烈粉", "熔岩琥珀", "魔幻电紫"];
 
   // Background Theme Presets
@@ -43,18 +53,10 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
   bool _blinkVisible = true;
   Timer? _blinkTimer;
 
-  // Animation controller for dynamic preview marquee
-  late AnimationController _scrollController;
-
   @override
   void initState() {
     super.initState();
-    _scrollController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat();
     _startBlinkTimer();
-
     // Telemetry: log tool launch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _logTelemetry();
@@ -63,7 +65,6 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _blinkTimer?.cancel();
     _textController.dispose();
     super.dispose();
@@ -77,7 +78,6 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
       });
       return;
     }
-    // Frequency in Hz: e.g. 1Hz = every 1000ms toggle. 5Hz = every 200ms toggle.
     final intervalMs = (1000 / (_blinkFrequency * 2)).round();
     _blinkTimer = Timer.periodic(Duration(milliseconds: intervalMs), (timer) {
       if (mounted) {
@@ -110,7 +110,6 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
     setState(() {
       _isFullscreen = true;
     });
-    // Configure system overlays and orientation
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
@@ -122,7 +121,6 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
     setState(() {
       _isFullscreen = false;
     });
-    // Restore system overlays and orientation
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -160,14 +158,14 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.fullscreen_exit_rounded, color: Colors.white60, size: 16),
-                        SizedBox(width: 4),
+                        Icon(Icons.fullscreen_exit_rounded, color: subTextColor, size: 16),
+                        const SizedBox(width: 4),
                         Text(
                           "轻触屏幕退出全屏",
-                          style: TextStyle(color: Colors.white60, fontSize: 11),
+                          style: TextStyle(color: subTextColor, fontSize: 11),
                         ),
                       ],
                     ),
@@ -204,7 +202,6 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
       ),
       body: Stack(
         children: [
-          // Cyberpunk Background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -219,10 +216,9 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               children: [
-                // 1. Live Preview Panel (Glassmorphic Outer, Black Inner Banner View)
-                const Text(
+                Text(
                   '📺 实时效果预览',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 ClipRRect(
@@ -232,7 +228,7 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.black,
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      border: Border.all(color: borderDividerColor),
                       boxShadow: [
                         BoxShadow(
                           color: _neonGradients[_selectedColorIndex][0].withOpacity(0.1),
@@ -245,234 +241,31 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // 2. Control Form Options
-                const Text(
+                Text(
                   '⚙️ 弹幕参数配置',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                GlassCard(
-                  borderColor: Colors.white.withOpacity(0.06),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Text Input fields
-                        const Text(
-                          "编辑弹幕内容",
-                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.02),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.06)),
-                          ),
-                          child: TextField(
-                            controller: _textController,
-                            style: const TextStyle(color: Colors.white, fontSize: 13.5),
-                            decoration: const InputDecoration(
-                              hintText: '输入要滚动的文字...',
-                              hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
-                              border: InputBorder.none,
-                            ),
-                            onChanged: (text) {
-                              setState(() {}); // Trigger refresh of the layout
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Neon presets picker
-                        const Text(
-                          "发光霓虹色彩",
-                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          height: 42,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _neonGradients.length,
-                            itemBuilder: (context, idx) {
-                              final isSelected = idx == _selectedColorIndex;
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedColorIndex = idx;
-                                  });
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: _neonGradients[idx]),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: isSelected ? Colors.white : Colors.transparent,
-                                      width: 2.0,
-                                    ),
-                                    boxShadow: [
-                                      if (isSelected)
-                                        BoxShadow(
-                                          color: _neonGradients[idx][0].withOpacity(0.4),
-                                          blurRadius: 10,
-                                        ),
-                                    ],
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    _colorNames[idx],
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 11,
-                                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Background styles picker
-                        const Text(
-                          "背景画布特效",
-                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: List.generate(_bgNames.length, (idx) {
-                            final isSelected = idx == _selectedBgIndex;
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedBgIndex = idx;
-                                  });
-                                },
-                                child: Container(
-                                  margin: EdgeInsets.only(
-                                    left: idx == 0 ? 0 : 6,
-                                    right: idx == _bgNames.length - 1 ? 0 : 6,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.015),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isSelected ? Colors.cyanAccent.withOpacity(0.5) : Colors.white.withOpacity(0.04),
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    _bgNames[idx],
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.cyanAccent : Colors.white60,
-                                      fontSize: 11.5,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(color: Colors.white10),
-                        const SizedBox(height: 8),
-
-                        // Font size control slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("文字大小", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            Text("${_fontSize.round()} PX", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        Slider(
-                          value: _fontSize,
-                          min: 32,
-                          max: 120,
-                          activeColor: Colors.cyanAccent,
-                          inactiveColor: Colors.white10,
-                          onChanged: (val) => setState(() => _fontSize = val),
-                        ),
-
-                        // Scroll Speed slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("滚动速度", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            Text("速度 ${_scrollSpeed.toStringAsFixed(1)}", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        Slider(
-                          value: _scrollSpeed,
-                          min: 0.5,
-                          max: 10.0,
-                          activeColor: Colors.cyanAccent,
-                          inactiveColor: Colors.white10,
-                          onChanged: (val) => setState(() => _scrollSpeed = val),
-                        ),
-
-                        // Glow radius slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("霓虹辉光半径", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            Text("${_glowRadius.round()} Lm", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        Slider(
-                          value: _glowRadius,
-                          min: 0,
-                          max: 30,
-                          activeColor: Colors.cyanAccent,
-                          inactiveColor: Colors.white10,
-                          onChanged: (val) => setState(() => _glowRadius = val),
-                        ),
-
-                        // Blink rate slider
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("呼吸闪烁频率", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            Text(
-                              _blinkFrequency <= 0.0 ? "常亮" : "${_blinkFrequency.toStringAsFixed(1)} Hz",
-                              style: TextStyle(
-                                color: _blinkFrequency <= 0 ? Colors.white30 : Colors.cyanAccent,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Slider(
-                          value: _blinkFrequency,
-                          min: 0.0,
-                          max: 5.0,
-                          activeColor: Colors.cyanAccent,
-                          inactiveColor: Colors.white10,
-                          onChanged: (val) {
-                            setState(() {
-                              _blinkFrequency = val;
-                            });
-                            _startBlinkTimer();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                LedControlPanel(
+                  textController: _textController,
+                  fontSize: _fontSize,
+                  onFontSizeChanged: (val) => setState(() => _fontSize = val),
+                  scrollSpeed: _scrollSpeed,
+                  onScrollSpeedChanged: (val) => setState(() => _scrollSpeed = val),
+                  glowRadius: _glowRadius,
+                  onGlowRadiusChanged: (val) => setState(() => _glowRadius = val),
+                  blinkFrequency: _blinkFrequency,
+                  onBlinkFrequencyChanged: (val) => setState(() => _blinkFrequency = val),
+                  selectedColorIndex: _selectedColorIndex,
+                  onColorIndexChanged: (idx) => setState(() => _selectedColorIndex = idx),
+                  selectedBgIndex: _selectedBgIndex,
+                  onBgIndexChanged: (idx) => setState(() => _selectedBgIndex = idx),
+                  neonGradients: _neonGradients,
+                  colorNames: _colorNames,
+                  bgNames: _bgNames,
+                  onBlinkFrequencySliderFinished: _startBlinkTimer,
                 ),
                 const SizedBox(height: 20),
-
-                // Fullscreen shortcut button
                 GestureDetector(
                   onTap: _enterFullscreen,
                   child: Container(
@@ -496,7 +289,7 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.fullscreen_rounded, color: Colors.black, size: 20),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           "💫 开启全屏沉浸播放 (横屏模式)",
                           style: TextStyle(color: Colors.black, fontSize: 13.5, fontWeight: FontWeight.w900),
@@ -517,11 +310,9 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
   Widget _buildBannerView({required bool isFullscreen}) {
     return Stack(
       children: [
-        // Background layer
         Positioned.fill(
           child: _buildBgDecoration(),
         ),
-        // Marquee Text layer
         Positioned.fill(
           child: ClipRect(
             child: Opacity(
@@ -543,15 +334,14 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
 
   Widget _buildBgDecoration() {
     if (_selectedBgIndex == 0) {
-      // Pure Black
       return Container(color: Colors.black);
     } else if (_selectedBgIndex == 1) {
-      // Subtle dot matrix grid
       return CustomPaint(
-        painter: GridMatrixPainter(dotColor: Colors.white.withOpacity(0.03)),
+        painter: GridMatrixPainter(
+          dotColor: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+        ),
       );
     } else {
-      // Deep Purple Glow background
       return Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
@@ -563,190 +353,4 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
       );
     }
   }
-}
-
-// Sub-widget for rendering continuous marquee scrolling smoothly
-class LedMarqueeWidget extends StatefulWidget {
-  final String text;
-  final double fontSize;
-  final double speedMultiplier;
-  final Color glowColor;
-  final List<Color> neonGradient;
-  final double glowRadius;
-
-  const LedMarqueeWidget({
-    super.key,
-    required this.text,
-    required this.fontSize,
-    required this.speedMultiplier,
-    required this.glowColor,
-    required this.neonGradient,
-    required this.glowRadius,
-  });
-
-  @override
-  State<LedMarqueeWidget> createState() => _LedMarqueeWidgetState();
-}
-
-class _LedMarqueeWidgetState extends State<LedMarqueeWidget> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  double _containerWidth = 0;
-  double _textWidth = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    // Use an animation controller that iterates continuously
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10), // Will be scaled dynamically
-    );
-    _controller.addListener(() {
-      setState(() {});
-    });
-    _updateSpeedAndDuration();
-  }
-
-  @override
-  void didUpdateWidget(covariant LedMarqueeWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _calculateTextWidth();
-    _updateSpeedAndDuration();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _calculateTextWidth() {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: widget.text,
-        style: TextStyle(
-          fontSize: widget.fontSize,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'monospace', // keeps sizing stable
-        ),
-      ),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    setState(() {
-      _textWidth = textPainter.width;
-    });
-  }
-
-  void _updateSpeedAndDuration() {
-    if (_textWidth <= 0 || _containerWidth <= 0) return;
-
-    // Total distance = container width + text width (to scroll completely off screen)
-    final distance = _containerWidth + _textWidth;
-    
-    // Calculate seconds needed: distance divided by speed coefficient
-    // speedMultiplier range: 0.5 (Slow) to 10 (Fast)
-    // base speed is e.g. 100 pixels per second for multiplier=1
-    final pixelsPerSecond = widget.speedMultiplier * 70.0;
-    final seconds = distance / pixelsPerSecond;
-
-    _controller.duration = Duration(milliseconds: (seconds * 1000).round());
-    if (!_controller.isAnimating) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (_containerWidth != constraints.maxWidth) {
-          _containerWidth = constraints.maxWidth;
-          // recalculate on next frame to ensure safe layout pass
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _calculateTextWidth();
-              _updateSpeedAndDuration();
-            }
-          });
-        }
-
-        // Compute horizontal offset
-        // 0.0 value: text starts at offscreen right (_containerWidth)
-        // 1.0 value: text reaches offscreen left (-_textWidth)
-        final xOffset = _containerWidth - (_containerWidth + _textWidth) * _controller.value;
-
-        return Stack(
-          alignment: Alignment.centerLeft,
-          children: [
-            Transform.translate(
-              offset: Offset(xOffset, 0),
-              child: ShaderMask(
-                shaderCallback: (bounds) {
-                  return LinearGradient(
-                    colors: widget.neonGradient,
-                  ).createShader(Offset.zero & bounds.size);
-                },
-                child: Text(
-                  widget.text,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: widget.fontSize,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    color: Colors.white, // fall back color before shader mask
-                    shadows: widget.glowRadius > 0
-                        ? [
-                            Shadow(
-                              color: widget.glowColor.withOpacity(0.8),
-                              blurRadius: widget.glowRadius,
-                            ),
-                            Shadow(
-                              color: widget.glowColor.withOpacity(0.5),
-                              blurRadius: widget.glowRadius * 1.5,
-                            ),
-                          ]
-                        : null,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// Subtle grid painter for custom tech background
-class GridMatrixPainter extends CustomPainter {
-  final Color dotColor;
-  final double gridSpacing;
-  final double dotRadius;
-
-  GridMatrixPainter({
-    required this.dotColor,
-    this.gridSpacing = 16.0,
-    this.dotRadius = 1.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = dotColor
-      ..style = PaintingStyle.fill;
-
-    for (double x = 0; x < size.width; x += gridSpacing) {
-      for (double y = 0; y < size.height; y += gridSpacing) {
-        canvas.drawCircle(Offset(x, y), dotRadius, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant GridMatrixPainter oldDelegate) =>
-      oldDelegate.dotColor != dotColor ||
-      oldDelegate.gridSpacing != gridSpacing ||
-      oldDelegate.dotRadius != dotRadius;
 }

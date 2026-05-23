@@ -6,16 +6,15 @@ import '../network/api_client.dart';
 /// Provider to reactively track and manage the custom API Base URL
 final apiBaseUrlProvider = StateNotifierProvider<ApiBaseUrlNotifier, String>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ApiBaseUrlNotifier(ref, prefs);
+  return ApiBaseUrlNotifier(prefs);
 });
 
 class ApiBaseUrlNotifier extends StateNotifier<String> {
-  final Ref _ref;
   final SharedPreferences _prefs;
   
   static const String _storageKey = 'api_custom_base_url';
 
-  ApiBaseUrlNotifier(this._ref, this._prefs) : super(_getInitialBaseUrl(_prefs));
+  ApiBaseUrlNotifier(this._prefs) : super(_getInitialBaseUrl(_prefs));
 
   static String _getInitialBaseUrl(SharedPreferences prefs) {
     final stored = prefs.getString(_storageKey);

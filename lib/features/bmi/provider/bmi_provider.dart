@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../dashboard/provider/tools_provider.dart';
 import '../../dashboard/provider/analytics_provider.dart';
@@ -34,6 +35,7 @@ class BmiState {
   final double? carbGrams;
   final double? fatGrams;
 
+  final String activeGoal;
   final bool isCalculating;
 
   const BmiState({
@@ -63,8 +65,26 @@ class BmiState {
     this.carbGrams,
     this.fatGrams,
 
+    required this.activeGoal,
     required this.isCalculating,
   });
+
+  double? get tdee => dailyCalories;
+  double? get suggestedCalories => finalCalorieGoal;
+
+  Color get messageColor {
+    final double? b = bmi;
+    if (b == null) return Colors.white70;
+    if (b < 18.5) {
+      return Colors.orangeAccent;
+    } else if (b < 24.0) {
+      return Colors.greenAccent;
+    } else if (b < 28.0) {
+      return Colors.orangeAccent;
+    } else {
+      return Colors.redAccent;
+    }
+  }
 
   BmiState copyWith({
     double? bmi,
@@ -91,6 +111,7 @@ class BmiState {
     double? carbGrams,
     double? fatGrams,
 
+    String? activeGoal,
     bool? isCalculating,
   }) {
     return BmiState(
@@ -118,6 +139,7 @@ class BmiState {
       carbGrams: carbGrams ?? this.carbGrams,
       fatGrams: fatGrams ?? this.fatGrams,
 
+      activeGoal: activeGoal ?? this.activeGoal,
       isCalculating: isCalculating ?? this.isCalculating,
     );
   }
@@ -143,6 +165,7 @@ class BmiNotifier extends StateNotifier<BmiState> {
           carbPercent: 40,
           fatPercent: 30,
           
+          activeGoal: 'cut',
           isCalculating: false,
         ));
 
@@ -159,13 +182,42 @@ class BmiNotifier extends StateNotifier<BmiState> {
     );
   }
 
+  void setUnitSystem(bool val) => toggleSystem(val);
+
+  void setGoal(String goal) {
+    double change = state.weeklyChange;
+    if (goal == 'cut') {
+      if (change >= 0) {
+        change = state.isMetric ? -0.5 : -1.1;
+      }
+    } else if (goal == 'maintain') {
+      change = 0.0;
+    } else if (goal == 'bulk') {
+      if (change <= 0) {
+        change = state.isMetric ? 0.5 : 1.1;
+      }
+    }
+    state = state.copyWith(activeGoal: goal, weeklyChange: change);
+  }
+
   void setGender(String gender) => state = state.copyWith(gender: gender);
   void setAge(int age) => state = state.copyWith(age: age);
   void setActivity(String act) => state = state.copyWith(activity: act);
 
   // --- WEIGHT TARGET SANDBOX SETTERS ---
   void setTargetWeight(double val) => state = state.copyWith(targetWeight: val);
-  void setWeeklyChange(double val) => state = state.copyWith(weeklyChange: val);
+  void setWeeklyChange(double val) {
+    // Determine active goal based on weekly change value
+    String goal = state.activeGoal;
+    if (val < 0) {
+      goal = 'cut';
+    } else if (val > 0) {
+      goal = 'bulk';
+    } else {
+      goal = 'maintain';
+    }
+    state = state.copyWith(weeklyChange: val, activeGoal: goal);
+  }
 
   // --- MACRO SPLITS SANDBOX SETTERS ---
   void setMacrosRatios(int protein, int carb, int fat) {

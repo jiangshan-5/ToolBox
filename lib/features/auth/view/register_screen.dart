@@ -97,16 +97,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     _isLoading = authState.isLoading;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const BackButton(color: Colors.white),
+        leading: BackButton(color: colors.onSurface),
         actions: [
           IconButton(
-            icon: const Icon(Icons.dns_rounded, color: Colors.cyanAccent),
+            icon: Icon(Icons.dns_rounded, color: colors.secondary),
             tooltip: '服务器配置',
             onPressed: () => ServerConfigDialog.show(context),
           ),
@@ -120,51 +123,45 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               constraints: const BoxConstraints(maxWidth: 400),
               padding: const EdgeInsets.all(24.0),
               child: GlassCard(
-                glowColor: Colors.deepPurpleAccent,
+                glowColor: colors.primary,
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         '创建账户',
                         style: TextStyle(
                           fontSize: 28, 
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: colors.onSurface,
                           letterSpacing: 1.5,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         '立即注册，开启您的高级工具箱', 
-                        style: TextStyle(color: Colors.white60, fontSize: 14),
+                        style: TextStyle(color: colors.onSurface.withOpacity(0.6), fontSize: 14),
                       ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.cyanAccent.withOpacity(0.06),
+                          color: colors.secondary.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.cyanAccent.withOpacity(0.02),
-                              blurRadius: 10,
-                            ),
-                          ],
+                          border: Border.all(color: colors.secondary.withOpacity(0.3)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.info_outline_rounded, color: Colors.cyanAccent, size: 16),
+                                Icon(Icons.info_outline_rounded, color: colors.secondary, size: 16),
                                 const SizedBox(width: 8),
-                                const Text(
+                                Text(
                                   "开发测试与真机联调提示",
                                   style: TextStyle(
-                                    color: Colors.cyanAccent,
+                                    color: colors.secondary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -174,12 +171,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             const SizedBox(height: 8),
                             Text(
                               "1. 📱 真机测试请点击右上角 🌐 图标配置电脑局域网 IP（如 http://192.168.x.x:8000）以连接服务。",
-                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, height: 1.4),
+                              style: TextStyle(color: colors.onSurface.withOpacity(0.7), fontSize: 11, height: 1.4),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               "2. 🔑 开发调试模式下（SMTP未配置），输入万能验证码 '000000' 即可直接注册成功。",
-                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, height: 1.4),
+                              style: TextStyle(color: colors.onSurface.withOpacity(0.7), fontSize: 11, height: 1.4),
                             ),
                           ],
                         ),
@@ -210,19 +207,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.06),
+                                    color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.08),
                                   ),
                                   color: (_secondsRemaining > 0 || _isSendingCode)
-                                      ? Colors.white.withOpacity(0.05)
-                                      : Colors.deepPurpleAccent.withOpacity(0.15),
+                                      ? (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
+                                      : colors.secondary.withOpacity(0.12),
                                 ),
                                 alignment: Alignment.center,
                                 child: _isSendingCode
-                                    ? const SizedBox(
+                                    ? SizedBox(
                                         width: 20,
                                         height: 20,
                                         child: CircularProgressIndicator(
-                                          color: Colors.white,
+                                          color: colors.secondary,
                                           strokeWidth: 2,
                                         ),
                                       )
@@ -232,8 +229,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                             : '获取验证码',
                                         style: TextStyle(
                                           color: (_secondsRemaining > 0 || _isSendingCode)
-                                              ? Colors.white38
-                                              : Colors.white,
+                                              ? colors.onSurface.withOpacity(0.38)
+                                              : colors.secondary,
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -251,16 +248,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         obscure: true,
                       ),
                       const SizedBox(height: 32),
-                      _buildRegisterButton(),
+                      _buildRegisterButton(colors),
                       const SizedBox(height: 28),
                       ScaleOnTap(
                         onTap: () => Navigator.pop(context),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Text(
                             "已有账户？立即登录", 
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: colors.onSurface.withOpacity(0.7),
                               fontSize: 14,
                               decoration: TextDecoration.underline,
                             ),
@@ -278,7 +275,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildRegisterButton() {
+  Widget _buildRegisterButton(ColorScheme colors) {
     return ScaleOnTap(
       onTap: _isLoading ? null : _handleRegister,
       child: Container(
@@ -288,15 +285,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
             colors: [
-              Colors.deepPurpleAccent,
-              Colors.purpleAccent.shade400,
+              colors.primary,
+              colors.secondary,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.deepPurpleAccent.withOpacity(0.3),
+              color: colors.primary.withOpacity(0.3),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -304,17 +301,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         alignment: Alignment.center,
         child: _isLoading 
-            ? const SizedBox(
+            ? SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(color: colors.onPrimary, strokeWidth: 2),
               ) 
-            : const Text(
+            : Text(
                 '注 册', 
                 style: TextStyle(
                   fontSize: 16, 
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: colors.onPrimary,
                   letterSpacing: 2.0,
                 ),
               ),
@@ -395,22 +392,28 @@ class _CyberInputState extends State<_CyberInput> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(_isFocused ? 0.07 : 0.03),
+        color: isDark 
+            ? Colors.white.withOpacity(_isFocused ? 0.07 : 0.03)
+            : Colors.black.withOpacity(_isFocused ? 0.06 : 0.03),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isFocused 
-              ? Colors.deepPurpleAccent.withOpacity(0.8) 
-              : Colors.white.withOpacity(0.06),
+              ? colors.primary.withOpacity(0.8) 
+              : (isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.08)),
           width: _isFocused ? 1.5 : 1.0,
         ),
         boxShadow: [
           if (_isFocused)
             BoxShadow(
-              color: Colors.deepPurpleAccent.withOpacity(0.20),
+              color: colors.primary.withOpacity(0.20),
               blurRadius: 14,
               spreadRadius: 1,
             ),
@@ -420,17 +423,17 @@ class _CyberInputState extends State<_CyberInput> {
         controller: widget.controller,
         focusNode: _focusNode,
         obscureText: widget.obscure,
-        style: const TextStyle(color: Colors.white, fontSize: 15),
-        cursorColor: Colors.deepPurpleAccent,
+        style: TextStyle(color: colors.onSurface, fontSize: 15),
+        cursorColor: colors.primary,
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: _isFocused ? Colors.deepPurpleAccent : Colors.white60,
+            color: _isFocused ? colors.primary : colors.onSurface.withOpacity(0.6),
             fontSize: 14,
           ),
           prefixIcon: Icon(
             widget.icon,
-            color: _isFocused ? Colors.deepPurpleAccent : Colors.white54,
+            color: _isFocused ? colors.primary : colors.onSurface.withOpacity(0.5),
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
