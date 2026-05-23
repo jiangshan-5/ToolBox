@@ -20,10 +20,7 @@ class WorkbenchTabView extends ConsumerStatefulWidget {
 }
 
 class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
-  List<String> _recentlyUsed = [
-    'randomizer',
-    'converter',
-  ];
+  List<String> _recentlyUsed = ['randomizer', 'converter'];
 
   @override
   void initState() {
@@ -93,15 +90,16 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildWorkbenchHeader(widget.userEmail, primaryColor, theme.colorScheme.secondary),
+        _buildWorkbenchHeader(
+          widget.userEmail,
+          primaryColor,
+          theme.colorScheme.secondary,
+        ),
         _buildConnectionIndicator(categoriesState),
         const SizedBox(height: 12),
         _buildRecentlyUsedSection(context, primaryColor),
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 4.0,
-            vertical: 8.0,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
           child: Row(
             children: [
               Icon(Icons.grid_view_rounded, color: primaryColor, size: 16),
@@ -120,11 +118,25 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
         Expanded(
           child: AnimatedCrossFade(
             duration: const Duration(milliseconds: 400),
-            firstChild: _buildStaticGrid(context, widget.isWide, textColor, isDark),
-            secondChild: (categoriesState.value != null && categoriesState.value!.isNotEmpty)
-                ? _buildDynamicGrid(context, categoriesState.value!, widget.isWide, theme.colorScheme.secondary)
+            firstChild: _buildStaticGrid(
+              context,
+              widget.isWide,
+              textColor,
+              isDark,
+            ),
+            secondChild:
+                (categoriesState.value != null &&
+                    categoriesState.value!.isNotEmpty)
+                ? _buildDynamicGrid(
+                    context,
+                    categoriesState.value!,
+                    widget.isWide,
+                    theme.colorScheme.secondary,
+                  )
                 : const SizedBox.shrink(),
-            crossFadeState: (categoriesState.value == null || categoriesState.value!.isEmpty)
+            crossFadeState:
+                (categoriesState.value == null ||
+                    categoriesState.value!.isEmpty)
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
           ),
@@ -136,7 +148,11 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
     );
   }
 
-  Widget _buildWorkbenchHeader(String email, Color primaryColor, Color secondaryColor) {
+  Widget _buildWorkbenchHeader(
+    String email,
+    Color primaryColor,
+    Color secondaryColor,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -431,7 +447,8 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                     final tool = catTools[toolIndex];
                     final String toolKey = tool['tool_key'] ?? '';
                     final String name = tool['name'] ?? '';
-                    final String description = tool['description'] ?? '云端数据库极速计算已就绪';
+                    final String description =
+                        tool['description'] ?? '云端数据库极速计算已就绪';
                     final Color color = getToolColor(toolKey, context);
                     final IconData icon = getToolIcon(toolKey);
                     return ParallaxGlassCard(
@@ -500,23 +517,17 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
     );
   }
 
-  Widget _buildStaticGrid(BuildContext context, bool isWide, Color textColor, bool isDark, {Key? key}) {
+  Widget _buildStaticGrid(
+    BuildContext context,
+    bool isWide,
+    Color textColor,
+    bool isDark, {
+    Key? key,
+  }) {
     final List<Map<String, dynamic>> staticTools = [
-      {
-        'title': '随机选择生成器',
-        'key': 'randomizer',
-        'desc': '极速随机生成数字，支持快速去重',
-      },
-      {
-        'title': '标准单位转换器',
-        'key': 'converter',
-        'desc': '多种体积长度质量快速一键互转',
-      },
-      {
-        'title': '健康 BMI 计算器',
-        'key': 'bmi_calculator',
-        'desc': '标准人体健康指标评测云储存',
-      },
+      {'title': '随机选择生成器', 'key': 'randomizer', 'desc': '极速随机生成数字，支持快速去重'},
+      {'title': '标准单位转换器', 'key': 'converter', 'desc': '多种体积长度质量快速一键互转'},
+      {'title': '健康 BMI 计算器', 'key': 'bmi_calculator', 'desc': '标准人体健康指标评测云储存'},
       {
         'title': '字数与字符统计器',
         'key': 'word_counter',
@@ -527,16 +538,8 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
         'key': 'password_generator',
         'desc': '安全高强度密码快捷生成及熵值分析',
       },
-      {
-        'title': '多时区时钟与番茄钟',
-        'key': 'world_clock',
-        'desc': '多时区对照与高精度番茄专注时钟',
-      },
-      {
-        'title': '白噪音专注冥想',
-        'key': 'white_noise',
-        'desc': '精选自然白噪音辅助冥想与高效专注',
-      },
+      {'title': '多时区时钟与番茄钟', 'key': 'world_clock', 'desc': '多时区对照与高精度番茄专注时钟'},
+      {'title': '白噪音专注冥想', 'key': 'white_noise', 'desc': '精选自然白噪音辅助冥想与高效专注'},
       {
         'title': '极极简 Markdown 编辑器',
         'key': 'markdown_editor',

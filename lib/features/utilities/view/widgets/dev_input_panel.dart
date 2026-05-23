@@ -21,7 +21,9 @@ class DevInputPanel extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
-    final Color borderDividerColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+    final Color borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,7 +40,9 @@ class DevInputPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+            color: isDark
+                ? Colors.white.withOpacity(0.02)
+                : Colors.black.withOpacity(0.03),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: borderDividerColor),
           ),

@@ -14,7 +14,9 @@ class BmiResultDashboardPanel extends ConsumerWidget {
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.white70 : Colors.black54;
     final faintTextColor = isDark ? Colors.white38 : Colors.black38;
-    final borderDividerColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+    final borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     final state = ref.watch(bmiProvider);
 
@@ -28,7 +30,12 @@ class BmiResultDashboardPanel extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               '体征目标与健康诊断仪',
-              style: TextStyle(color: textColor, fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+              style: TextStyle(
+                color: textColor,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ],
         ),
@@ -47,22 +54,41 @@ class BmiResultDashboardPanel extends ConsumerWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: const Color(0xFFFF007F).withOpacity(0.3)),
+                border: Border.all(
+                  color: const Color(0xFFFF007F).withOpacity(0.3),
+                ),
               ),
               child: Column(
                 children: [
-                  Text('BMI 身体质量指数', style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                  Text(
+                    'BMI 身体质量指数',
+                    style: TextStyle(
+                      color: subTextColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     state.bmi!.toStringAsFixed(1),
-                    style: TextStyle(fontSize: 68, fontWeight: FontWeight.bold, color: textColor, letterSpacing: -1),
+                    style: TextStyle(
+                      fontSize: 68,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      letterSpacing: -1,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   _buildBmiGauge(isDark, state.bmi!),
                   const SizedBox(height: 14),
                   Text(
                     state.message,
-                    style: TextStyle(color: state.messageColor, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 0.5),
+                    style: TextStyle(
+                      color: state.messageColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      letterSpacing: 0.5,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -104,7 +130,9 @@ class BmiResultDashboardPanel extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+            color: isDark
+                ? Colors.white.withOpacity(0.02)
+                : Colors.black.withOpacity(0.03),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: borderDividerColor),
           ),
@@ -113,20 +141,36 @@ class BmiResultDashboardPanel extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.track_changes_rounded, color: Colors.cyanAccent, size: 18),
+                  Icon(
+                    Icons.track_changes_rounded,
+                    color: Colors.cyanAccent,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
-                  Text('计划靶点卡路里建议', style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text(
+                    '计划靶点卡路里建议',
+                    style: TextStyle(
+                      color: subTextColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('日建议摄入量:', style: TextStyle(color: faintTextColor, fontSize: 12)),
+                  Text(
+                    '日建议摄入量:',
+                    style: TextStyle(color: faintTextColor, fontSize: 12),
+                  ),
                   Text(
                     '${state.suggestedCalories!.toStringAsFixed(0)} kcal',
                     style: TextStyle(
-                      color: state.suggestedCalories! < state.tdee! ? Colors.cyanAccent : const Color(0xFFFF5252),
+                      color: state.suggestedCalories! < state.tdee!
+                          ? Colors.cyanAccent
+                          : const Color(0xFFFF5252),
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -137,7 +181,11 @@ class BmiResultDashboardPanel extends ConsumerWidget {
               LinearProgressIndicator(
                 value: state.suggestedCalories! / 4000.0,
                 backgroundColor: isDark ? Colors.white10 : Colors.black12,
-                valueColor: AlwaysStoppedAnimation<Color>(state.suggestedCalories! < state.tdee! ? Colors.cyanAccent : const Color(0xFFFF5252)),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  state.suggestedCalories! < state.tdee!
+                      ? Colors.cyanAccent
+                      : const Color(0xFFFF5252),
+                ),
                 minHeight: 5,
               ),
             ],
@@ -146,9 +194,20 @@ class BmiResultDashboardPanel extends ConsumerWidget {
         const SizedBox(height: 20),
         Row(
           children: [
-            const Icon(Icons.analytics_rounded, color: Color(0xFFFF8C00), size: 18),
+            const Icon(
+              Icons.analytics_rounded,
+              color: Color(0xFFFF8C00),
+              size: 18,
+            ),
             const SizedBox(width: 8),
-            Text('三大宏量营养重量指标', style: TextStyle(color: subTextColor, fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(
+              '三大宏量营养重量指标',
+              style: TextStyle(
+                color: subTextColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -210,7 +269,11 @@ class BmiResultDashboardPanel extends ConsumerWidget {
             child: const Center(
               child: Text(
                 '保存健康报告至笔记本',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -238,9 +301,28 @@ class BmiResultDashboardPanel extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('15.0 (偏瘦)', style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 10)),
-            Text('24.0 (正常)', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 10, fontWeight: FontWeight.bold)),
-            Text('35.0 (肥胖)', style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 10)),
+            Text(
+              '15.0 (偏瘦)',
+              style: TextStyle(
+                color: isDark ? Colors.white38 : Colors.black38,
+                fontSize: 10,
+              ),
+            ),
+            Text(
+              '24.0 (正常)',
+              style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.black54,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '35.0 (肥胖)',
+              style: TextStyle(
+                color: isDark ? Colors.white38 : Colors.black38,
+                fontSize: 10,
+              ),
+            ),
           ],
         ),
       ],
@@ -260,7 +342,9 @@ class BmiResultDashboardPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
+        color: isDark
+            ? Colors.white.withOpacity(0.015)
+            : Colors.black.withOpacity(0.02),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderDividerColor),
       ),
@@ -274,7 +358,11 @@ class BmiResultDashboardPanel extends ConsumerWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(color: subTextColor, fontSize: 11, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: subTextColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -284,12 +372,20 @@ class BmiResultDashboardPanel extends ConsumerWidget {
           const SizedBox(height: 10),
           Text(
             value,
-            style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             desc,
-            style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 9.5, height: 1.3),
+            style: TextStyle(
+              color: isDark ? Colors.white38 : Colors.black38,
+              fontSize: 9.5,
+              height: 1.3,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -309,7 +405,9 @@ class BmiResultDashboardPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.01) : Colors.black.withOpacity(0.015),
+        color: isDark
+            ? Colors.white.withOpacity(0.01)
+            : Colors.black.withOpacity(0.015),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderDividerColor),
       ),
@@ -319,15 +417,24 @@ class BmiResultDashboardPanel extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _handleSaveNotebook(BuildContext context, WidgetRef ref, BmiState state) {
-    final report = '''# 🩺 Body Biometric & Macronutrients Report
+  void _handleSaveNotebook(
+    BuildContext context,
+    WidgetRef ref,
+    BmiState state,
+  ) {
+    final report =
+        '''# 🩺 Body Biometric & Macronutrients Report
 - **体征检测年龄**: ${state.age} 岁
 - **性别分类**: ${state.gender == 'male' ? '男性 (Male)' : '女性 (Female)'}
 - **身体质量指数 (BMI)**: ${state.bmi!.toStringAsFixed(1)} (${state.message})
@@ -353,7 +460,9 @@ class BmiResultDashboardPanel extends ConsumerWidget {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const MarkdownEditorScreen()),
+              MaterialPageRoute(
+                builder: (context) => const MarkdownEditorScreen(),
+              ),
             );
           },
         ),

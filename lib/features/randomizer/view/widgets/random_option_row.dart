@@ -61,7 +61,11 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.01),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.03)
+              : Colors.black.withOpacity(0.03),
+        ),
       ),
       child: Column(
         children: [
@@ -71,12 +75,17 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
                 child: TextFormField(
                   controller: _textController,
                   focusNode: _textFocus,
-                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(vertical: 4),
                   ),
-                  onChanged: (v) => widget.notifier.updateOptionText(widget.id, v),
+                  onChanged: (v) =>
+                      widget.notifier.updateOptionText(widget.id, v),
                 ),
               ),
               Container(
@@ -88,7 +97,11 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
                 ),
                 child: Text(
                   '中签率 🎯 ${widget.probability.toStringAsFixed(1)}%',
-                  style: const TextStyle(color: Colors.pinkAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.pinkAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -96,7 +109,11 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
                 onTap: () => widget.notifier.removeWeightedOption(widget.id),
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: Icon(Icons.delete_outline_rounded, color: faintTextColor, size: 16),
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    color: faintTextColor,
+                    size: 16,
+                  ),
                 ),
               ),
             ],
@@ -107,7 +124,9 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
-              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+              color: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.05),
             ),
             clipBehavior: Clip.antiAlias,
             child: FractionallySizedBox(
@@ -115,7 +134,9 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
               widthFactor: probPercent.clamp(0.0, 1.0),
               child: Container(
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: [Colors.pinkAccent, Color(0xFFFF4081)]),
+                  gradient: LinearGradient(
+                    colors: [Colors.pinkAccent, Color(0xFFFF4081)],
+                  ),
                 ),
               ),
             ),
@@ -124,7 +145,9 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: Colors.pinkAccent,
-              inactiveTrackColor: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+              inactiveTrackColor: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.black.withOpacity(0.06),
               thumbColor: Colors.pinkAccent,
               overlayColor: Colors.pinkAccent.withOpacity(0.15),
               trackHeight: 2,
@@ -135,7 +158,8 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
               min: 0.1,
               max: 10.0,
               divisions: 99,
-              onChanged: (v) => widget.notifier.updateOptionWeight(widget.id, v),
+              onChanged: (v) =>
+                  widget.notifier.updateOptionWeight(widget.id, v),
             ),
           ),
         ],

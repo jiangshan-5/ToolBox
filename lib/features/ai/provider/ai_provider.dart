@@ -29,11 +29,11 @@ class Message {
   }
 
   Map<String, dynamic> toJson() => {
-        'role': role,
-        'content': content,
-        if (usageTokens != null) 'usageTokens': usageTokens,
-        if (provider != null) 'provider': provider,
-      };
+    'role': role,
+    'content': content,
+    if (usageTokens != null) 'usageTokens': usageTokens,
+    if (provider != null) 'provider': provider,
+  };
 }
 
 class AiChatState {
@@ -41,11 +41,7 @@ class AiChatState {
   final bool isLoading;
   final String? error;
 
-  AiChatState({
-    required this.messages,
-    this.isLoading = false,
-    this.error,
-  });
+  AiChatState({required this.messages, this.isLoading = false, this.error});
 
   AiChatState copyWith({
     List<Message>? messages,
@@ -92,7 +88,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
         final apiClient = _ref.read(apiClientProvider);
         final response = await apiClient.instance.get('/ai/chat/history');
         if (!mounted) return;
-        
+
         final List<dynamic> list = response.data;
         final messages = list
             .map((item) => Message.fromJson(item as Map<String, dynamic>))
@@ -106,10 +102,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
         );
       } catch (e) {
         if (!mounted) return;
-        state = state.copyWith(
-          isLoading: false,
-          error: '获取历史记录出现未知异常: $e',
-        );
+        state = state.copyWith(isLoading: false, error: '获取历史记录出现未知异常: $e');
       }
     }
   }
@@ -121,7 +114,9 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
     if (isGuest) {
       try {
         final storage = _ref.read(localStorageServiceProvider);
-        final serialized = jsonEncode(state.messages.map((m) => m.toJson()).toList());
+        final serialized = jsonEncode(
+          state.messages.map((m) => m.toJson()).toList(),
+        );
         await storage.setString('guest_ai_chat_history', serialized);
       } catch (e) {
         print('Failed to save guest chat history: $e');
@@ -144,7 +139,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
     try {
       final apiClient = _ref.read(apiClientProvider);
       final aiConfig = _ref.read(aiConfigProvider);
-      
+
       // Convert in-memory messages to json array for conversation memory
       final historyList = state.messages
           .sublist(0, state.messages.length - 1)
@@ -153,10 +148,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
 
       final response = await apiClient.instance.post(
         '/ai/chat',
-        data: {
-          'message': text,
-          'history': historyList,
-        },
+        data: {'message': text, 'history': historyList},
         options: Options(
           headers: {
             'X-AI-Provider': aiConfig.provider,
@@ -192,7 +184,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
           final wordsGenerated = reply.length;
           // Estimate 1.5 seconds saved per word compared to manual research/typing
           final timeSavedSeconds = (wordsGenerated * 1.5).round();
-          
+
           await apiClient.instance.post(
             '/analytics/telemetry',
             data: {
@@ -208,7 +200,6 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
           print('Telemetry sync failed: $telemetryError');
         }
       }
-
     } on DioException catch (e) {
       if (!mounted) return;
       state = state.copyWith(
@@ -217,10 +208,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
       );
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(
-        isLoading: false,
-        error: '对话出现未知异常: $e',
-      );
+      state = state.copyWith(isLoading: false, error: '对话出现未知异常: $e');
     }
   }
 
@@ -249,20 +237,17 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
 }
 
 /// Global dynamic multi-turn chat agent provider
-final aiChatProvider = StateNotifierProvider.autoDispose<AiChatNotifier, AiChatState>((ref) {
-  return AiChatNotifier(ref);
-});
+final aiChatProvider =
+    StateNotifierProvider.autoDispose<AiChatNotifier, AiChatState>((ref) {
+      return AiChatNotifier(ref);
+    });
 
 class AiTextProcessorState {
   final bool isLoading;
   final String? result;
   final String? error;
 
-  AiTextProcessorState({
-    this.isLoading = false,
-    this.result,
-    this.error,
-  });
+  AiTextProcessorState({this.isLoading = false, this.result, this.error});
 
   AiTextProcessorState copyWith({
     bool? isLoading,
@@ -295,7 +280,7 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
     try {
       final apiClient = _ref.read(apiClientProvider);
       final aiConfig = _ref.read(aiConfigProvider);
-      
+
       final response = await apiClient.instance.post(
         '/ai/process-text',
         data: {
@@ -316,10 +301,7 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
       if (!mounted) return;
 
       final resultText = response.data['result'] as String;
-      state = AiTextProcessorState(
-        isLoading: false,
-        result: resultText,
-      );
+      state = AiTextProcessorState(isLoading: false, result: resultText);
 
       // Async upload AI Telemetry to Cloud — mirrors AiChatNotifier
       try {
@@ -347,10 +329,7 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
       );
     } catch (e) {
       if (!mounted) return;
-      state = AiTextProcessorState(
-        isLoading: false,
-        error: '文本处理出现异常: $e',
-      );
+      state = AiTextProcessorState(isLoading: false, error: '文本处理出现异常: $e');
     }
   }
 
@@ -360,7 +339,10 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
 }
 
 /// Global text processing agent provider
-final aiTextProcessorProvider = StateNotifierProvider.autoDispose<AiTextProcessorNotifier, AiTextProcessorState>((ref) {
-  return AiTextProcessorNotifier(ref);
-});
-
+final aiTextProcessorProvider =
+    StateNotifierProvider.autoDispose<
+      AiTextProcessorNotifier,
+      AiTextProcessorState
+    >((ref) {
+      return AiTextProcessorNotifier(ref);
+    });

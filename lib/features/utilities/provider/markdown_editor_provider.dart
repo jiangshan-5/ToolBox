@@ -52,7 +52,8 @@ class MarkdownEditorCacheNotifier extends StateNotifier<String> {
   Future<void> appendNote(String text) => appendText(text);
 }
 
-final markdownEditorCacheProvider = StateNotifierProvider<MarkdownEditorCacheNotifier, String>((ref) {
-  final storage = ref.watch(localStorageServiceProvider);
-  return MarkdownEditorCacheNotifier(storage);
-});
+final markdownEditorCacheProvider =
+    StateNotifierProvider<MarkdownEditorCacheNotifier, String>((ref) {
+      final storage = ref.watch(localStorageServiceProvider);
+      return MarkdownEditorCacheNotifier(storage);
+    });

@@ -50,10 +50,12 @@ class _DiceBouncingCanvasState extends State<DiceBouncingCanvas> {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.orangeAccent.withOpacity(_isDiceBouncing ? 0.55 : 0.25),
+                color: Colors.orangeAccent.withOpacity(
+                  _isDiceBouncing ? 0.55 : 0.25,
+                ),
                 blurRadius: _isDiceBouncing ? 35 : 16,
                 offset: const Offset(0, 8),
-              )
+              ),
             ],
           ),
           child: Stack(
@@ -76,7 +78,10 @@ class _DiceBouncingCanvasState extends State<DiceBouncingCanvas> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: _isDiceBouncing ? 10 * 3.14159 : 0),
+                    tween: Tween(
+                      begin: 0,
+                      end: _isDiceBouncing ? 10 * 3.14159 : 0,
+                    ),
                     duration: const Duration(milliseconds: 800),
                     curve: Curves.bounceOut,
                     builder: (context, value, child) {
@@ -84,7 +89,11 @@ class _DiceBouncingCanvasState extends State<DiceBouncingCanvas> {
                         angle: value,
                         child: Transform.scale(
                           scale: _isDiceBouncing ? 1.3 : 1.0,
-                          child: Icon(Icons.casino_rounded, color: textColor, size: 76),
+                          child: Icon(
+                            Icons.casino_rounded,
+                            color: textColor,
+                            size: 76,
+                          ),
                         ),
                       );
                     },

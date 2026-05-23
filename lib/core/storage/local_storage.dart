@@ -35,7 +35,7 @@ class LocalStorageService {
 /// Provider for SharedPreferences instance (to be overridden in main.dart)
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError(
-    'SharedPreferences has not been initialized. Make sure to override sharedPreferencesProvider inside main.dart'
+    'SharedPreferences has not been initialized. Make sure to override sharedPreferencesProvider inside main.dart',
   );
 });
 

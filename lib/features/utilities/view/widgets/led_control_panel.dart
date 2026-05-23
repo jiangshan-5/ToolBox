@@ -46,10 +46,14 @@ class LedControlPanel extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color subTextColor = isDark ? Colors.white70 : Colors.black54;
-    final Color borderDividerColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+    final Color borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     return GlassCard(
-      borderColor: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+      borderColor: isDark
+          ? Colors.white.withOpacity(0.06)
+          : Colors.black.withOpacity(0.06),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -58,16 +62,24 @@ class LedControlPanel extends StatelessWidget {
             // Text Input fields
             Text(
               "编辑弹幕内容",
-              style: TextStyle(color: subTextColor, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: subTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+                color: isDark
+                    ? Colors.white.withOpacity(0.02)
+                    : Colors.black.withOpacity(0.03),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.06)
+                      : Colors.black.withOpacity(0.06),
                 ),
               ),
               child: TextField(
@@ -85,7 +97,11 @@ class LedControlPanel extends StatelessWidget {
             // Neon presets picker
             Text(
               "发光霓虹色彩",
-              style: TextStyle(color: subTextColor, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: subTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -121,7 +137,9 @@ class LedControlPanel extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.black,
                           fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+                          fontWeight: isSelected
+                              ? FontWeight.w900
+                              : FontWeight.bold,
                         ),
                       ),
                     ),
@@ -134,7 +152,11 @@ class LedControlPanel extends StatelessWidget {
             // Background styles picker
             Text(
               "背景画布特效",
-              style: TextStyle(color: subTextColor, fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: subTextColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -150,19 +172,31 @@ class LedControlPanel extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? borderDividerColor : (isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02)),
+                        color: isSelected
+                            ? borderDividerColor
+                            : (isDark
+                                  ? Colors.white.withOpacity(0.015)
+                                  : Colors.black.withOpacity(0.02)),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? Colors.cyanAccent.withOpacity(0.5) : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
+                          color: isSelected
+                              ? Colors.cyanAccent.withOpacity(0.5)
+                              : (isDark
+                                    ? Colors.white.withOpacity(0.04)
+                                    : Colors.black.withOpacity(0.04)),
                         ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         bgNames[idx],
                         style: TextStyle(
-                          color: isSelected ? Colors.cyanAccent : Colors.white60,
+                          color: isSelected
+                              ? Colors.cyanAccent
+                              : Colors.white60,
                           fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -178,8 +212,18 @@ class LedControlPanel extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("文字大小", style: TextStyle(color: subTextColor, fontSize: 12)),
-                Text("${fontSize.round()} PX", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(
+                  "文字大小",
+                  style: TextStyle(color: subTextColor, fontSize: 12),
+                ),
+                Text(
+                  "${fontSize.round()} PX",
+                  style: const TextStyle(
+                    color: Colors.cyanAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             Slider(
@@ -195,8 +239,18 @@ class LedControlPanel extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("滚动速度", style: TextStyle(color: subTextColor, fontSize: 12)),
-                Text("速度 ${scrollSpeed.toStringAsFixed(1)}", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(
+                  "滚动速度",
+                  style: TextStyle(color: subTextColor, fontSize: 12),
+                ),
+                Text(
+                  "速度 ${scrollSpeed.toStringAsFixed(1)}",
+                  style: const TextStyle(
+                    color: Colors.cyanAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             Slider(
@@ -212,8 +266,18 @@ class LedControlPanel extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("霓虹辉光半径", style: TextStyle(color: subTextColor, fontSize: 12)),
-                Text("${glowRadius.round()} Lm", style: const TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(
+                  "霓虹辉光半径",
+                  style: TextStyle(color: subTextColor, fontSize: 12),
+                ),
+                Text(
+                  "${glowRadius.round()} Lm",
+                  style: const TextStyle(
+                    color: Colors.cyanAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             Slider(
@@ -229,11 +293,18 @@ class LedControlPanel extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("呼吸闪烁频率", style: TextStyle(color: subTextColor, fontSize: 12)),
                 Text(
-                  blinkFrequency <= 0.0 ? "常亮" : "${blinkFrequency.toStringAsFixed(1)} Hz",
+                  "呼吸闪烁频率",
+                  style: TextStyle(color: subTextColor, fontSize: 12),
+                ),
+                Text(
+                  blinkFrequency <= 0.0
+                      ? "常亮"
+                      : "${blinkFrequency.toStringAsFixed(1)} Hz",
                   style: TextStyle(
-                    color: blinkFrequency <= 0 ? Colors.white30 : Colors.cyanAccent,
+                    color: blinkFrequency <= 0
+                        ? Colors.white30
+                        : Colors.cyanAccent,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),

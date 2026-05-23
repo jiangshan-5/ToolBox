@@ -11,8 +11,8 @@ class CustomConverter {
   final String name;
   final String fromUnit;
   final String toUnit;
-  final double factor;  // multiplier
-  final double offset;  // offset, e.g. x * factor + offset
+  final double factor; // multiplier
+  final double offset; // offset, e.g. x * factor + offset
 
   const CustomConverter({
     required this.id,
@@ -135,7 +135,8 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
   };
 
   ConverterNotifier(this._ref)
-      : super(ConverterState(
+    : super(
+        ConverterState(
           category: ConverterCategory.length,
           inputValue: 0.0,
           fromUnit: 'cm',
@@ -162,7 +163,8 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
           ],
           activeCustomId: '1',
           allConversionsMatrix: [],
-        )) {
+        ),
+      ) {
     _calculateMatrixComparisons(); // Init matrix
   }
 
@@ -176,28 +178,26 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
   }) {
     final list = [...state.customConverters];
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    list.add(CustomConverter(
-      id: id,
-      name: name,
-      fromUnit: fromUnit,
-      toUnit: toUnit,
-      factor: factor,
-      offset: offset,
-    ));
-    state = state.copyWith(
-      customConverters: list,
-      activeCustomId: id,
+    list.add(
+      CustomConverter(
+        id: id,
+        name: name,
+        fromUnit: fromUnit,
+        toUnit: toUnit,
+        factor: factor,
+        offset: offset,
+      ),
     );
+    state = state.copyWith(customConverters: list, activeCustomId: id);
     _performConversionInstant();
   }
 
   void removeCustomConverter(String id) {
-    final list = state.customConverters.where((element) => element.id != id).toList();
+    final list = state.customConverters
+        .where((element) => element.id != id)
+        .toList();
     String? nextActive = list.isNotEmpty ? list.first.id : null;
-    state = state.copyWith(
-      customConverters: list,
-      activeCustomId: nextActive,
-    );
+    state = state.copyWith(customConverters: list, activeCustomId: nextActive);
     _performConversionInstant();
   }
 
@@ -218,8 +218,11 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
       case ConverterCategory.area:
         return areaFactors.keys.toList();
       case ConverterCategory.sandbox:
-        if (state.activeCustomId == null || state.customConverters.isEmpty) return ['源单位', '目标单位'];
-        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
+        if (state.activeCustomId == null || state.customConverters.isEmpty)
+          return ['源单位', '目标单位'];
+        final cur = state.customConverters.firstWhere(
+          (e) => e.id == state.activeCustomId,
+        );
         return [cur.fromUnit, cur.toUnit];
     }
   }
@@ -240,7 +243,9 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
       defTo = 'mu';
     } else if (cat == ConverterCategory.sandbox) {
       if (state.customConverters.isNotEmpty) {
-        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
+        final cur = state.customConverters.firstWhere(
+          (e) => e.id == state.activeCustomId,
+        );
         defFrom = cur.fromUnit;
         defTo = cur.toUnit;
       } else {
@@ -277,18 +282,20 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
   void _logConversionUsage() {
     if (state.inputValue == 0.0) return;
     final catName = state.category.name;
-    _ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'converter',
-      parameters: {
-        'category': catName,
-        'from': state.fromUnit,
-        'to': state.toUnit,
-        'input': state.inputValue,
-        'result': state.result,
-      },
-      status: 'success',
-      durationMs: 0,
-    );
+    _ref
+        .read(toolsAnalyticsProvider)
+        .logUsage(
+          toolKey: 'converter',
+          parameters: {
+            'category': catName,
+            'from': state.fromUnit,
+            'to': state.toUnit,
+            'input': state.inputValue,
+            'result': state.result,
+          },
+          status: 'success',
+          durationMs: 0,
+        );
   }
 
   void updateFromUnit(String unit) {
@@ -327,7 +334,9 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
 
     if (cat == ConverterCategory.sandbox) {
       if (state.activeCustomId != null && state.customConverters.isNotEmpty) {
-        final cur = state.customConverters.firstWhere((e) => e.id == state.activeCustomId);
+        final cur = state.customConverters.firstWhere(
+          (e) => e.id == state.activeCustomId,
+        );
         if (from == cur.fromUnit) {
           // Forward calculation: y = x * factor + offset
           finalResult = input * cur.factor + cur.offset;
@@ -359,7 +368,8 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
     final input = state.inputValue;
     final from = state.fromUnit;
 
-    if (cat == ConverterCategory.sandbox || cat == ConverterCategory.temperature) {
+    if (cat == ConverterCategory.sandbox ||
+        cat == ConverterCategory.temperature) {
       state = state.copyWith(allConversionsMatrix: []);
       return;
     }
@@ -375,7 +385,7 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
 
     // Convert input to base standard unit value
     final double baseVal = input * factors[from]!;
-    
+
     final List<MatrixUnitItem> matrix = [];
     factors.forEach((unitKey, factor) {
       if (unitKey != from) {
@@ -389,7 +399,7 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
 
   double _convertTemperature(double value, String from, String to) {
     if (from == to) return value;
-    
+
     double tempInCelsius = 0;
     if (from == '°c') {
       tempInCelsius = value;
@@ -412,6 +422,7 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
 }
 
 /// Riverpod provider
-final converterProvider = StateNotifierProvider.autoDispose<ConverterNotifier, ConverterState>((ref) {
-  return ConverterNotifier(ref);
-});
+final converterProvider =
+    StateNotifierProvider.autoDispose<ConverterNotifier, ConverterState>((ref) {
+      return ConverterNotifier(ref);
+    });

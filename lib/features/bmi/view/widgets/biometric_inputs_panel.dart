@@ -16,15 +16,18 @@ class BmiBiometricInputsPanel extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BmiBiometricInputsPanel> createState() => _BmiBiometricInputsPanelState();
+  ConsumerState<BmiBiometricInputsPanel> createState() =>
+      _BmiBiometricInputsPanelState();
 }
 
-class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPanel> {
+class _BmiBiometricInputsPanelState
+    extends ConsumerState<BmiBiometricInputsPanel> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
   Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
-  Color get borderDividerColor => isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+  Color get borderDividerColor =>
+      isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +41,12 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
         const SizedBox(height: 16),
         _buildGenderSelector(state.gender, notifier),
         const SizedBox(height: 16),
-        _buildBiometricInputs(state.isMetric, state.age, state.activity, notifier),
+        _buildBiometricInputs(
+          state.isMetric,
+          state.age,
+          state.activity,
+          notifier,
+        ),
         const SizedBox(height: 16),
         _buildGoalSandboxConfig(state.isMetric, state.weeklyChange, notifier),
       ],
@@ -49,11 +57,20 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('体征测量单位制:', style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(
+          '体征测量单位制:',
+          style: TextStyle(
+            color: subTextColor,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         Container(
           height: 32,
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
+            color: isDark
+                ? Colors.white.withOpacity(0.015)
+                : Colors.black.withOpacity(0.02),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: borderDividerColor),
           ),
@@ -97,7 +114,9 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? const Color(0xFFFF007F) : (isDark ? Colors.white38 : Colors.black38),
+            color: isSelected
+                ? const Color(0xFFFF007F)
+                : (isDark ? Colors.white38 : Colors.black38),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 11,
           ),
@@ -120,14 +139,22 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
               decoration: BoxDecoration(
                 gradient: isMale
                     ? LinearGradient(
-                        colors: [const Color(0xFF00B0FF).withOpacity(0.12), const Color(0xFF0077FF).withOpacity(0.04)],
+                        colors: [
+                          const Color(0xFF00B0FF).withOpacity(0.12),
+                          const Color(0xFF0077FF).withOpacity(0.04),
+                        ],
                       )
                     : LinearGradient(
-                        colors: [Colors.white.withOpacity(0.01), Colors.white.withOpacity(0.01)],
+                        colors: [
+                          Colors.white.withOpacity(0.01),
+                          Colors.white.withOpacity(0.01),
+                        ],
                       ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isMale ? const Color(0xFF00B0FF).withOpacity(0.4) : borderDividerColor,
+                  color: isMale
+                      ? const Color(0xFF00B0FF).withOpacity(0.4)
+                      : borderDividerColor,
                   width: 1.5,
                 ),
                 boxShadow: isMale
@@ -136,18 +163,26 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
                           color: const Color(0xFF00B0FF).withOpacity(0.08),
                           blurRadius: 10,
                           spreadRadius: 1,
-                        )
+                        ),
                       ]
                     : null,
               ),
               child: Column(
                 children: [
-                  Icon(Icons.male_rounded, color: isMale ? const Color(0xFF00B0FF) : (isDark ? Colors.white38 : Colors.black38), size: 34),
+                  Icon(
+                    Icons.male_rounded,
+                    color: isMale
+                        ? const Color(0xFF00B0FF)
+                        : (isDark ? Colors.white38 : Colors.black38),
+                    size: 34,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     '男 性',
                     style: TextStyle(
-                      color: isMale ? const Color(0xFF00B0FF) : (isDark ? Colors.white54 : Colors.black54),
+                      color: isMale
+                          ? const Color(0xFF00B0FF)
+                          : (isDark ? Colors.white54 : Colors.black54),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -167,14 +202,22 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
               decoration: BoxDecoration(
                 gradient: !isMale
                     ? LinearGradient(
-                        colors: [const Color(0xFFFF007F).withOpacity(0.12), const Color(0xFFFF5E62).withOpacity(0.04)],
+                        colors: [
+                          const Color(0xFFFF007F).withOpacity(0.12),
+                          const Color(0xFFFF5E62).withOpacity(0.04),
+                        ],
                       )
                     : LinearGradient(
-                        colors: [Colors.white.withOpacity(0.01), Colors.white.withOpacity(0.01)],
+                        colors: [
+                          Colors.white.withOpacity(0.01),
+                          Colors.white.withOpacity(0.01),
+                        ],
                       ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: !isMale ? const Color(0xFFFF007F).withOpacity(0.4) : borderDividerColor,
+                  color: !isMale
+                      ? const Color(0xFFFF007F).withOpacity(0.4)
+                      : borderDividerColor,
                   width: 1.5,
                 ),
                 boxShadow: !isMale
@@ -183,18 +226,26 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
                           color: const Color(0xFFFF007F).withOpacity(0.08),
                           blurRadius: 10,
                           spreadRadius: 1,
-                        )
+                        ),
                       ]
                     : null,
               ),
               child: Column(
                 children: [
-                  Icon(Icons.female_rounded, color: !isMale ? const Color(0xFFFF007F) : (isDark ? Colors.white38 : Colors.black38), size: 34),
+                  Icon(
+                    Icons.female_rounded,
+                    color: !isMale
+                        ? const Color(0xFFFF007F)
+                        : (isDark ? Colors.white38 : Colors.black38),
+                    size: 34,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     '女 性',
                     style: TextStyle(
-                      color: !isMale ? const Color(0xFFFF007F) : (isDark ? Colors.white54 : Colors.black54),
+                      color: !isMale
+                          ? const Color(0xFFFF007F)
+                          : (isDark ? Colors.white54 : Colors.black54),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -208,14 +259,21 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
     );
   }
 
-  Widget _buildBiometricInputs(bool isMetric, int age, String activity, BmiNotifier notifier) {
+  Widget _buildBiometricInputs(
+    bool isMetric,
+    int age,
+    String activity,
+    BmiNotifier notifier,
+  ) {
     final heightUnit = isMetric ? 'cm' : 'inch';
     final weightUnit = isMetric ? 'kg' : 'lb';
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+        color: isDark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderDividerColor),
       ),
@@ -249,7 +307,10 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('基础新陈代谢年龄:', style: TextStyle(color: subTextColor, fontSize: 13)),
+              Text(
+                '基础新陈代谢年龄:',
+                style: TextStyle(color: subTextColor, fontSize: 13),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -258,7 +319,11 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
                 ),
                 child: Text(
                   '$age 岁',
-                  style: const TextStyle(color: Color(0xFFFF007F), fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                    color: Color(0xFFFF007F),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -266,7 +331,9 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: const Color(0xFFFF007F),
-              inactiveTrackColor: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+              inactiveTrackColor: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.black.withOpacity(0.06),
               thumbColor: const Color(0xFFFF007F),
               overlayColor: const Color(0xFFFF007F).withOpacity(0.15),
               valueIndicatorColor: const Color(0xFFFF007F),
@@ -298,7 +365,9 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
+        color: isDark
+            ? Colors.white.withOpacity(0.015)
+            : Colors.black.withOpacity(0.02),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderDividerColor),
       ),
@@ -306,7 +375,11 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
       child: TextFormField(
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 15),
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
         decoration: InputDecoration(
           labelText: '$label ($unit)',
           labelStyle: TextStyle(color: faintTextColor, fontSize: 12),
@@ -342,17 +415,23 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFFF007F).withOpacity(0.12) : Colors.white.withOpacity(0.01),
+                    color: isSel
+                        ? const Color(0xFFFF007F).withOpacity(0.12)
+                        : Colors.white.withOpacity(0.01),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSel ? const Color(0xFFFF007F).withOpacity(0.4) : borderDividerColor,
+                      color: isSel
+                          ? const Color(0xFFFF007F).withOpacity(0.4)
+                          : borderDividerColor,
                     ),
                   ),
                   child: Center(
                     child: Text(
                       act,
                       style: TextStyle(
-                        color: isSel ? const Color(0xFFFF007F) : (isDark ? Colors.white54 : Colors.black54),
+                        color: isSel
+                            ? const Color(0xFFFF007F)
+                            : (isDark ? Colors.white54 : Colors.black54),
                         fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                         fontSize: 12,
                       ),
@@ -367,7 +446,11 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
     );
   }
 
-  Widget _buildGoalSandboxConfig(bool isMetric, double weeklyChange, BmiNotifier notifier) {
+  Widget _buildGoalSandboxConfig(
+    bool isMetric,
+    double weeklyChange,
+    BmiNotifier notifier,
+  ) {
     final weightUnit = isMetric ? 'kg' : 'lb';
     final state = ref.watch(bmiProvider);
     final activeGoal = state.activeGoal;
@@ -375,7 +458,9 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+        color: isDark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderDividerColor),
       ),
@@ -385,19 +470,34 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('健身目标规划:', style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(
+                '健身目标规划:',
+                style: TextStyle(
+                  color: subTextColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               Container(
                 width: 100,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.015)
+                      : Colors.black.withOpacity(0.02),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderDividerColor),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: TextFormField(
                   controller: widget.targetWeightController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                   decoration: InputDecoration(
                     labelText: '目标 ($weightUnit)',
                     labelStyle: TextStyle(color: faintTextColor, fontSize: 8),
@@ -411,11 +511,23 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
           const SizedBox(height: 14),
           Row(
             children: [
-              _buildGoalChip('减脂 (Cut)', activeGoal == 'cut', () => notifier.setGoal('cut')),
+              _buildGoalChip(
+                '减脂 (Cut)',
+                activeGoal == 'cut',
+                () => notifier.setGoal('cut'),
+              ),
               const SizedBox(width: 8),
-              _buildGoalChip('维持 (Maintain)', activeGoal == 'maintain', () => notifier.setGoal('maintain')),
+              _buildGoalChip(
+                '维持 (Maintain)',
+                activeGoal == 'maintain',
+                () => notifier.setGoal('maintain'),
+              ),
               const SizedBox(width: 8),
-              _buildGoalChip('增肌 (Bulk)', activeGoal == 'bulk', () => notifier.setGoal('bulk')),
+              _buildGoalChip(
+                '增肌 (Bulk)',
+                activeGoal == 'bulk',
+                () => notifier.setGoal('bulk'),
+              ),
             ],
           ),
           if (activeGoal != 'maintain') ...[
@@ -429,14 +541,20 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
                 ),
                 Text(
                   '${weeklyChange.toStringAsFixed(2)} $weightUnit/周',
-                  style: const TextStyle(color: Color(0xFFFF007F), fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                    color: Color(0xFFFF007F),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
             SliderTheme(
               data: SliderThemeData(
                 activeTrackColor: const Color(0xFFFF007F),
-                inactiveTrackColor: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                inactiveTrackColor: isDark
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.black.withOpacity(0.06),
                 thumbColor: const Color(0xFFFF007F),
                 overlayColor: const Color(0xFFFF007F).withOpacity(0.15),
                 valueIndicatorColor: const Color(0xFFFF007F),
@@ -464,17 +582,23 @@ class _BmiBiometricInputsPanelState extends ConsumerState<BmiBiometricInputsPane
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFF007F).withOpacity(0.12) : Colors.white.withOpacity(0.01),
+            color: isSelected
+                ? const Color(0xFFFF007F).withOpacity(0.12)
+                : Colors.white.withOpacity(0.01),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? const Color(0xFFFF007F).withOpacity(0.4) : borderDividerColor,
+              color: isSelected
+                  ? const Color(0xFFFF007F).withOpacity(0.4)
+                  : borderDividerColor,
             ),
           ),
           child: Center(
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? const Color(0xFFFF007F) : (isDark ? Colors.white54 : Colors.black54),
+                color: isSelected
+                    ? const Color(0xFFFF007F)
+                    : (isDark ? Colors.white54 : Colors.black54),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 11,
               ),

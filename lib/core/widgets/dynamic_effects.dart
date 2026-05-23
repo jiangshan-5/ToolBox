@@ -17,7 +17,8 @@ class ScaleOnTap extends StatefulWidget {
   State<ScaleOnTap> createState() => _ScaleOnTapState();
 }
 
-class _ScaleOnTapState extends State<ScaleOnTap> with SingleTickerProviderStateMixin {
+class _ScaleOnTapState extends State<ScaleOnTap>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -31,10 +32,7 @@ class _ScaleOnTapState extends State<ScaleOnTap> with SingleTickerProviderStateM
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: widget.scaleFactor,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -54,10 +52,7 @@ class _ScaleOnTapState extends State<ScaleOnTap> with SingleTickerProviderStateM
           widget.onTap?.call();
         },
         onTapCancel: () => _controller.reverse(),
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: widget.child,
-        ),
+        child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
       ),
     );
   }
@@ -102,13 +97,13 @@ class _HoverGlowCardState extends State<HoverGlowCard> {
           borderRadius: widget.borderRadius,
           boxShadow: [
             BoxShadow(
-              color: _isHovered 
-                  ? widget.glowColor.withOpacity(0.25) 
+              color: _isHovered
+                  ? widget.glowColor.withOpacity(0.25)
                   : widget.glowColor.withOpacity(0.02),
               blurRadius: _isHovered ? 25 : 10,
               spreadRadius: _isHovered ? 4 : 0,
               offset: Offset(0, _isHovered ? 12 : 4),
-            )
+            ),
           ],
         ),
         child: widget.child,
@@ -134,7 +129,8 @@ class StaggerEntrance extends StatefulWidget {
   State<StaggerEntrance> createState() => _StaggerEntranceState();
 }
 
-class _StaggerEntranceState extends State<StaggerEntrance> with SingleTickerProviderStateMixin {
+class _StaggerEntranceState extends State<StaggerEntrance>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacity;
   late Animation<Offset> _slide;
@@ -147,13 +143,15 @@ class _StaggerEntranceState extends State<StaggerEntrance> with SingleTickerProv
       duration: const Duration(milliseconds: 500),
     );
 
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _slide = Tween<Offset>(begin: const Offset(0.0, 0.25), end: Offset.zero).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _slide = Tween<Offset>(
+      begin: const Offset(0.0, 0.25),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     Future.delayed(widget.delayStep * widget.index, () {
       if (mounted) {
@@ -172,10 +170,7 @@ class _StaggerEntranceState extends State<StaggerEntrance> with SingleTickerProv
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _opacity,
-      child: SlideTransition(
-        position: _slide,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }
@@ -185,17 +180,14 @@ class PulseGlow extends StatefulWidget {
   final Widget child;
   final Color color;
 
-  const PulseGlow({
-    super.key,
-    required this.child,
-    required this.color,
-  });
+  const PulseGlow({super.key, required this.child, required this.color});
 
   @override
   State<PulseGlow> createState() => _PulseGlowState();
 }
 
-class _PulseGlowState extends State<PulseGlow> with SingleTickerProviderStateMixin {
+class _PulseGlowState extends State<PulseGlow>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _glowRadius;
 
@@ -207,9 +199,10 @@ class _PulseGlowState extends State<PulseGlow> with SingleTickerProviderStateMix
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
 
-    _glowRadius = Tween<double>(begin: 8.0, end: 24.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _glowRadius = Tween<double>(
+      begin: 8.0,
+      end: 24.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -232,7 +225,7 @@ class _PulseGlowState extends State<PulseGlow> with SingleTickerProviderStateMix
                 blurRadius: _glowRadius.value,
                 spreadRadius: _glowRadius.value / 4.0,
                 offset: const Offset(0, 4),
-              )
+              ),
             ],
           ),
           child: widget.child,

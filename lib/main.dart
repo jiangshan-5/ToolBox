@@ -13,9 +13,7 @@ void main() async {
 
   runApp(
     ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const ToolboxApp(),
     ),
   );
@@ -49,8 +47,8 @@ class AuthWrapper extends ConsumerWidget {
       transitionBuilder: (Widget child, Animation<double> animation) {
         return FadeTransition(opacity: animation, child: child);
       },
-      child: authState.isAuthenticated 
-          ? const DashboardScreen(key: ValueKey('Dashboard')) 
+      child: authState.isAuthenticated
+          ? const DashboardScreen(key: ValueKey('Dashboard'))
           : const LoginScreen(key: ValueKey('Login')),
     );
   }

@@ -35,15 +35,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     await ref.read(authProvider.notifier).login(email, password);
-    
+
     if (mounted) {
       final error = ref.read(authProvider).error;
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error), 
-            backgroundColor: Colors.redAccent,
-          ),
+          SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -94,33 +91,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Text(
                         '欢迎回来',
                         style: TextStyle(
-                          fontSize: 28, 
-                          fontWeight: FontWeight.bold, 
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
                           color: colors.onSurface,
                           letterSpacing: 1.5,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '登录您的 Toolbox Pro 账户', 
-                        style: TextStyle(color: colors.onSurface.withOpacity(0.6), fontSize: 14),
+                        '登录您的 Toolbox Pro 账户',
+                        style: TextStyle(
+                          color: colors.onSurface.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.secondary.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.secondary.withOpacity(0.3)),
+                          border: Border.all(
+                            color: colors.secondary.withOpacity(0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline_rounded, color: colors.secondary, size: 18),
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: colors.secondary,
+                              size: 18,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 "📱 真机调试提示：请确保手机与电脑在同一 Wi-Fi，并点击右上角 🌐 图标配置电脑局域网后端 IP 以正常连接。",
-                                style: TextStyle(color: colors.onSurface.withOpacity(0.75), fontSize: 11, height: 1.4),
+                                style: TextStyle(
+                                  color: colors.onSurface.withOpacity(0.75),
+                                  fontSize: 11,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
                           ],
@@ -163,10 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [
-              colors.primary,
-              colors.secondary,
-            ],
+            colors: [colors.primary, colors.secondary],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -179,16 +189,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ],
         ),
         alignment: Alignment.center,
-        child: _isLoading 
+        child: _isLoading
             ? SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(color: colors.onPrimary, strokeWidth: 2),
-              ) 
+                child: CircularProgressIndicator(
+                  color: colors.onPrimary,
+                  strokeWidth: 2,
+                ),
+              )
             : Text(
-                '登 录', 
+                '登 录',
                 style: TextStyle(
-                  fontSize: 16, 
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: colors.onPrimary,
                   letterSpacing: 2.0,
@@ -204,15 +217,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         ScaleOnTap(
           onTap: () => Navigator.push(
-            context, 
+            context,
             MaterialPageRoute(builder: (_) => const RegisterScreen()),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
-              "还没有账户？立即注册", 
+              "还没有账户？立即注册",
               style: TextStyle(
-                color: colors.onSurface.withOpacity(0.7), 
+                color: colors.onSurface.withOpacity(0.7),
                 fontSize: 14,
                 decoration: TextDecoration.underline,
               ),
@@ -238,9 +251,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Icon(Icons.bolt_rounded, color: colors.secondary, size: 18),
                 const SizedBox(width: 6),
                 Text(
-                  "游客快捷体验 (免登录)", 
+                  "游客快捷体验 (免登录)",
                   style: TextStyle(
-                    color: colors.secondary, 
+                    color: colors.secondary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     letterSpacing: 0.5,
@@ -304,7 +317,7 @@ class _CyberInputState extends State<_CyberInput> {
         color: colors.onSurface.withOpacity(_isFocused ? 0.08 : 0.04),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isFocused 
+          color: _isFocused
               ? colors.primary
               : colors.onSurface.withOpacity(0.08),
           width: _isFocused ? 1.5 : 1.0,
@@ -327,15 +340,22 @@ class _CyberInputState extends State<_CyberInput> {
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: _isFocused ? colors.primary : colors.onSurface.withOpacity(0.55),
+            color: _isFocused
+                ? colors.primary
+                : colors.onSurface.withOpacity(0.55),
             fontSize: 14,
           ),
           prefixIcon: Icon(
             widget.icon,
-            color: _isFocused ? colors.primary : colors.onSurface.withOpacity(0.50),
+            color: _isFocused
+                ? colors.primary
+                : colors.onSurface.withOpacity(0.50),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );

@@ -31,7 +31,9 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
   void initState() {
     super.initState();
     try {
-      _accelerometerSubscription = accelerometerEventStream().listen((AccelerometerEvent event) {
+      _accelerometerSubscription = accelerometerEventStream().listen((
+        AccelerometerEvent event,
+      ) {
         if (mounted) {
           setState(() {
             // Cap the max tilt to prevent extreme flips
@@ -60,7 +62,7 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
     final matrix = Matrix4.identity()
       ..setEntry(3, 2, 0.001) // perspective
       ..rotateX(-_pitch) // tilt up/down
-      ..rotateY(-_roll);  // tilt left/right
+      ..rotateY(-_roll); // tilt left/right
 
     return TweenAnimationBuilder(
       tween: Matrix4Tween(begin: Matrix4.identity(), end: matrix),

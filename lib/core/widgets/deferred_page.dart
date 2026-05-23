@@ -8,17 +8,14 @@ class DeferredPage extends StatefulWidget {
   final Widget child;
   final String title;
 
-  const DeferredPage({
-    super.key,
-    required this.child,
-    required this.title,
-  });
+  const DeferredPage({super.key, required this.child, required this.title});
 
   @override
   State<DeferredPage> createState() => _DeferredPageState();
 }
 
-class _DeferredPageState extends State<DeferredPage> with SingleTickerProviderStateMixin {
+class _DeferredPageState extends State<DeferredPage>
+    with SingleTickerProviderStateMixin {
   bool _isTransitionComplete = false;
   Animation<double>? _routeAnimation;
 
@@ -95,14 +92,15 @@ class _DeferredPageState extends State<DeferredPage> with SingleTickerProviderSt
       body: Stack(
         children: [
           Positioned.fill(
-            child: DynamicBackground(
-              child: const SizedBox.expand(),
-            ),
+            child: DynamicBackground(child: const SizedBox.expand()),
           ),
           // Skeleton placeholders
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10.0,
+              ),
               child: Column(
                 children: [
                   const SizedBox(height: 20),
@@ -172,7 +170,8 @@ class _ShimmerContainer extends StatefulWidget {
   State<_ShimmerContainer> createState() => _ShimmerContainerState();
 }
 
-class _ShimmerContainerState extends State<_ShimmerContainer> with SingleTickerProviderStateMixin {
+class _ShimmerContainerState extends State<_ShimmerContainer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -184,9 +183,10 @@ class _ShimmerContainerState extends State<_ShimmerContainer> with SingleTickerP
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: 0.03, end: 0.12).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.03,
+      end: 0.12,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -205,12 +205,14 @@ class _ShimmerContainerState extends State<_ShimmerContainer> with SingleTickerP
           height: widget.height,
           margin: widget.margin,
           decoration: BoxDecoration(
-            color: isDark 
+            color: isDark
                 ? Colors.white.withOpacity(_animation.value)
                 : Colors.black.withOpacity(_animation.value),
             borderRadius: widget.borderRadius,
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+              color: isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : Colors.black.withOpacity(0.04),
               width: 1.0,
             ),
           ),

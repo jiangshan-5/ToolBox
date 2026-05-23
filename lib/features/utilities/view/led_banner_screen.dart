@@ -18,13 +18,17 @@ class LedBannerScreen extends ConsumerStatefulWidget {
   ConsumerState<LedBannerScreen> createState() => _LedBannerScreenState();
 }
 
-class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerProviderStateMixin {
+class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
+    with TickerProviderStateMixin {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
-  Color get borderDividerColor => isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+  Color get borderDividerColor =>
+      isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 
-  final TextEditingController _textController = TextEditingController(text: "CYBERPUNK NEON LED BANNER 🚀");
+  final TextEditingController _textController = TextEditingController(
+    text: "CYBERPUNK NEON LED BANNER 🚀",
+  );
 
   double _fontSize = 64.0;
   double _scrollSpeed = 3.0; // 1 (Slow) to 10 (Fast)
@@ -48,7 +52,7 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
 
   // Full Screen State
   bool _isFullscreen = false;
-  
+
   // Blink state
   bool _blinkVisible = true;
   Timer? _blinkTimer;
@@ -90,19 +94,21 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
 
   void _logTelemetry() {
     try {
-      ref.read(toolsAnalyticsProvider).logUsage(
-        toolKey: 'led_banner',
-        parameters: {
-          'font_size': _fontSize.round(),
-          'scroll_speed': _scrollSpeed,
-          'glow_radius': _glowRadius.round(),
-          'blink_frequency': _blinkFrequency,
-          'color_theme': _colorNames[_selectedColorIndex],
-          'bg_theme': _bgNames[_selectedBgIndex],
-        },
-        status: 'success',
-        durationMs: 0,
-      );
+      ref
+          .read(toolsAnalyticsProvider)
+          .logUsage(
+            toolKey: 'led_banner',
+            parameters: {
+              'font_size': _fontSize.round(),
+              'scroll_speed': _scrollSpeed,
+              'glow_radius': _glowRadius.round(),
+              'blink_frequency': _blinkFrequency,
+              'color_theme': _colorNames[_selectedColorIndex],
+              'bg_theme': _bgNames[_selectedBgIndex],
+            },
+            status: 'success',
+            durationMs: 0,
+          );
     } catch (_) {}
   }
 
@@ -145,14 +151,15 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
             onTap: _exitFullscreen,
             child: Stack(
               children: [
-                Positioned.fill(
-                  child: _buildBannerView(isFullscreen: true),
-                ),
+                Positioned.fill(child: _buildBannerView(isFullscreen: true)),
                 Positioned(
                   top: 20,
                   right: 20,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
@@ -161,7 +168,11 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.fullscreen_exit_rounded, color: subTextColor, size: 16),
+                        Icon(
+                          Icons.fullscreen_exit_rounded,
+                          color: subTextColor,
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           "轻触屏幕退出全屏",
@@ -184,16 +195,27 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'LED 手持弹幕',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.fullscreen_rounded, color: Colors.cyanAccent, size: 28),
+            icon: const Icon(
+              Icons.fullscreen_rounded,
+              color: Colors.cyanAccent,
+              size: 28,
+            ),
             tooltip: "进入全屏模式",
             onPressed: _enterFullscreen,
           ),
@@ -205,7 +227,11 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF090714), Color(0xFF0F0B22), Color(0xFF040308)],
+                colors: [
+                  Color(0xFF090714),
+                  Color(0xFF0F0B22),
+                  Color(0xFF040308),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -218,7 +244,11 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
               children: [
                 Text(
                   '📺 实时效果预览',
-                  style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 ClipRRect(
@@ -231,7 +261,8 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                       border: Border.all(color: borderDividerColor),
                       boxShadow: [
                         BoxShadow(
-                          color: _neonGradients[_selectedColorIndex][0].withOpacity(0.1),
+                          color: _neonGradients[_selectedColorIndex][0]
+                              .withOpacity(0.1),
                           blurRadius: 20,
                           spreadRadius: -5,
                         ),
@@ -243,7 +274,11 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                 const SizedBox(height: 20),
                 Text(
                   '⚙️ 弹幕参数配置',
-                  style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 LedControlPanel(
@@ -251,15 +286,20 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                   fontSize: _fontSize,
                   onFontSizeChanged: (val) => setState(() => _fontSize = val),
                   scrollSpeed: _scrollSpeed,
-                  onScrollSpeedChanged: (val) => setState(() => _scrollSpeed = val),
+                  onScrollSpeedChanged: (val) =>
+                      setState(() => _scrollSpeed = val),
                   glowRadius: _glowRadius,
-                  onGlowRadiusChanged: (val) => setState(() => _glowRadius = val),
+                  onGlowRadiusChanged: (val) =>
+                      setState(() => _glowRadius = val),
                   blinkFrequency: _blinkFrequency,
-                  onBlinkFrequencyChanged: (val) => setState(() => _blinkFrequency = val),
+                  onBlinkFrequencyChanged: (val) =>
+                      setState(() => _blinkFrequency = val),
                   selectedColorIndex: _selectedColorIndex,
-                  onColorIndexChanged: (idx) => setState(() => _selectedColorIndex = idx),
+                  onColorIndexChanged: (idx) =>
+                      setState(() => _selectedColorIndex = idx),
                   selectedBgIndex: _selectedBgIndex,
-                  onBgIndexChanged: (idx) => setState(() => _selectedBgIndex = idx),
+                  onBgIndexChanged: (idx) =>
+                      setState(() => _selectedBgIndex = idx),
                   neonGradients: _neonGradients,
                   colorNames: _colorNames,
                   bgNames: _bgNames,
@@ -288,11 +328,19 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.fullscreen_rounded, color: Colors.black, size: 20),
+                        Icon(
+                          Icons.fullscreen_rounded,
+                          color: Colors.black,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           "💫 开启全屏沉浸播放 (横屏模式)",
-                          style: TextStyle(color: Colors.black, fontSize: 13.5, fontWeight: FontWeight.w900),
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ],
                     ),
@@ -310,15 +358,15 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
   Widget _buildBannerView({required bool isFullscreen}) {
     return Stack(
       children: [
-        Positioned.fill(
-          child: _buildBgDecoration(),
-        ),
+        Positioned.fill(child: _buildBgDecoration()),
         Positioned.fill(
           child: ClipRect(
             child: Opacity(
               opacity: _blinkVisible ? 1.0 : 0.0,
               child: LedMarqueeWidget(
-                text: _textController.text.isEmpty ? "输入一些内容" : _textController.text,
+                text: _textController.text.isEmpty
+                    ? "输入一些内容"
+                    : _textController.text,
                 fontSize: isFullscreen ? _fontSize * 1.5 : _fontSize * 0.7,
                 speedMultiplier: _scrollSpeed,
                 glowColor: _neonGradients[_selectedColorIndex][0],
@@ -338,7 +386,9 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen> with TickerPr
     } else if (_selectedBgIndex == 1) {
       return CustomPaint(
         painter: GridMatrixPainter(
-          dotColor: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+          dotColor: isDark
+              ? Colors.white.withOpacity(0.03)
+              : Colors.black.withOpacity(0.03),
         ),
       );
     } else {

@@ -25,7 +25,11 @@ class DevJsonSpacingOptions extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.space_bar_rounded, color: Colors.purpleAccent, size: 18),
+                const Icon(
+                  Icons.space_bar_rounded,
+                  color: Colors.purpleAccent,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   "JSON 缩进空格数",
@@ -40,9 +44,14 @@ class DevJsonSpacingOptions extends StatelessWidget {
                   onTap: () => onJsonSpacingChanged(spaces),
                   child: Container(
                     margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: active ? Colors.purpleAccent.withOpacity(0.15) : Colors.transparent,
+                      color: active
+                          ? Colors.purpleAccent.withOpacity(0.15)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: active ? Colors.purpleAccent : Colors.white10,
@@ -53,7 +62,9 @@ class DevJsonSpacingOptions extends StatelessWidget {
                       style: TextStyle(
                         color: active ? Colors.purpleAccent : Colors.white30,
                         fontSize: 11,
-                        fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: active
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),

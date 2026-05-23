@@ -144,7 +144,8 @@ class ThemeConfig {
       customPrimary: customPrimary ?? this.customPrimary,
       customSecondary: customSecondary ?? this.customSecondary,
       customSurface: customSurface ?? this.customSurface,
-      customSurfaceContainer: customSurfaceContainer ?? this.customSurfaceContainer,
+      customSurfaceContainer:
+          customSurfaceContainer ?? this.customSurfaceContainer,
       customIsDark: customIsDark ?? this.customIsDark,
     );
   }
@@ -152,14 +153,16 @@ class ThemeConfig {
 
 class ThemeNotifier extends StateNotifier<ThemeConfig> {
   ThemeNotifier()
-      : super(ThemeConfig(
+    : super(
+        ThemeConfig(
           type: AppThemeType.cyberpunkDark,
           customPrimary: const Color(0xFF7C4DFF),
           customSecondary: const Color(0xFF18FFFF),
           customSurface: const Color(0xFF0A0714),
           customSurfaceContainer: const Color(0xFF130F24),
           customIsDark: true,
-        )) {
+        ),
+      ) {
     _loadThemeSettings();
   }
 
@@ -170,15 +173,27 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
       final customPrimaryVal = prefs.getInt('theme_custom_primary');
       final customSecondaryVal = prefs.getInt('theme_custom_secondary');
       final customSurfaceVal = prefs.getInt('theme_custom_surface');
-      final customSurfaceContainerVal = prefs.getInt('theme_custom_surface_container');
+      final customSurfaceContainerVal = prefs.getInt(
+        'theme_custom_surface_container',
+      );
       final customIsDarkVal = prefs.getBool('theme_custom_is_dark');
 
       state = ThemeConfig(
-        type: typeIndex != null ? AppThemeType.values[typeIndex] : AppThemeType.cyberpunkDark,
-        customPrimary: customPrimaryVal != null ? Color(customPrimaryVal) : const Color(0xFF7C4DFF),
-        customSecondary: customSecondaryVal != null ? Color(customSecondaryVal) : const Color(0xFF18FFFF),
-        customSurface: customSurfaceVal != null ? Color(customSurfaceVal) : const Color(0xFF0A0714),
-        customSurfaceContainer: customSurfaceContainerVal != null ? Color(customSurfaceContainerVal) : const Color(0xFF130F24),
+        type: typeIndex != null
+            ? AppThemeType.values[typeIndex]
+            : AppThemeType.cyberpunkDark,
+        customPrimary: customPrimaryVal != null
+            ? Color(customPrimaryVal)
+            : const Color(0xFF7C4DFF),
+        customSecondary: customSecondaryVal != null
+            ? Color(customSecondaryVal)
+            : const Color(0xFF18FFFF),
+        customSurface: customSurfaceVal != null
+            ? Color(customSurfaceVal)
+            : const Color(0xFF0A0714),
+        customSurfaceContainer: customSurfaceContainerVal != null
+            ? Color(customSurfaceContainerVal)
+            : const Color(0xFF130F24),
         customIsDark: customIsDarkVal ?? true,
       );
     } catch (_) {}
@@ -201,16 +216,22 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
     final newSecondary = secondary ?? state.customSecondary;
     final newSurface = surface ?? state.customSurface;
     final newIsDark = isDark ?? state.customIsDark;
-    
+
     // Derive surface container if not provided
     final Color newSurfaceContainer;
     if (surfaceContainer != null) {
       newSurfaceContainer = surfaceContainer;
     } else {
       if (newIsDark) {
-        newSurfaceContainer = Color.alphaBlend(Colors.white.withOpacity(0.06), newSurface);
+        newSurfaceContainer = Color.alphaBlend(
+          Colors.white.withOpacity(0.06),
+          newSurface,
+        );
       } else {
-        newSurfaceContainer = Color.alphaBlend(Colors.black.withOpacity(0.06), newSurface);
+        newSurfaceContainer = Color.alphaBlend(
+          Colors.black.withOpacity(0.06),
+          newSurface,
+        );
       }
     }
 
@@ -228,7 +249,10 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
     await prefs.setInt('theme_custom_primary', newPrimary.value);
     await prefs.setInt('theme_custom_secondary', newSecondary.value);
     await prefs.setInt('theme_custom_surface', newSurface.value);
-    await prefs.setInt('theme_custom_surface_container', newSurfaceContainer.value);
+    await prefs.setInt(
+      'theme_custom_surface_container',
+      newSurfaceContainer.value,
+    );
     await prefs.setBool('theme_custom_is_dark', newIsDark);
   }
 }

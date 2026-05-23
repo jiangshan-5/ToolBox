@@ -20,7 +20,8 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
   Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
-  Color get borderDividerColor => isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+  Color get borderDividerColor =>
+      isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
@@ -42,10 +43,9 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
     }
 
     ref.read(bmiProvider.notifier).setTargetWeight(tw);
-    final success = await ref.read(bmiProvider.notifier).runBiometricAnalysis(
-      heightInput: h,
-      weightInput: w,
-    );
+    final success = await ref
+        .read(bmiProvider.notifier)
+        .runBiometricAnalysis(heightInput: h, weightInput: w);
 
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +75,12 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
       appBar: AppBar(
         title: Text(
           '体征与宏量营养沙盒',
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 0.8),
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            letterSpacing: 0.8,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -84,7 +89,10 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Theme.of(context).colorScheme.surface.withOpacity(0.8), Colors.transparent],
+              colors: [
+                Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                Colors.transparent,
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -98,7 +106,10 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -132,18 +143,27 @@ class _BmiScreenState extends ConsumerState<BmiScreen> {
                             ? SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(color: textColor, strokeWidth: 2.5),
+                                child: CircularProgressIndicator(
+                                  color: textColor,
+                                  strokeWidth: 2.5,
+                                ),
                               )
                             : const Text(
                                 '立即唤起体征诊断引擎',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   const BmiMacrosSandboxPanel(),
-                  if (state.bmi != null && state.bmr != null && state.tdee != null) ...[
+                  if (state.bmi != null &&
+                      state.bmr != null &&
+                      state.tdee != null) ...[
                     const BmiResultDashboardPanel(),
                   ],
                   const SizedBox(height: 20),

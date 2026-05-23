@@ -37,9 +37,10 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
   void initState() {
     super.initState();
     _inputController.addListener(_processInput);
-    
+
     // Initial seed input just to make it interesting
-    _inputController.text = '{"name": "Cyber Toolbox", "version": "1.0", "status": "online"}';
+    _inputController.text =
+        '{"name": "Cyber Toolbox", "version": "1.0", "status": "online"}';
   }
 
   @override
@@ -119,7 +120,8 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
             } else {
               dt = DateTime.fromMillisecondsSinceEpoch(val);
             }
-            result = '本地时间 (Local Time):\n${dt.toLocal().toString()}\n\nUTC 时间 (UTC Time):\n${dt.toUtc().toIso8601String()}';
+            result =
+                '本地时间 (Local Time):\n${dt.toLocal().toString()}\n\nUTC 时间 (UTC Time):\n${dt.toUtc().toIso8601String()}';
           } else {
             final parsed = DateTime.tryParse(trimmed);
             if (parsed == null) {
@@ -127,7 +129,8 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
             }
             final sec = parsed.millisecondsSinceEpoch ~/ 1000;
             final ms = parsed.millisecondsSinceEpoch;
-            result = '秒级时间戳 (Seconds):\n$sec\n\n毫秒级时间戳 (Milliseconds):\n$ms\n\nISO 8601 格式:\n${parsed.toUtc().toIso8601String()}';
+            result =
+                '秒级时间戳 (Seconds):\n$sec\n\n毫秒级时间戳 (Milliseconds):\n$ms\n\nISO 8601 格式:\n${parsed.toUtc().toIso8601String()}';
           }
           break;
         case 'json_format':
@@ -181,22 +184,24 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
 
   void _debounceTelemetry() {
     final now = DateTime.now();
-    if (_lastLoggedOp != _activeOperation || 
-        _lastLoggedTime == null || 
+    if (_lastLoggedOp != _activeOperation ||
+        _lastLoggedTime == null ||
         now.difference(_lastLoggedTime!).inSeconds > 5) {
       _lastLoggedOp = _activeOperation;
       _lastLoggedTime = now;
       try {
-        ref.read(toolsAnalyticsProvider).logUsage(
-          toolKey: 'dev_encoder',
-          parameters: {
-            'operation': _activeOperation,
-            'input_length': _inputController.text.length,
-            'output_length': _outputController.text.length,
-          },
-          status: 'success',
-          durationMs: 0,
-        );
+        ref
+            .read(toolsAnalyticsProvider)
+            .logUsage(
+              toolKey: 'dev_encoder',
+              parameters: {
+                'operation': _activeOperation,
+                'input_length': _inputController.text.length,
+                'output_length': _outputController.text.length,
+              },
+              status: 'success',
+              durationMs: 0,
+            );
       } catch (_) {}
     }
   }
@@ -211,8 +216,10 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     if (inputBytes > 0 && outputBytes > 0) {
       deltaRatio = ((outputBytes - inputBytes) / inputBytes) * 100;
     }
-    
-    final activeOp = devOperations.firstWhere((element) => element.key == _activeOperation);
+
+    final activeOp = devOperations.firstWhere(
+      (element) => element.key == _activeOperation,
+    );
     final activeOpColor = activeOp.color;
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWide = screenWidth > 800;
@@ -223,12 +230,19 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           '开发者沙盒编码盒',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
       body: Stack(
@@ -236,7 +250,11 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF070B19), Color(0xFF0F1532), Color(0xFF04060C)],
+                colors: [
+                  Color(0xFF070B19),
+                  Color(0xFF0F1532),
+                  Color(0xFF04060C),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

@@ -2,7 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/local_storage.dart';
 
 class AiConfigState {
-  final String provider; // 'siliconflow', 'deepseek', 'gemini', 'openai', 'mock'
+  final String
+  provider; // 'siliconflow', 'deepseek', 'gemini', 'openai', 'mock'
   final String apiKey;
   final String baseUrl;
   final String model;
@@ -33,12 +34,14 @@ class AiConfigNotifier extends StateNotifier<AiConfigState> {
   final LocalStorageService _storage;
 
   AiConfigNotifier(this._storage)
-      : super(AiConfigState(
+    : super(
+        AiConfigState(
           provider: _storage.getString('ai_provider') ?? 'mock',
           apiKey: _storage.getString('ai_api_key') ?? '',
           baseUrl: _storage.getString('ai_base_url') ?? '',
           model: _storage.getString('ai_model') ?? '',
-        ));
+        ),
+      );
 
   Future<void> updateConfig({
     required String provider,
@@ -65,17 +68,14 @@ class AiConfigNotifier extends StateNotifier<AiConfigState> {
     await _storage.setString('ai_base_url', '');
     await _storage.setString('ai_model', '');
 
-    state = AiConfigState(
-      provider: 'mock',
-      apiKey: '',
-      baseUrl: '',
-      model: '',
-    );
+    state = AiConfigState(provider: 'mock', apiKey: '', baseUrl: '', model: '');
   }
 }
 
 /// Global AI Configuration provider
-final aiConfigProvider = StateNotifierProvider<AiConfigNotifier, AiConfigState>((ref) {
-  final storage = ref.watch(localStorageServiceProvider);
-  return AiConfigNotifier(storage);
-});
+final aiConfigProvider = StateNotifierProvider<AiConfigNotifier, AiConfigState>(
+  (ref) {
+    final storage = ref.watch(localStorageServiceProvider);
+    return AiConfigNotifier(storage);
+  },
+);

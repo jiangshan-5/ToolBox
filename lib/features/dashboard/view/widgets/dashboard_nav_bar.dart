@@ -52,7 +52,12 @@ class DashboardNavBar extends StatelessWidget {
               children: [
                 _buildNavItem(context, 0, Icons.grid_view_rounded, '工作台'),
                 _buildNavItem(context, 1, Icons.analytics_rounded, '数据分析站'),
-                _buildNavItem(context, 2, Icons.manage_accounts_rounded, '个人中心'),
+                _buildNavItem(
+                  context,
+                  2,
+                  Icons.manage_accounts_rounded,
+                  '个人中心',
+                ),
               ],
             ),
           ),
@@ -61,7 +66,12 @@ class DashboardNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, int index, IconData icon, String label) {
+  Widget _buildNavItem(
+    BuildContext context,
+    int index,
+    IconData icon,
+    String label,
+  ) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
     final isDark = theme.brightness == Brightness.dark;

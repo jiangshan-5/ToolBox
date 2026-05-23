@@ -17,10 +17,7 @@ class WeightedOption {
     required this.weight,
   });
 
-  WeightedOption copyWith({
-    String? text,
-    double? weight,
-  }) {
+  WeightedOption copyWith({String? text, double? weight}) {
     return WeightedOption(
       id: id,
       text: text ?? this.text,
@@ -41,11 +38,7 @@ class CustomRange {
     required this.active,
   });
 
-  CustomRange copyWith({
-    int? min,
-    int? max,
-    bool? active,
-  }) {
+  CustomRange copyWith({int? min, int? max, bool? active}) {
     return CustomRange(
       min: min ?? this.min,
       max: max ?? this.max,
@@ -57,7 +50,7 @@ class CustomRange {
 /// Comprehensive State keeping all custom sandbox attributes
 class RandomizerState {
   final RandomizerMode mode;
-  
+
   // 1. COMBINATORIAL NUMBER SANDBOX
   final List<CustomRange> customRanges;
   final int generateCount;
@@ -140,7 +133,8 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
   final _random = Random();
 
   RandomizerNotifier(this._ref)
-      : super(RandomizerState(
+    : super(
+        RandomizerState(
           mode: RandomizerMode.number,
           customRanges: [
             const CustomRange(min: 1, max: 10, active: true),
@@ -165,7 +159,8 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
           customDiceLabels: '大吉, 中吉, 小吉, 平, 凶, 大凶',
           diceRollResults: [],
           isGenerating: false,
-        ));
+        ),
+      );
 
   void setMode(RandomizerMode mode) => state = state.copyWith(mode: mode);
 
@@ -189,7 +184,8 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
   }
 
   void setGenerateCount(int val) => state = state.copyWith(generateCount: val);
-  void setAllowDuplicates(bool val) => state = state.copyWith(allowDuplicates: val);
+  void setAllowDuplicates(bool val) =>
+      state = state.copyWith(allowDuplicates: val);
   void setPrefix(String val) => state = state.copyWith(prefix: val);
   void setSuffix(String val) => state = state.copyWith(suffix: val);
   void setPadLeft(int val) => state = state.copyWith(padLeft: val);
@@ -203,7 +199,9 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
   }
 
   void removeWeightedOption(String id) {
-    final options = state.weightedOptions.where((element) => element.id != id).toList();
+    final options = state.weightedOptions
+        .where((element) => element.id != id)
+        .toList();
     state = state.copyWith(weightedOptions: options);
   }
 
@@ -225,15 +223,21 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
 
   // 3. DICE SETTERS
   void setDiceSides(int val) => state = state.copyWith(diceSides: val);
-  void setCustomDiceLabels(String val) => state = state.copyWith(customDiceLabels: val);
+  void setCustomDiceLabels(String val) =>
+      state = state.copyWith(customDiceLabels: val);
 
   /// --- ALGORITHMS ---
 
   /// Dynamic mathematical calculation of current probabilities
   double getProbabilityOfOption(String id) {
-    final total = state.weightedOptions.fold<double>(0.0, (sum, item) => sum + item.weight);
+    final total = state.weightedOptions.fold<double>(
+      0.0,
+      (sum, item) => sum + item.weight,
+    );
     if (total == 0.0) return 0.0;
-    final target = state.weightedOptions.firstWhere((element) => element.id == id);
+    final target = state.weightedOptions.firstWhere(
+      (element) => element.id == id,
+    );
     return (target.weight / total) * 100.0;
   }
 
@@ -303,18 +307,23 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
     state = state.copyWith(formattedResults: formatted, isGenerating: false);
 
     // DB logs
-    _ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'randomizer',
-      parameters: {
-        'mode': 'combinatorial',
-        'active_ranges': state.customRanges.where((e) => e.active).map((e) => '[${e.min},${e.max}]').toList(),
-        'allow_duplicates': state.allowDuplicates,
-        'pad_left': state.padLeft,
-        'results': formatted,
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
+    _ref
+        .read(toolsAnalyticsProvider)
+        .logUsage(
+          toolKey: 'randomizer',
+          parameters: {
+            'mode': 'combinatorial',
+            'active_ranges': state.customRanges
+                .where((e) => e.active)
+                .map((e) => '[${e.min},${e.max}]')
+                .toList(),
+            'allow_duplicates': state.allowDuplicates,
+            'pad_left': state.padLeft,
+            'results': formatted,
+          },
+          status: 'success',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
   }
 
   /// Run weighted decision extraction using probability proportional to size (PPS)
@@ -333,8 +342,11 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
 
     for (int i = 0; i < needCount; i++) {
       if (pool.isEmpty) break;
-      
-      final double totalWeight = pool.fold(0.0, (sum, element) => sum + element.weight);
+
+      final double totalWeight = pool.fold(
+        0.0,
+        (sum, element) => sum + element.weight,
+      );
       if (totalWeight <= 0) {
         // Fallback: simple uniform draw
         final idx = _random.nextInt(pool.length);
@@ -366,17 +378,19 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
       isGenerating: false,
     );
 
-    _ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'randomizer',
-      parameters: {
-        'mode': 'weighted',
-        'options_count': state.weightedOptions.length,
-        'draw_count': needCount,
-        'drawn': state.drawnOptions,
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
+    _ref
+        .read(toolsAnalyticsProvider)
+        .logUsage(
+          toolKey: 'randomizer',
+          parameters: {
+            'mode': 'weighted',
+            'options_count': state.weightedOptions.length,
+            'draw_count': needCount,
+            'drawn': state.drawnOptions,
+          },
+          status: 'success',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
   }
 
   /// Roll custom dice (either multi-sided standard dice, or custom text label dice!)
@@ -405,25 +419,27 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
     }
 
     stopwatch.stop();
-    state = state.copyWith(
-      diceRollResults: results,
-      isGenerating: false,
-    );
+    state = state.copyWith(diceRollResults: results, isGenerating: false);
 
-    _ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'randomizer',
-      parameters: {
-        'mode': 'custom_dice',
-        'is_text_dice': labels.isNotEmpty,
-        'roll_outcome': results,
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
+    _ref
+        .read(toolsAnalyticsProvider)
+        .logUsage(
+          toolKey: 'randomizer',
+          parameters: {
+            'mode': 'custom_dice',
+            'is_text_dice': labels.isNotEmpty,
+            'roll_outcome': results,
+          },
+          status: 'success',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
   }
 }
 
 /// Riverpod provider for the Sandboxed Randomizer
-final randomizerProvider = StateNotifierProvider.autoDispose<RandomizerNotifier, RandomizerState>((ref) {
-  return RandomizerNotifier(ref);
-});
+final randomizerProvider =
+    StateNotifierProvider.autoDispose<RandomizerNotifier, RandomizerState>((
+      ref,
+    ) {
+      return RandomizerNotifier(ref);
+    });

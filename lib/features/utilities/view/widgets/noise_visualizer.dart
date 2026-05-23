@@ -22,7 +22,9 @@ class NoiseVisualizer extends StatelessWidget {
     return GlassCard(
       glowColor: isMixerPlaying
           ? Colors.cyanAccent
-          : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
+          : (isDark
+                ? Colors.white.withOpacity(0.04)
+                : Colors.black.withOpacity(0.04)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
@@ -79,7 +81,9 @@ class NoiseVisualizer extends StatelessWidget {
                 IconButton(
                   iconSize: 42,
                   icon: Icon(
-                    isMixerPlaying ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
+                    isMixerPlaying
+                        ? Icons.stop_circle_rounded
+                        : Icons.play_circle_fill_rounded,
                     color: Colors.cyanAccent,
                   ),
                   onPressed: onToggleMixerPlay,

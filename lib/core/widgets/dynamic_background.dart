@@ -12,7 +12,8 @@ class DynamicBackground extends ConsumerStatefulWidget {
   ConsumerState<DynamicBackground> createState() => _DynamicBackgroundState();
 }
 
-class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with SingleTickerProviderStateMixin {
+class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -51,10 +52,8 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
       return Stack(
         children: [
           // Solid Backdrop
-          Container(
-            color: surfaceColor,
-          ),
-          
+          Container(color: surfaceColor),
+
           // Floating Mesh Gradients (Static positions)
           Positioned(
             top: -50,
@@ -94,7 +93,7 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
               ),
             ),
           ),
-          
+
           // Foreground Content
           widget.child,
         ],
@@ -106,10 +105,8 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
       return Stack(
         children: [
           // Solid Backdrop
-          Container(
-            color: surfaceColor,
-          ),
-          
+          Container(color: surfaceColor),
+
           // Floating Mesh Gradients
           AnimatedBuilder(
             animation: _controller,
@@ -136,7 +133,8 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
                     ),
                   ),
                   Positioned(
-                    bottom: -100 + math.cos(_controller.value * 2 * math.pi) * 80,
+                    bottom:
+                        -100 + math.cos(_controller.value * 2 * math.pi) * 80,
                     right: -50 + math.sin(_controller.value * 2 * math.pi) * 80,
                     child: Container(
                       width: MediaQuery.of(context).size.width * 1.2,
@@ -146,7 +144,9 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
                         color: secondaryColor.withOpacity(secondaryOpacity),
                         boxShadow: [
                           BoxShadow(
-                            color: secondaryColor.withOpacity(secondaryGlowOpacity),
+                            color: secondaryColor.withOpacity(
+                              secondaryGlowOpacity,
+                            ),
                             blurRadius: 200,
                             spreadRadius: 150,
                           ),
@@ -158,7 +158,7 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground> with Sing
               );
             },
           ),
-          
+
           // Foreground Content
           widget.child,
         ],

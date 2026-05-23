@@ -57,7 +57,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final response = await _apiClient.instance.get('/auth/me');
         final userProfile = response.data['profile'];
         final nickname = userProfile != null ? userProfile['nickname'] : null;
-        state = AuthState(isAuthenticated: true, email: email, nickname: nickname);
+        state = AuthState(
+          isAuthenticated: true,
+          email: email,
+          nickname: nickname,
+        );
       } catch (e) {
         // If expired or network error fails auth checks, wipe session
         await TokenManager.clearSession();
@@ -83,10 +87,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final response = await _apiClient.instance.post(
         '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       final token = response.data['access_token'] as String;
@@ -96,9 +97,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final nickname = userProfile != null ? userProfile['nickname'] : null;
 
       // Persist credentials securely
-      await TokenManager.saveSession(accessToken: token, refreshToken: refreshToken, email: responseEmail);
+      await TokenManager.saveSession(
+        accessToken: token,
+        refreshToken: refreshToken,
+        email: responseEmail,
+      );
 
-      state = AuthState(isAuthenticated: true, email: responseEmail, nickname: nickname);
+      state = AuthState(
+        isAuthenticated: true,
+        email: responseEmail,
+        nickname: nickname,
+      );
     } on DioException catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -129,11 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final response = await _apiClient.instance.post(
         '/auth/register',
-        data: {
-          'email': email,
-          'password': password,
-          'code': code,
-        },
+        data: {'email': email, 'password': password, 'code': code},
       );
 
       final token = response.data['access_token'] as String;
@@ -143,9 +148,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final nickname = userProfile != null ? userProfile['nickname'] : null;
 
       // Persist session
-      await TokenManager.saveSession(accessToken: token, refreshToken: refreshToken, email: responseEmail);
+      await TokenManager.saveSession(
+        accessToken: token,
+        refreshToken: refreshToken,
+        email: responseEmail,
+      );
 
-      state = AuthState(isAuthenticated: true, email: responseEmail, nickname: nickname);
+      state = AuthState(
+        isAuthenticated: true,
+        email: responseEmail,
+        nickname: nickname,
+      );
     } on DioException catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -173,7 +186,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(nickname: nickname ?? state.nickname);
       return true;
     } on DioException catch (e) {
-      state = state.copyWith(error: e.response?.data['detail'] ?? 'Failed to update profile');
+      state = state.copyWith(
+        error: e.response?.data['detail'] ?? 'Failed to update profile',
+      );
       return false;
     } catch (e) {
       state = state.copyWith(error: 'An unexpected error occurred.');
@@ -193,9 +208,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final response = await _apiClient.instance.post(
         '/auth/register/send-code',
-        data: {
-          'email': email,
-        },
+        data: {'email': email},
       );
       state = state.copyWith(isLoading: false);
       return response.data['detail'] as String?;
@@ -231,10 +244,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _apiClient.instance.put(
         '/auth/change-password',
-        data: {
-          'old_password': oldPassword,
-          'new_password': newPassword,
-        },
+        data: {'old_password': oldPassword, 'new_password': newPassword},
       );
       state = state.copyWith(isLoading: false);
       return true;
@@ -254,11 +264,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> loginAsGuest() async {
     // Clear old registered user sessions to prevent header pollution
     await TokenManager.clearSession();
-    state = AuthState(
-      isAuthenticated: true,
-      email: null,
-      nickname: "游客",
-    );
+    state = AuthState(isAuthenticated: true, email: null, nickname: "游客");
   }
 
   /// Session teardown
@@ -266,7 +272,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Clear state and storage immediately for instant UI feedback
     await TokenManager.clearSession();
     state = AuthState(isAuthenticated: false);
-    
+
     try {
       // Fire backend logout in background without awaiting or blocking UI
       _apiClient.instance.post('/auth/logout').ignore();

@@ -11,7 +11,9 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final subTextColor = isDark ? Colors.white70 : Colors.black54;
     final faintTextColor = isDark ? Colors.white38 : Colors.black38;
-    final borderDividerColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+    final borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     final state = ref.watch(bmiProvider);
     final notifier = ref.read(bmiProvider.notifier);
@@ -32,7 +34,9 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+        color: isDark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderDividerColor),
       ),
@@ -41,11 +45,19 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.restaurant_menu_rounded, color: Color(0xFFFF8C00), size: 18),
+              const Icon(
+                Icons.restaurant_menu_rounded,
+                color: Color(0xFFFF8C00),
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Text(
                 '三大营养素分配比重沙盒',
-                style: TextStyle(color: subTextColor, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                  color: subTextColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -56,25 +68,43 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               children: presets.map((p) {
-                final isCurrent = proteinPercent == p['p'] &&
+                final isCurrent =
+                    proteinPercent == p['p'] &&
                     carbPercent == p['c'] &&
                     fatPercent == p['f'];
                 return ScaleOnTap(
-                  onTap: () => notifier.setMacrosRatios(p['p'] as int, p['c'] as int, p['f'] as int),
+                  onTap: () => notifier.setMacrosRatios(
+                    p['p'] as int,
+                    p['c'] as int,
+                    p['f'] as int,
+                  ),
                   child: Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: isCurrent ? const Color(0xFFFF8C00).withOpacity(0.2) : Colors.white.withOpacity(0.01),
+                      color: isCurrent
+                          ? const Color(0xFFFF8C00).withOpacity(0.2)
+                          : Colors.white.withOpacity(0.01),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: isCurrent ? const Color(0xFFFF8C00).withOpacity(0.6) : borderDividerColor),
+                      border: Border.all(
+                        color: isCurrent
+                            ? const Color(0xFFFF8C00).withOpacity(0.6)
+                            : borderDividerColor,
+                      ),
                     ),
                     child: Center(
                       child: Text(
                         p['title'] as String,
                         style: TextStyle(
-                          color: isCurrent ? const Color(0xFFFF8C00) : (isDark ? Colors.white54 : Colors.black54),
-                          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                          color: isCurrent
+                              ? const Color(0xFFFF8C00)
+                              : (isDark ? Colors.white54 : Colors.black54),
+                          fontWeight: isCurrent
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 11,
                         ),
                       ),
@@ -93,7 +123,8 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
             label: '🍗 蛋白质 (Protein %)',
             value: proteinPercent,
             color: const Color(0xFFFF8C00),
-            onChanged: (v) => notifier.setMacrosRatios(v, carbPercent, fatPercent),
+            onChanged: (v) =>
+                notifier.setMacrosRatios(v, carbPercent, fatPercent),
           ),
           _buildMacroSliderRow(
             isDark: isDark,
@@ -101,7 +132,8 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
             label: '🍞 碳水化合物 (Carbs %)',
             value: carbPercent,
             color: const Color(0xFF00E5FF),
-            onChanged: (v) => notifier.setMacrosRatios(proteinPercent, v, fatPercent),
+            onChanged: (v) =>
+                notifier.setMacrosRatios(proteinPercent, v, fatPercent),
           ),
           _buildMacroSliderRow(
             isDark: isDark,
@@ -109,17 +141,23 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
             label: '🥑 脂肪 (Fats %)',
             value: fatPercent,
             color: const Color(0xFF00E676),
-            onChanged: (v) => notifier.setMacrosRatios(proteinPercent, carbPercent, v),
+            onChanged: (v) =>
+                notifier.setMacrosRatios(proteinPercent, carbPercent, v),
           ),
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('配比占比总和:', style: TextStyle(color: faintTextColor, fontSize: 12)),
+              Text(
+                '配比占比总和:',
+                style: TextStyle(color: faintTextColor, fontSize: 12),
+              ),
               Text(
                 '$total% / 100%',
                 style: TextStyle(
-                  color: isBalanced ? const Color(0xFF00E676) : const Color(0xFFFF5252),
+                  color: isBalanced
+                      ? const Color(0xFF00E676)
+                      : const Color(0xFFFF5252),
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -144,7 +182,9 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(7),
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+        color: isDark
+            ? Colors.white.withOpacity(0.05)
+            : Colors.black.withOpacity(0.05),
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -152,23 +192,17 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
           if (protein > 0)
             Expanded(
               flex: (pWeight * 100).toInt(),
-              child: Container(
-                color: const Color(0xFFFF8C00),
-              ),
+              child: Container(color: const Color(0xFFFF8C00)),
             ),
           if (carb > 0)
             Expanded(
               flex: (cWeight * 100).toInt(),
-              child: Container(
-                color: const Color(0xFF00E5FF),
-              ),
+              child: Container(color: const Color(0xFF00E5FF)),
             ),
           if (fat > 0)
             Expanded(
               flex: (fWeight * 100).toInt(),
-              child: Container(
-                color: const Color(0xFF00E676),
-              ),
+              child: Container(color: const Color(0xFF00E676)),
             ),
         ],
       ),
@@ -192,13 +226,22 @@ class BmiMacrosSandboxPanel extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label, style: TextStyle(color: subTextColor, fontSize: 12)),
-              Text('$value%', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(
+                '$value%',
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
             ],
           ),
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: color,
-              inactiveTrackColor: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+              inactiveTrackColor: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.black.withOpacity(0.06),
               thumbColor: color,
               overlayColor: color.withOpacity(0.15),
               trackHeight: 3,

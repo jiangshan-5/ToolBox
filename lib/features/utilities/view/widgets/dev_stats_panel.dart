@@ -41,7 +41,9 @@ class DevStatsPanel extends StatelessWidget {
                 "${deltaRatio >= 0 ? '+' : ''}${deltaRatio.toStringAsFixed(1)}%",
                 deltaRatio == 0
                     ? Colors.white54
-                    : (deltaRatio < 0 ? Colors.greenAccent : Colors.amberAccent),
+                    : (deltaRatio < 0
+                          ? Colors.greenAccent
+                          : Colors.amberAccent),
               ),
             ),
             const SizedBox(width: 12),
@@ -72,10 +74,14 @@ class DevStatsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
+        color: isDark
+            ? Colors.white.withOpacity(0.015)
+            : Colors.black.withOpacity(0.02),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+          color: isDark
+              ? Colors.white.withOpacity(0.04)
+              : Colors.black.withOpacity(0.04),
         ),
       ),
       child: Column(

@@ -17,7 +17,7 @@ class ApiClient {
 
   /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
   /// Defaults to [kReleaseMode] to use the live cloud server for release builds.
-  static const bool useLiveServer = kReleaseMode;
+  static const bool useLiveServer = true;
 
   /// Dynamic Base URL detection for seamless emulator/simulator local debugging
   static String get defaultBaseUrl {
@@ -39,10 +39,7 @@ class ApiClient {
 
   ApiClient({String? baseUrl}) : _baseUrl = baseUrl ?? defaultBaseUrl {
     _refreshDio = Dio(
-      BaseOptions(
-        baseUrl: _baseUrl,
-        contentType: Headers.jsonContentType,
-      ),
+      BaseOptions(baseUrl: _baseUrl, contentType: Headers.jsonContentType),
     );
     _dio = Dio(
       BaseOptions(
@@ -70,10 +67,9 @@ class ApiClient {
               !requestPath.contains('/auth/login') &&
               !requestPath.contains('/auth/register') &&
               !requestPath.contains('/auth/refresh')) {
-            
             final refreshToken = await TokenManager.getRefreshToken();
             final email = await TokenManager.getEmail();
-            
+
             if (refreshToken != null && email != null) {
               var completer = _refreshCompleter;
               if (completer == null) {
@@ -85,24 +81,26 @@ class ApiClient {
                     '/auth/refresh',
                     data: {'refresh_token': refreshToken},
                   );
-                  
-                  final newAccessToken = refreshResponse.data['access_token'] as String;
-                  final newRefreshToken = refreshResponse.data['refresh_token'] as String;
-                  
+
+                  final newAccessToken =
+                      refreshResponse.data['access_token'] as String;
+                  final newRefreshToken =
+                      refreshResponse.data['refresh_token'] as String;
+
                   // Save newly rotated tokens
                   await TokenManager.saveSession(
                     accessToken: newAccessToken,
                     refreshToken: newRefreshToken,
                     email: email,
                   );
-                  
+
                   completer.complete(newAccessToken);
                 } catch (refreshError) {
                   completer.complete(null);
-                  
+
                   // Token refresh failed (e.g. revoked or expired) -> Wipe session
                   await TokenManager.clearSession();
-                  
+
                   // Trigger global authentication failure callback
                   onAuthFailure?.call();
                 } finally {
@@ -115,7 +113,7 @@ class ApiClient {
                 // Replay the original failed request with the new access token
                 final options = error.requestOptions;
                 options.headers['Authorization'] = 'Bearer $newAccessToken';
-                
+
                 final response = await _dio.fetch(options);
                 return handler.resolve(response);
               } else {
@@ -132,7 +130,7 @@ class ApiClient {
 
           // Cleanly extract custom error messages set by FastAPI detail fields
           String message = "网络连接失败，请检查网络设置并稍后重试";
-          
+
           if (error.response != null) {
             final data = error.response?.data;
             if (data is Map && data.containsKey('detail')) {
@@ -142,11 +140,11 @@ class ApiClient {
             } else {
               message = "服务器处理出错 (状态码: ${error.response?.statusCode})";
             }
-          } else if (error.type == DioExceptionType.connectionTimeout || 
-                     error.type == DioExceptionType.receiveTimeout) {
+          } else if (error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.receiveTimeout) {
             message = "请求连接超时，请检查网络连接";
           }
-          
+
           // Inject friendly description directly into error entity
           final customException = DioException(
             requestOptions: error.requestOptions,
@@ -154,7 +152,7 @@ class ApiClient {
             type: error.type,
             error: message,
           );
-          
+
           return handler.next(customException);
         },
       ),

@@ -19,12 +19,14 @@ class WhiteNoiseScreen extends ConsumerStatefulWidget {
   ConsumerState<WhiteNoiseScreen> createState() => _WhiteNoiseScreenState();
 }
 
-class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with TickerProviderStateMixin {
+class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
+    with TickerProviderStateMixin {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
   Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
-  Color get borderDividerColor => isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+  Color get borderDividerColor =>
+      isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 
   // Screen Tabs: 'breathing' vs 'mixer'
   String _activeTab = 'breathing';
@@ -93,7 +95,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
   // Breathing modes: '4-7-8', 'box', 'equal'
   String _activeBreathingMode = '4-7-8';
   bool _isBreathingActive = false;
-  
+
   // Rhythmic phases
   String _breathingPhase = 'inhale'; // inhale, hold, exhale, hold2 (for box)
   int _breathingSecondsRemaining = 0;
@@ -101,7 +103,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
   Timer? _bubbleSmoothTimer; // High frequency timer for smooth bubble scaling
   double _bubbleScale = 1.0;
   double _elapsedFraction = 0.0; // Current state elapsed fractional progress
-  
+
   // Cumulative parameters
   int _completedCycles = 0;
   final Map<String, Map<String, dynamic>> _breathingConfigs = {
@@ -158,15 +160,14 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
   // ===========================================================================
   void _logMeditationTelemetry(String type, Map<String, dynamic> extras) {
     try {
-      ref.read(toolsAnalyticsProvider).logUsage(
-        toolKey: 'white_noise',
-        parameters: {
-          'action': type,
-          ...extras,
-        },
-        status: 'success',
-        durationMs: 0,
-      );
+      ref
+          .read(toolsAnalyticsProvider)
+          .logUsage(
+            toolKey: 'white_noise',
+            parameters: {'action': type, ...extras},
+            status: 'success',
+            durationMs: 0,
+          );
     } catch (_) {}
   }
 
@@ -198,7 +199,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
   void _triggerSleepFading() {
     _sleepTimer?.cancel();
     _stopBreathingCoach();
-    
+
     // Smoothly silence channels
     setState(() {
       _isMixerPlaying = false;
@@ -237,7 +238,10 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
         }
         _startVisualizerAnimation();
         _logMeditationTelemetry('mixer_start', {
-          'active_channels': _channelActive.entries.where((e) => e.value).map((e) => e.key).toList(),
+          'active_channels': _channelActive.entries
+              .where((e) => e.value)
+              .map((e) => e.key)
+              .toList(),
         });
       } else {
         _visualizerTimer?.cancel();
@@ -264,7 +268,9 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
 
   void _startVisualizerAnimation() {
     _visualizerTimer?.cancel();
-    _visualizerTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    _visualizerTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) {
       if (!_isMixerPlaying) {
         timer.cancel();
         return;
@@ -278,7 +284,9 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
             activeCount++;
           }
         }
-        final double volumeAvg = activeCount > 0 ? (totalVolumeWeight / activeCount) : 0.0;
+        final double volumeAvg = activeCount > 0
+            ? (totalVolumeWeight / activeCount)
+            : 0.0;
         final double maxWaveHeight = 8.0 + (volumeAvg * 34.0);
         for (var i = 0; i < _visualizerHeights.length; i++) {
           _visualizerHeights[i] = 3.0 + _random.nextDouble() * maxWaveHeight;
@@ -310,8 +318,10 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
       _completedCycles = 0;
       _elapsedFraction = 0.0;
     });
-    _logMeditationTelemetry('breathing_coach_start', {'mode': _activeBreathingMode});
-    
+    _logMeditationTelemetry('breathing_coach_start', {
+      'mode': _activeBreathingMode,
+    });
+
     _breathingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
       if (_breathingSecondsRemaining > 1) {
@@ -329,7 +339,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
             _completedCycles++;
           });
         }
-        
+
         setState(() {
           _breathingPhase = nextPhase;
           _breathingSecondsRemaining = durations[nextPhase]!;
@@ -339,36 +349,46 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
 
     const int updatePeriodMs = 40;
     int elapsedTicks = 0;
-    
-    _bubbleSmoothTimer = Timer.periodic(Duration(milliseconds: updatePeriodMs), (timer) {
-      if (!mounted || !_isBreathingActive) {
-        timer.cancel();
-        return;
-      }
-      
-      final currentDuration = durations[_breathingPhase]!;
-      elapsedTicks = (elapsedTicks + updatePeriodMs);
-      final currentSecondsElapsed = currentDuration - _breathingSecondsRemaining;
-      
-      setState(() {
-        final double ratio = (currentSecondsElapsed + (elapsedTicks % 1000) / 1000.0) / currentDuration;
-        _elapsedFraction = ratio.clamp(0.0, 1.0);
-        switch (_breathingPhase) {
-          case 'inhale':
-            _bubbleScale = 1.0 + (0.8 * _elapsedFraction);
-            break;
-          case 'hold':
-            _bubbleScale = 1.8 + sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.03;
-            break;
-          case 'exhale':
-            _bubbleScale = 1.8 - (0.8 * _elapsedFraction);
-            break;
-          case 'hold2':
-            _bubbleScale = 1.0 + sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.01;
-            break;
+
+    _bubbleSmoothTimer = Timer.periodic(
+      Duration(milliseconds: updatePeriodMs),
+      (timer) {
+        if (!mounted || !_isBreathingActive) {
+          timer.cancel();
+          return;
         }
-      });
-    });
+
+        final currentDuration = durations[_breathingPhase]!;
+        elapsedTicks = (elapsedTicks + updatePeriodMs);
+        final currentSecondsElapsed =
+            currentDuration - _breathingSecondsRemaining;
+
+        setState(() {
+          final double ratio =
+              (currentSecondsElapsed + (elapsedTicks % 1000) / 1000.0) /
+              currentDuration;
+          _elapsedFraction = ratio.clamp(0.0, 1.0);
+          switch (_breathingPhase) {
+            case 'inhale':
+              _bubbleScale = 1.0 + (0.8 * _elapsedFraction);
+              break;
+            case 'hold':
+              _bubbleScale =
+                  1.8 +
+                  sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.03;
+              break;
+            case 'exhale':
+              _bubbleScale = 1.8 - (0.8 * _elapsedFraction);
+              break;
+            case 'hold2':
+              _bubbleScale =
+                  1.0 +
+                  sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.01;
+              break;
+          }
+        });
+      },
+    );
   }
 
   void _stopBreathingCoach() {
@@ -393,12 +413,19 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           '律动呼吸与多声道白噪音',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
       body: Stack(
@@ -406,7 +433,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF070514), Color(0xFF0F0B24), Color(0xFF030206)],
+                colors: [
+                  Color(0xFF070514),
+                  Color(0xFF0F0B24),
+                  Color(0xFF030206),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -423,7 +454,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
                   _buildBreathingTab()
                 else
                   _buildMixerTab(),
-                
+
                 const SizedBox(height: 24),
                 _buildSleepTimerPanel(),
                 const SizedBox(height: 28),
@@ -440,9 +471,15 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+        color: isDark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -451,12 +488,14 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
               onTap: () => setState(() => _activeTab = 'breathing'),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _activeTab == 'breathing' 
+                  color: _activeTab == 'breathing'
                       ? Colors.purpleAccent.withOpacity(0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _activeTab == 'breathing' ? Colors.purpleAccent : Colors.transparent,
+                    color: _activeTab == 'breathing'
+                        ? Colors.purpleAccent
+                        : Colors.transparent,
                     width: 1.2,
                   ),
                 ),
@@ -467,15 +506,21 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
                     Icon(
                       Icons.spa_rounded,
                       size: 16,
-                      color: _activeTab == 'breathing' ? Colors.purpleAccent : Colors.white54,
+                      color: _activeTab == 'breathing'
+                          ? Colors.purpleAccent
+                          : Colors.white54,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '呼吸律动冥想',
                       style: TextStyle(
-                        color: _activeTab == 'breathing' ? Colors.white : Colors.white54,
+                        color: _activeTab == 'breathing'
+                            ? Colors.white
+                            : Colors.white54,
                         fontSize: 12.5,
-                        fontWeight: _activeTab == 'breathing' ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: _activeTab == 'breathing'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -488,12 +533,14 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
               onTap: () => setState(() => _activeTab = 'mixer'),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _activeTab == 'mixer' 
+                  color: _activeTab == 'mixer'
                       ? Colors.cyanAccent.withOpacity(0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _activeTab == 'mixer' ? Colors.cyanAccent : Colors.transparent,
+                    color: _activeTab == 'mixer'
+                        ? Colors.cyanAccent
+                        : Colors.transparent,
                     width: 1.2,
                   ),
                 ),
@@ -504,15 +551,21 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
                     Icon(
                       Icons.hearing_rounded,
                       size: 16,
-                      color: _activeTab == 'mixer' ? Colors.cyanAccent : Colors.white54,
+                      color: _activeTab == 'mixer'
+                          ? Colors.cyanAccent
+                          : Colors.white54,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '声景多路混音',
                       style: TextStyle(
-                        color: _activeTab == 'mixer' ? Colors.white : Colors.white54,
+                        color: _activeTab == 'mixer'
+                            ? Colors.white
+                            : Colors.white54,
                         fontSize: 12.5,
-                        fontWeight: _activeTab == 'mixer' ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: _activeTab == 'mixer'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -544,7 +597,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
         const SizedBox(height: 20),
         Text(
           '🧘 调息减压模式配置',
-          style: TextStyle(color: textColor, fontSize: 13.5, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: textColor,
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         Column(
@@ -566,12 +623,18 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isSelected 
+                  color: isSelected
                       ? modeColor.withOpacity(0.08)
-                      : (isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02)),
+                      : (isDark
+                            ? Colors.white.withOpacity(0.015)
+                            : Colors.black.withOpacity(0.02)),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isSelected ? modeColor.withOpacity(0.4) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                    color: isSelected
+                        ? modeColor.withOpacity(0.4)
+                        : (isDark
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.black.withOpacity(0.05)),
                     width: 1.2,
                   ),
                 ),
@@ -581,7 +644,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: isSelected ? modeColor.withOpacity(0.15) : (isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03)),
+                        color: isSelected
+                            ? modeColor.withOpacity(0.15)
+                            : (isDark
+                                  ? Colors.white.withOpacity(0.02)
+                                  : Colors.black.withOpacity(0.03)),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -606,7 +673,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
                           const SizedBox(height: 4),
                           Text(
                             config['desc'],
-                            style: TextStyle(color: faintTextColor, fontSize: 10, height: 1.3),
+                            style: TextStyle(
+                              color: faintTextColor,
+                              fontSize: 10,
+                              height: 1.3,
+                            ),
                           ),
                         ],
                       ),
@@ -633,7 +704,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
         const SizedBox(height: 20),
         Text(
           '🎧 混音多声道列表 (自定义音量百分比)',
-          style: TextStyle(color: textColor, fontSize: 13.5, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: textColor,
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
         Column(
@@ -667,25 +742,42 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
       children: [
         Text(
           '💤 专注休眠倒计时停止器',
-          style: TextStyle(color: textColor, fontSize: 13.5, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: textColor,
+            fontSize: 13.5,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+            color: isDark
+                ? Colors.white.withOpacity(0.02)
+                : Colors.black.withOpacity(0.03),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.black.withOpacity(0.06),
+            ),
           ),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('定时静音状态', style: TextStyle(color: subTextColor, fontSize: 12)),
+                  Text(
+                    '定时静音状态',
+                    style: TextStyle(color: subTextColor, fontSize: 12),
+                  ),
                   Text(
                     _formatSleepTimer(),
-                    style: const TextStyle(color: Colors.purpleAccent, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.purpleAccent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -714,10 +806,18 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen> with Ticker
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.12) : (isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03)),
+          color: isSelected
+              ? color.withOpacity(0.12)
+              : (isDark
+                    ? Colors.white.withOpacity(0.02)
+                    : Colors.black.withOpacity(0.03)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.5) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+            color: isSelected
+                ? color.withOpacity(0.5)
+                : (isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.05)),
           ),
         ),
         child: Text(

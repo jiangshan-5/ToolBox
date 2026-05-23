@@ -10,7 +10,8 @@ class WorldClockScreen extends ConsumerStatefulWidget {
   ConsumerState<WorldClockScreen> createState() => _WorldClockScreenState();
 }
 
-class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with SingleTickerProviderStateMixin {
+class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late Timer _clockTimer;
   DateTime _now = DateTime.now();
@@ -26,7 +27,7 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
+
     // Update Clock every second
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
@@ -98,22 +99,26 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
     // Log telemetry when a pomodoro WORK cycle completes
     if (wasWorkCycle) {
       try {
-        ref.read(toolsAnalyticsProvider).logUsage(
-          toolKey: 'world_clock',
-          parameters: {
-            'event': 'pomodoro_cycle_complete',
-            'total_cycles': _totalCompletedCycles,
-          },
-          status: 'success',
-          durationMs: 1500000, // 25 minutes in ms
-        );
+        ref
+            .read(toolsAnalyticsProvider)
+            .logUsage(
+              toolKey: 'world_clock',
+              parameters: {
+                'event': 'pomodoro_cycle_complete',
+                'total_cycles': _totalCompletedCycles,
+              },
+              status: 'success',
+              durationMs: 1500000, // 25 minutes in ms
+            );
       } catch (_) {}
     }
 
     // Notify user with standard snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isBreakTime ? '🎉 专注时间结束！进入 5 分钟小憩吧' : '💪 休息结束！开启下一轮专注工作'),
+        content: Text(
+          _isBreakTime ? '🎉 专注时间结束！进入 5 分钟小憩吧' : '💪 休息结束！开启下一轮专注工作',
+        ),
         backgroundColor: Colors.purpleAccent,
       ),
     );
@@ -133,12 +138,19 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           '时区对照与极智番茄钟',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -157,7 +169,11 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0C091F), Color(0xFF140F2D), Color(0xFF06050C)],
+                colors: [
+                  Color(0xFF0C091F),
+                  Color(0xFF140F2D),
+                  Color(0xFF06050C),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -166,10 +182,7 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
           SafeArea(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildWorldClockTab(),
-                _buildPomodoroTab(),
-              ],
+              children: [_buildWorldClockTab(), _buildPomodoroTab()],
             ),
           ),
         ],
@@ -192,13 +205,15 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
   }
 
   Widget _buildClockItem(String location, DateTime baseTime, int offsetHours) {
-    final DateTime targetTime = baseTime.toUtc().add(Duration(hours: offsetHours));
-    
+    final DateTime targetTime = baseTime.toUtc().add(
+      Duration(hours: offsetHours),
+    );
+
     final String hourStr = targetTime.hour.toString().padLeft(2, '0');
     final String minuteStr = targetTime.minute.toString().padLeft(2, '0');
     final String secondStr = targetTime.second.toString().padLeft(2, '0');
     final String timeStr = '$hourStr:$minuteStr:$secondStr';
-    
+
     final String yearStr = targetTime.year.toString();
     final String monthStr = targetTime.month.toString().padLeft(2, '0');
     final String dayStr = targetTime.day.toString().padLeft(2, '0');
@@ -220,7 +235,11 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
             children: [
               Text(
                 location,
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -273,7 +292,9 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
                   Text(
                     _isBreakTime ? '休息中...' : '专注中...',
                     style: TextStyle(
-                      color: _isBreakTime ? Colors.greenAccent : Colors.purpleAccent,
+                      color: _isBreakTime
+                          ? Colors.greenAccent
+                          : Colors.purpleAccent,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -312,7 +333,9 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
               ),
               const SizedBox(width: 24),
               _buildRoundButton(
-                _isTimerRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                _isTimerRunning
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
                 _isTimerRunning ? _pauseTimer : _startTimer,
                 _isBreakTime ? Colors.greenAccent : Colors.purpleAccent,
                 isLarge: true,
@@ -330,7 +353,12 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen> with Single
     );
   }
 
-  Widget _buildRoundButton(IconData icon, VoidCallback onTap, Color color, {bool isLarge = false}) {
+  Widget _buildRoundButton(
+    IconData icon,
+    VoidCallback onTap,
+    Color color, {
+    bool isLarge = false,
+  }) {
     final size = isLarge ? 64.0 : 48.0;
     final iconSize = isLarge ? 32.0 : 20.0;
 

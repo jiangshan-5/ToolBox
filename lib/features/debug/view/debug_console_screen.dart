@@ -5,7 +5,9 @@ import '../../../core/widgets/glass_card.dart';
 import '../../auth/provider/auth_provider.dart';
 
 /// 1. Server Stdout Logs Fetcher Provider
-final serverLogsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
+final serverLogsProvider = FutureProvider.autoDispose<List<dynamic>>((
+  ref,
+) async {
   final apiClient = ref.watch(apiClientProvider);
   try {
     final response = await apiClient.instance.get('/debug/server-logs');
@@ -16,7 +18,9 @@ final serverLogsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async
 });
 
 /// 2. Database Stats Counts Provider
-final dbStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+final dbStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
+  ref,
+) async {
   final apiClient = ref.watch(apiClientProvider);
   try {
     final response = await apiClient.instance.get('/debug/db-stats');
@@ -32,7 +36,9 @@ class DebugConsoleScreen extends ConsumerWidget {
   /// Monospace color code logic for standard logs stream
   Color _getLogLevelColor(String logLine) {
     final lower = logLine.toLowerCase();
-    if (lower.contains('error') || lower.contains('exception') || lower.contains('failed')) {
+    if (lower.contains('error') ||
+        lower.contains('exception') ||
+        lower.contains('failed')) {
       return const Color(0xFFFF5252); // Soft Red
     }
     if (lower.contains('warning') || lower.contains('warn')) {
@@ -67,12 +73,20 @@ class DebugConsoleScreen extends ConsumerWidget {
                   color: Colors.deepPurpleAccent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.terminal_rounded, size: 20, color: Colors.purpleAccent),
+                child: const Icon(
+                  Icons.terminal_rounded,
+                  size: 20,
+                  color: Colors.purpleAccent,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
                 '开发者系统调试台',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
@@ -125,7 +139,11 @@ class DebugConsoleScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogsTab(BuildContext context, WidgetRef ref, AsyncValue<List<dynamic>> logsState) {
+  Widget _buildLogsTab(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<dynamic>> logsState,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -136,7 +154,11 @@ class DebugConsoleScreen extends ConsumerWidget {
             children: [
               const Text(
                 '🔔 云端 Uvicorn 实时运行日志 (Tail -100 行)',
-                style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               logsState.maybeWhen(
                 data: (logs) => ElevatedButton.icon(
@@ -156,7 +178,9 @@ class DebugConsoleScreen extends ConsumerWidget {
                     backgroundColor: Colors.white12,
                     foregroundColor: Colors.white70,
                     minimumSize: const Size(90, 32),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
                 orElse: () => const SizedBox(),
@@ -180,7 +204,10 @@ class DebugConsoleScreen extends ConsumerWidget {
                       return const Center(
                         child: Text(
                           '📭 目前尚无任何云端控制台输出',
-                          style: TextStyle(color: Colors.white30, fontFamily: 'monospace'),
+                          style: TextStyle(
+                            color: Colors.white30,
+                            fontFamily: 'monospace',
+                          ),
                         ),
                       );
                     }
@@ -205,12 +232,17 @@ class DebugConsoleScreen extends ConsumerWidget {
                     );
                   },
                   loading: () => const Center(
-                    child: CircularProgressIndicator(color: Colors.purpleAccent),
+                    child: CircularProgressIndicator(
+                      color: Colors.purpleAccent,
+                    ),
                   ),
                   error: (err, stack) => Center(
                     child: Text(
                       '❌ 拉取系统日志失败: $err',
-                      style: const TextStyle(color: Colors.redAccent, fontFamily: 'monospace'),
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontFamily: 'monospace',
+                      ),
                     ),
                   ),
                 ),
@@ -222,7 +254,11 @@ class DebugConsoleScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsTab(BuildContext context, WidgetRef ref, AsyncValue<Map<String, dynamic>> statsState) {
+  Widget _buildStatsTab(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<Map<String, dynamic>> statsState,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -230,7 +266,11 @@ class DebugConsoleScreen extends ConsumerWidget {
         children: [
           const Text(
             '📊 阿里云 PostgreSQL 物理表行数核验 (实时)',
-            style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: Colors.white60,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -259,8 +299,8 @@ class DebugConsoleScreen extends ConsumerWidget {
                     final isError = value.toString().startsWith('Error');
 
                     return GlassCard(
-                      borderColor: isError 
-                          ? Colors.redAccent.withOpacity(0.2) 
+                      borderColor: isError
+                          ? Colors.redAccent.withOpacity(0.2)
                           : Colors.purpleAccent.withOpacity(0.15),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -283,7 +323,9 @@ class DebugConsoleScreen extends ConsumerWidget {
                             Text(
                               isError ? '未挂载' : value.toString(),
                               style: TextStyle(
-                                color: isError ? Colors.redAccent : Colors.greenAccent,
+                                color: isError
+                                    ? Colors.redAccent
+                                    : Colors.greenAccent,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
                                 fontFamily: 'monospace',
@@ -293,7 +335,9 @@ class DebugConsoleScreen extends ConsumerWidget {
                             Text(
                               isError ? '表结构缺失' : '当前存储行数',
                               style: TextStyle(
-                                color: isError ? Colors.redAccent.withOpacity(0.6) : Colors.white60,
+                                color: isError
+                                    ? Colors.redAccent.withOpacity(0.6)
+                                    : Colors.white60,
                                 fontSize: 10,
                               ),
                             ),
@@ -308,7 +352,10 @@ class DebugConsoleScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(color: Colors.purpleAccent),
               ),
               error: (err, stack) => Center(
-                child: Text('❌ 载入资产大盘失败: $err', style: const TextStyle(color: Colors.redAccent)),
+                child: Text(
+                  '❌ 载入资产大盘失败: $err',
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
               ),
             ),
           ),

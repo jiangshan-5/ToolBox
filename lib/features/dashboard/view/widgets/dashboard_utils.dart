@@ -35,46 +35,28 @@ class FadePageRoute<T> extends PageRouteBuilder<T> {
 Widget? getToolPage(String toolKey) {
   switch (toolKey) {
     case 'randomizer':
-      return const DeferredPage(
-        title: '高自由度决策随机沙盒',
-        child: RandomizerScreen(),
-      );
+      return const DeferredPage(title: '高自由度决策随机沙盒', child: RandomizerScreen());
     case 'unit_converter':
     case 'converter':
-      return const DeferredPage(
-        title: '物理量公式沙盒转换站',
-        child: ConverterScreen(),
-      );
+      return const DeferredPage(title: '物理量公式沙盒转换站', child: ConverterScreen());
     case 'bmi_calculator':
-      return const DeferredPage(
-        title: '体征与宏量营养沙盒',
-        child: BmiScreen(),
-      );
+      return const DeferredPage(title: '体征与宏量营养沙盒', child: BmiScreen());
     case 'ai_chat':
-      return const DeferredPage(
-        title: 'AI 智能多轮对话助理',
-        child: AiChatScreen(),
-      );
+      return const DeferredPage(title: 'AI 智能多轮对话助理', child: AiChatScreen());
     case 'ai_text_processor':
       return const DeferredPage(
         title: 'AI 高级写作引擎',
         child: AiTextProcessorScreen(),
       );
     case 'word_counter':
-      return const DeferredPage(
-        title: '字数与字符统计器',
-        child: WordCounterScreen(),
-      );
+      return const DeferredPage(title: '字数与字符统计器', child: WordCounterScreen());
     case 'password_generator':
       return const DeferredPage(
         title: '密码生成与强度分析',
         child: PasswordGeneratorScreen(),
       );
     case 'world_clock':
-      return const DeferredPage(
-        title: '时区对照与极智番茄钟',
-        child: WorldClockScreen(),
-      );
+      return const DeferredPage(title: '时区对照与极智番茄钟', child: WorldClockScreen());
     case 'white_noise':
       return const DeferredPage(
         title: '律动呼吸与多声道白噪音',
@@ -86,15 +68,9 @@ Widget? getToolPage(String toolKey) {
         child: MarkdownEditorScreen(),
       );
     case 'led_banner':
-      return const DeferredPage(
-        title: 'LED 手持弹幕',
-        child: LedBannerScreen(),
-      );
+      return const DeferredPage(title: 'LED 手持弹幕', child: LedBannerScreen());
     case 'dev_encoder':
-      return const DeferredPage(
-        title: '开发者沙盒编码盒',
-        child: DevEncoderScreen(),
-      );
+      return const DeferredPage(title: '开发者沙盒编码盒', child: DevEncoderScreen());
     default:
       return null;
   }

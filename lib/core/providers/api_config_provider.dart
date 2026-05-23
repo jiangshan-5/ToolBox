@@ -4,14 +4,16 @@ import '../storage/local_storage.dart';
 import '../network/api_client.dart';
 
 /// Provider to reactively track and manage the custom API Base URL
-final apiBaseUrlProvider = StateNotifierProvider<ApiBaseUrlNotifier, String>((ref) {
+final apiBaseUrlProvider = StateNotifierProvider<ApiBaseUrlNotifier, String>((
+  ref,
+) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return ApiBaseUrlNotifier(prefs);
 });
 
 class ApiBaseUrlNotifier extends StateNotifier<String> {
   final SharedPreferences _prefs;
-  
+
   static const String _storageKey = 'api_custom_base_url';
 
   ApiBaseUrlNotifier(this._prefs) : super(_getInitialBaseUrl(_prefs));
@@ -31,10 +33,11 @@ class ApiBaseUrlNotifier extends StateNotifier<String> {
       await resetToDefault();
       return;
     }
-    
+
     // Auto add protocol and api version if missing
     String formattedUrl = cleanUrl;
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+    if (!formattedUrl.startsWith('http://') &&
+        !formattedUrl.startsWith('https://')) {
       formattedUrl = 'http://$formattedUrl';
     }
     if (!formattedUrl.contains('/api/v1')) {

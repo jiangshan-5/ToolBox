@@ -31,12 +31,14 @@ class SettingsState {
 
 class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier()
-      : super(SettingsState(
+    : super(
+        SettingsState(
           isDarkMode: true,
           isHapticsEnabled: true,
           isBiometricsEnabled: false,
           isLowPowerMode: false,
-        )) {
+        ),
+      ) {
     _loadSettings();
   }
 
@@ -75,6 +77,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 }
 
-final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
-  return SettingsNotifier();
-});
+final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
+  (ref) {
+    return SettingsNotifier();
+  },
+);

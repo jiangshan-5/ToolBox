@@ -23,14 +23,27 @@ class AnalyticsDashboardData {
       aiWordsGenerated: json['ai_words_generated'] ?? 0,
       aiTimeSavedHours: (json['ai_time_saved_hours'] ?? 0.0).toDouble(),
       aiModelInvocations: json['ai_model_invocations'] ?? 0,
-      healthBmiTrend: (json['health_bmi_trend'] as List<dynamic>?)?.map((e) => (e as num).toDouble()).toList() ?? [],
-      healthTrendDates: (json['health_trend_dates'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      heatmapActivity: (json['heatmap_activity'] as List<dynamic>?)?.map((e) => (e as num).toDouble()).toList() ?? [],
+      healthBmiTrend:
+          (json['health_bmi_trend'] as List<dynamic>?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          [],
+      healthTrendDates:
+          (json['health_trend_dates'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      heatmapActivity:
+          (json['heatmap_activity'] as List<dynamic>?)
+              ?.map((e) => (e as num).toDouble())
+              .toList() ??
+          [],
     );
   }
 }
 
-class AnalyticsNotifier extends StateNotifier<AsyncValue<AnalyticsDashboardData>> {
+class AnalyticsNotifier
+    extends StateNotifier<AsyncValue<AnalyticsDashboardData>> {
   final Ref _ref;
 
   AnalyticsNotifier(this._ref) : super(const AsyncValue.loading()) {
@@ -64,7 +77,11 @@ class AnalyticsNotifier extends StateNotifier<AsyncValue<AnalyticsDashboardData>
   }
 }
 
-final analyticsProvider = StateNotifierProvider<AnalyticsNotifier, AsyncValue<AnalyticsDashboardData>>((ref) {
-  ref.watch(authProvider);
-  return AnalyticsNotifier(ref);
-});
+final analyticsProvider =
+    StateNotifierProvider<
+      AnalyticsNotifier,
+      AsyncValue<AnalyticsDashboardData>
+    >((ref) {
+      ref.watch(authProvider);
+      return AnalyticsNotifier(ref);
+    });

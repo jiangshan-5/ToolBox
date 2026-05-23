@@ -66,15 +66,20 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
     return Row(
       children: [
         ScaleOnTap(
-          onTap: () => widget.notifier.toggleRangeActive(widget.index, !widget.active),
+          onTap: () =>
+              widget.notifier.toggleRangeActive(widget.index, !widget.active),
           child: Checkbox(
             value: widget.active,
             activeColor: Colors.cyanAccent,
             checkColor: Colors.black87,
-            onChanged: (v) => widget.notifier.toggleRangeActive(widget.index, v!),
+            onChanged: (v) =>
+                widget.notifier.toggleRangeActive(widget.index, v!),
           ),
         ),
-        Text('区间 ${widget.index + 1}: ', style: TextStyle(color: subTextColor, fontSize: 13)),
+        Text(
+          '区间 ${widget.index + 1}: ',
+          style: TextStyle(color: subTextColor, fontSize: 13),
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Container(
@@ -86,16 +91,31 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
               controller: _minController,
               focusNode: _minFocus,
               keyboardType: TextInputType.number,
-              style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
               decoration: InputDecoration(
                 hintText: 'Min',
                 hintStyle: const TextStyle(color: Colors.white12),
                 filled: true,
-                fillColor: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                fillColor: isDark
+                    ? Colors.white.withOpacity(0.015)
+                    : Colors.black.withOpacity(0.02),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
-              onChanged: (v) => widget.notifier.updateRangeMin(widget.index, int.tryParse(v) ?? 0),
+              onChanged: (v) => widget.notifier.updateRangeMin(
+                widget.index,
+                int.tryParse(v) ?? 0,
+              ),
             ),
           ),
         ),
@@ -113,16 +133,31 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
               controller: _maxController,
               focusNode: _maxFocus,
               keyboardType: TextInputType.number,
-              style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
               decoration: InputDecoration(
                 hintText: 'Max',
                 hintStyle: const TextStyle(color: Colors.white12),
                 filled: true,
-                fillColor: isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                fillColor: isDark
+                    ? Colors.white.withOpacity(0.015)
+                    : Colors.black.withOpacity(0.02),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
-              onChanged: (v) => widget.notifier.updateRangeMax(widget.index, int.tryParse(v) ?? 100),
+              onChanged: (v) => widget.notifier.updateRangeMax(
+                widget.index,
+                int.tryParse(v) ?? 100,
+              ),
             ),
           ),
         ),

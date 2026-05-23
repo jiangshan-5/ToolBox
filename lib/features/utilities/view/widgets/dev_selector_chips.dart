@@ -47,12 +47,16 @@ class DevSelectorChips extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? opColor.withOpacity(0.12)
-                        : (isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02)),
+                        : (isDark
+                              ? Colors.white.withOpacity(0.015)
+                              : Colors.black.withOpacity(0.02)),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isSelected
                           ? opColor
-                          : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                          : (isDark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.black.withOpacity(0.05)),
                       width: 1.5,
                     ),
                     boxShadow: [
@@ -78,7 +82,9 @@ class DevSelectorChips extends StatelessWidget {
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.white60,
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ],

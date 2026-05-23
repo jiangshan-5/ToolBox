@@ -12,25 +12,26 @@ class BmiState {
   final double? idealWeight;
   final double? bsa;
   final String message;
-  
+
   final bool isMetric;
   final String gender;
   final int age;
   final String activity;
   final double? dailyCalories;
-  
+
   // 1. WEIGHT GOAL SANDBOX PARAMETERS
-  final double targetWeight;     // Target weight in kg/lbs
-  final double weeklyChange;     // target loss/gain per week, e.g. -0.5kg or +0.25kg
-  final double? weeksToTarget;   // calculated weeks
-  final double caloricOffset;    // calculated daily calorie addition/subtraction
+  final double targetWeight; // Target weight in kg/lbs
+  final double
+  weeklyChange; // target loss/gain per week, e.g. -0.5kg or +0.25kg
+  final double? weeksToTarget; // calculated weeks
+  final double caloricOffset; // calculated daily calorie addition/subtraction
   final double? finalCalorieGoal; // dailyCalories + caloricOffset
 
   // 2. MACRONUTRIENT RATIO SANDBOX (Percentages must sum to 100)
   final int proteinPercent;
   final int carbPercent;
   final int fatPercent;
-  
+
   final double? proteinGrams;
   final double? carbGrams;
   final double? fatGrams;
@@ -49,7 +50,7 @@ class BmiState {
     required this.age,
     required this.activity,
     this.dailyCalories,
-    
+
     // Weight Goal Defaults
     required this.targetWeight,
     required this.weeklyChange,
@@ -97,7 +98,7 @@ class BmiState {
     int? age,
     String? activity,
     double? dailyCalories,
-    
+
     double? targetWeight,
     double? weeklyChange,
     double? weeksToTarget,
@@ -125,7 +126,7 @@ class BmiState {
       age: age ?? this.age,
       activity: activity ?? this.activity,
       dailyCalories: dailyCalories ?? this.dailyCalories,
-      
+
       targetWeight: targetWeight ?? this.targetWeight,
       weeklyChange: weeklyChange ?? this.weeklyChange,
       weeksToTarget: weeksToTarget ?? this.weeksToTarget,
@@ -150,24 +151,26 @@ class BmiNotifier extends StateNotifier<BmiState> {
   final Ref _ref;
 
   BmiNotifier(this._ref)
-      : super(const BmiState(
+    : super(
+        const BmiState(
           message: '',
           isMetric: true,
           gender: 'male',
           age: 25,
           activity: '久坐不动',
-          
+
           targetWeight: 70.0,
           weeklyChange: -0.5,
           caloricOffset: 0.0,
-          
+
           proteinPercent: 30,
           carbPercent: 40,
           fatPercent: 30,
-          
+
           activeGoal: 'cut',
           isCalculating: false,
-        ));
+        ),
+      );
 
   void toggleSystem(bool isMetric) {
     // Sensible defaults switch
@@ -239,11 +242,7 @@ class BmiNotifier extends StateNotifier<BmiState> {
     final double cG = (baseGoal * (state.carbPercent / 100.0)) / 4.0;
     final double fG = (baseGoal * (state.fatPercent / 100.0)) / 9.0;
 
-    state = state.copyWith(
-      proteinGrams: pG,
-      carbGrams: cG,
-      fatGrams: fG,
-    );
+    state = state.copyWith(proteinGrams: pG, carbGrams: cG, fatGrams: fG);
   }
 
   /// Run primary biometric pipeline and evaluate sandboxes projections
@@ -289,9 +288,17 @@ class BmiNotifier extends StateNotifier<BmiState> {
     // 4. Clinical BMR (Harris-Benedict revised)
     double bmr = 0;
     if (state.gender == 'male') {
-      bmr = 88.362 + (13.397 * weightInKg) + (4.799 * heightInCm) - (5.677 * state.age);
+      bmr =
+          88.362 +
+          (13.397 * weightInKg) +
+          (4.799 * heightInCm) -
+          (5.677 * state.age);
     } else {
-      bmr = 447.593 + (9.247 * weightInKg) + (3.098 * heightInCm) - (4.330 * state.age);
+      bmr =
+          447.593 +
+          (9.247 * weightInKg) +
+          (3.098 * heightInCm) -
+          (4.330 * state.age);
     }
 
     // 5. BSA Body Surface Area (Mosteller)
@@ -318,7 +325,7 @@ class BmiNotifier extends StateNotifier<BmiState> {
     if (state.activity == '中度运动') activityMultiplier = 1.55;
     if (state.activity == '高强度训练') activityMultiplier = 1.725;
     if (state.activity == '专业运动员') activityMultiplier = 1.9;
-    
+
     final double dailyCalories = bmr * activityMultiplier;
 
     // --- WEIGHT PLANNING SANDBOX MATHS ---
@@ -334,7 +341,7 @@ class BmiNotifier extends StateNotifier<BmiState> {
       if (deltaWeightKg < 0 && changeInKgPerWeek < 0) {
         caloricOffset = (changeInKgPerWeek * 7700) / 7.0; // Negative offset
         weeksToTarget = deltaWeightKg / changeInKgPerWeek;
-      } 
+      }
       // If gaining weight (delta > 0, change > 0)
       else if (deltaWeightKg > 0 && changeInKgPerWeek > 0) {
         caloricOffset = (changeInKgPerWeek * 5500) / 7.0; // Positive offset
@@ -353,11 +360,13 @@ class BmiNotifier extends StateNotifier<BmiState> {
       bsa: bsa,
       message: msg,
       dailyCalories: dailyCalories,
-      
+
       weeksToTarget: weeksToTarget > 0 ? weeksToTarget : 0.0,
       caloricOffset: caloricOffset,
-      finalCalorieGoal: finalGoal > 800 ? finalGoal : 800.0, // Clinical safe floor
-      
+      finalCalorieGoal: finalGoal > 800
+          ? finalGoal
+          : 800.0, // Clinical safe floor
+
       isCalculating: false,
     );
 
@@ -365,20 +374,22 @@ class BmiNotifier extends StateNotifier<BmiState> {
     _calculateMacrosOnly();
 
     // Log to DB telemetry
-    _ref.read(toolsAnalyticsProvider).logUsage(
-      toolKey: 'bmi_calculator',
-      parameters: {
-        'mode': 'clinical_sandbox',
-        'target_weight': state.targetWeight,
-        'weekly_change': state.weeklyChange,
-        'calculated_weeks': weeksToTarget,
-        'protein_percent': state.proteinPercent,
-        'carb_percent': state.carbPercent,
-        'fat_percent': state.fatPercent,
-      },
-      status: 'success',
-      durationMs: stopwatch.elapsedMilliseconds,
-    );
+    _ref
+        .read(toolsAnalyticsProvider)
+        .logUsage(
+          toolKey: 'bmi_calculator',
+          parameters: {
+            'mode': 'clinical_sandbox',
+            'target_weight': state.targetWeight,
+            'weekly_change': state.weeklyChange,
+            'calculated_weeks': weeksToTarget,
+            'protein_percent': state.proteinPercent,
+            'carb_percent': state.carbPercent,
+            'fat_percent': state.fatPercent,
+          },
+          status: 'success',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
 
     // Sync physical health metrics to the new analytics Cloud Database
     final authState = _ref.read(authProvider);
@@ -405,6 +416,8 @@ class BmiNotifier extends StateNotifier<BmiState> {
 }
 
 /// Riverpod provider
-final bmiProvider = StateNotifierProvider.autoDispose<BmiNotifier, BmiState>((ref) {
+final bmiProvider = StateNotifierProvider.autoDispose<BmiNotifier, BmiState>((
+  ref,
+) {
   return BmiNotifier(ref);
 });

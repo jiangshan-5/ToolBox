@@ -29,7 +29,9 @@ class DevOutputPanel extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
     final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
-    final Color borderDividerColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
+    final Color borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +48,9 @@ class DevOutputPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
+            color: isDark
+                ? Colors.white.withOpacity(0.02)
+                : Colors.black.withOpacity(0.03),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: borderDividerColor),
           ),
@@ -76,25 +80,37 @@ class DevOutputPanel extends StatelessWidget {
                   Row(
                     children: [
                       IconButton(
-                        icon: Icon(Icons.copy_rounded, color: activeOpColor, size: 18),
+                        icon: Icon(
+                          Icons.copy_rounded,
+                          color: activeOpColor,
+                          size: 18,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         tooltip: '复制结果',
                         onPressed: outputLen == 0
                             ? null
                             : () {
-                                Clipboard.setData(ClipboardData(text: outputController.text));
+                                Clipboard.setData(
+                                  ClipboardData(text: outputController.text),
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: const Text('转换结果已成功复制'),
-                                    backgroundColor: activeOpColor.withOpacity(0.2),
+                                    backgroundColor: activeOpColor.withOpacity(
+                                      0.2,
+                                    ),
                                   ),
                                 );
                               },
                       ),
                       const SizedBox(width: 16),
                       IconButton(
-                        icon: Icon(Icons.share_rounded, color: activeOpColor, size: 18),
+                        icon: Icon(
+                          Icons.share_rounded,
+                          color: activeOpColor,
+                          size: 18,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         tooltip: '分享结果',

@@ -56,7 +56,9 @@ final categoriesProvider = FutureProvider<List<dynamic>>((ref) async {
 });
 
 /// Asynchronous API provider to retrieve latest usage logs of active user
-final telemetryLogsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
+final telemetryLogsProvider = FutureProvider.autoDispose<List<dynamic>>((
+  ref,
+) async {
   final authState = ref.watch(authProvider);
   if (!authState.isAuthenticated || authState.email == null) {
     return [];
@@ -72,19 +74,25 @@ final telemetryLogsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) as
         'tool_key': 'converter',
         'status': 'success',
         'duration_ms': 18,
-        'created_at': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
+        'created_at': DateTime.now()
+            .subtract(const Duration(minutes: 5))
+            .toIso8601String(),
       },
       {
         'tool_key': 'bmi_calculator',
         'status': 'success',
         'duration_ms': 25,
-        'created_at': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+        'created_at': DateTime.now()
+            .subtract(const Duration(hours: 1))
+            .toIso8601String(),
       },
       {
         'tool_key': 'randomizer',
         'status': 'success',
         'duration_ms': 12,
-        'created_at': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
+        'created_at': DateTime.now()
+            .subtract(const Duration(hours: 3))
+            .toIso8601String(),
       },
     ];
   }

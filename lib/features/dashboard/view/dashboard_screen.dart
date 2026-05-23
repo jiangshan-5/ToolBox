@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'dart:io';
@@ -47,18 +48,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _connectWebSocket(String baseUrl) async {
+    if (kIsWeb) return;
     if (_isDisposed) return;
     if (_connectedUrl == baseUrl && _socket != null) return;
 
     _socket?.close();
     _connectedUrl = baseUrl;
 
-    String wsUrl = baseUrl
-        .replaceAll('http://', 'ws://')
-        .replaceAll('https://', 'wss://') + '/system/ws/updates';
+    String wsUrl =
+        baseUrl
+            .replaceAll('http://', 'ws://')
+            .replaceAll('https://', 'wss://') +
+        '/system/ws/updates';
 
     try {
-      _socket = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 4));
+      _socket = await WebSocket.connect(
+        wsUrl,
+      ).timeout(const Duration(seconds: 4));
       _socket!.listen(
         (message) {
           try {
@@ -95,6 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _retryConnection(String baseUrl) {
+    if (kIsWeb) return;
     if (_isDisposed) return;
     Future.delayed(const Duration(seconds: 5), () {
       if (!mounted || _isDisposed) return;
@@ -106,6 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   void _reconnectWebSocket(String newUrl) {
+    if (kIsWeb) return;
     _socket?.close();
     _socket = null;
     _connectedUrl = null;
@@ -114,6 +122,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   /// Perform system update validation
   Future<void> _checkForUpdates() async {
+    if (kIsWeb) return;
     try {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.instance.get('/system/version');

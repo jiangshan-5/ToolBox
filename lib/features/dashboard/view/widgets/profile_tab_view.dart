@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'dart:ui';
+import 'dart:convert';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -47,9 +49,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
-        child: CircularProgressIndicator(color: primaryColor),
-      ),
+      builder: (context) =>
+          Center(child: CircularProgressIndicator(color: primaryColor)),
     );
     try {
       final apiClient = ref.read(apiClientProvider);
@@ -59,7 +60,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
         final List<dynamic> healthData = data['health'] ?? [];
         final List<dynamic> aiData = data['ai'] ?? [];
         final List<List<dynamic>> csvData = [];
-        
+
         csvData.add(['--- 健康监测数据 (Health Records) ---']);
         csvData.add(['时间', '体重 (kg)', '身高 (cm)', 'BMI']);
         for (var record in healthData) {
@@ -72,7 +73,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
         }
         csvData.add([]);
         csvData.add([]);
-        
+
         csvData.add(['--- AI 使用监测数据 (AI Telemetry Logs) ---']);
         csvData.add(['时间', '服务商', '模型名称', '生成词数', '节省时间 (秒)']);
         for (var log in aiData) {
@@ -84,14 +85,32 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             log['time_saved_seconds'] ?? '',
           ]);
         }
-        
+
         final csvString = Csv().encode(csvData);
+
+        if (kIsWeb) {
+          final bytes = const Utf8Encoder().convert(csvString);
+          final xFile = XFile.fromData(
+            bytes,
+            name:
+                'toolbox_pro_export_${DateTime.now().millisecondsSinceEpoch}.csv',
+            mimeType: 'text/csv',
+          );
+          if (context.mounted) {
+            Navigator.pop(context); // Dismiss loading
+            await Share.shareXFiles([
+              xFile,
+            ], text: '这是从 Toolbox Pro 导出的健康与监控数据。');
+          }
+          return;
+        }
+
         final tempDir = await getTemporaryDirectory();
         final file = File(
           '${tempDir.path}/toolbox_pro_export_${DateTime.now().millisecondsSinceEpoch}.csv',
         );
         await file.writeAsString(csvString);
-        
+
         if (context.mounted) {
           Navigator.pop(context); // Dismiss loading
           await Share.shareXFiles([
@@ -712,12 +731,16 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                 physics: const BouncingScrollPhysics(),
                                 itemCount: appThemePresets.length + 1,
                                 itemBuilder: (context, index) {
-                                  final isCustomCard = index == appThemePresets.length;
+                                  final isCustomCard =
+                                      index == appThemePresets.length;
                                   final AppThemeType cardType = isCustomCard
                                       ? AppThemeType.custom
                                       : appThemePresets[index].type;
-                                  final String cardName = isCustomCard ? '自定义主题' : appThemePresets[index].name;
-                                  final bool isSelected = themeConfig.type == cardType;
+                                  final String cardName = isCustomCard
+                                      ? '自定义主题'
+                                      : appThemePresets[index].name;
+                                  final bool isSelected =
+                                      themeConfig.type == cardType;
                                   final Color pColor = isCustomCard
                                       ? themeConfig.customPrimary
                                       : appThemePresets[index].primary;
@@ -733,9 +756,13 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                   return GestureDetector(
                                     onTap: () {
                                       if (isCustomCard) {
-                                        ref.read(themeProvider.notifier).updateCustomTheme();
+                                        ref
+                                            .read(themeProvider.notifier)
+                                            .updateCustomTheme();
                                       } else {
-                                        ref.read(themeProvider.notifier).setThemeType(cardType);
+                                        ref
+                                            .read(themeProvider.notifier)
+                                            .setThemeType(cardType);
                                       }
                                     },
                                     child: Container(
@@ -746,21 +773,31 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                         color: isSelected
                                             ? pColor.withOpacity(0.12)
                                             : (isDark
-                                                ? Colors.white.withOpacity(0.02)
-                                                : Colors.black.withOpacity(0.03)),
+                                                  ? Colors.white.withOpacity(
+                                                      0.02,
+                                                    )
+                                                  : Colors.black.withOpacity(
+                                                      0.03,
+                                                    )),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
                                           color: isSelected
                                               ? pColor
                                               : (isDark
-                                                  ? Colors.white.withOpacity(0.06)
-                                                  : Colors.black.withOpacity(0.08)),
+                                                    ? Colors.white.withOpacity(
+                                                        0.06,
+                                                      )
+                                                    : Colors.black.withOpacity(
+                                                        0.08,
+                                                      )),
                                           width: isSelected ? 1.5 : 1,
                                         ),
                                         boxShadow: isSelected
                                             ? [
                                                 BoxShadow(
-                                                  color: pColor.withOpacity(0.1),
+                                                  color: pColor.withOpacity(
+                                                    0.1,
+                                                  ),
                                                   blurRadius: 6,
                                                   spreadRadius: 1,
                                                 ),
@@ -768,17 +805,21 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                             : null,
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Expanded(
                                                 child: Text(
                                                   cardName,
                                                   maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 11.5,
@@ -799,17 +840,25 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                           ),
                                           Row(
                                             children: [
-                                              _buildColorIndicatorCircle(pColor),
+                                              _buildColorIndicatorCircle(
+                                                pColor,
+                                              ),
                                               const SizedBox(width: 4),
-                                              _buildColorIndicatorCircle(sColor),
+                                              _buildColorIndicatorCircle(
+                                                sColor,
+                                              ),
                                               const SizedBox(width: 4),
-                                              _buildColorIndicatorCircle(surfColor),
+                                              _buildColorIndicatorCircle(
+                                                surfColor,
+                                              ),
                                             ],
                                           ),
                                           Text(
                                             isSelected ? '已激活' : '点击使用',
                                             style: TextStyle(
-                                              color: isSelected ? pColor : Colors.white30,
+                                              color: isSelected
+                                                  ? pColor
+                                                  : Colors.white30,
                                               fontSize: 9.5,
                                               fontWeight: isSelected
                                                   ? FontWeight.bold
@@ -829,7 +878,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                               curve: Curves.easeInOut,
                               child: themeConfig.type == AppThemeType.custom
                                   ? Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Divider(
                                           color: Colors.white12,
@@ -869,28 +919,52 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                             Expanded(
                                               child: GestureDetector(
                                                 onTap: () => ref
-                                                    .read(themeProvider.notifier)
-                                                    .updateCustomTheme(isDark: true),
+                                                    .read(
+                                                      themeProvider.notifier,
+                                                    )
+                                                    .updateCustomTheme(
+                                                      isDark: true,
+                                                    ),
                                                 child: Container(
                                                   height: 38,
                                                   decoration: BoxDecoration(
-                                                    color: themeConfig.customIsDark
-                                                        ? themeConfig.customPrimary.withOpacity(0.15)
-                                                        : Colors.white.withOpacity(0.02),
-                                                    borderRadius: BorderRadius.circular(10),
+                                                    color:
+                                                        themeConfig.customIsDark
+                                                        ? themeConfig
+                                                              .customPrimary
+                                                              .withOpacity(0.15)
+                                                        : Colors.white
+                                                              .withOpacity(
+                                                                0.02,
+                                                              ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
                                                     border: Border.all(
-                                                      color: themeConfig.customIsDark
-                                                          ? themeConfig.customPrimary
-                                                          : Colors.white.withOpacity(0.08),
+                                                      color:
+                                                          themeConfig
+                                                              .customIsDark
+                                                          ? themeConfig
+                                                                .customPrimary
+                                                          : Colors.white
+                                                                .withOpacity(
+                                                                  0.08,
+                                                                ),
                                                     ),
                                                   ),
                                                   child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: [
                                                       Icon(
                                                         Icons.dark_mode_rounded,
-                                                        color: themeConfig.customIsDark
-                                                            ? themeConfig.customPrimary
+                                                        color:
+                                                            themeConfig
+                                                                .customIsDark
+                                                            ? themeConfig
+                                                                  .customPrimary
                                                             : Colors.white54,
                                                         size: 16,
                                                       ),
@@ -898,13 +972,18 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                       Text(
                                                         '深色极客模式',
                                                         style: TextStyle(
-                                                          color: themeConfig.customIsDark
+                                                          color:
+                                                              themeConfig
+                                                                  .customIsDark
                                                               ? Colors.white
                                                               : Colors.white54,
                                                           fontSize: 12,
-                                                          fontWeight: themeConfig.customIsDark
+                                                          fontWeight:
+                                                              themeConfig
+                                                                  .customIsDark
                                                               ? FontWeight.bold
-                                                              : FontWeight.normal,
+                                                              : FontWeight
+                                                                    .normal,
                                                         ),
                                                       ),
                                                     ],
@@ -916,28 +995,54 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                             Expanded(
                                               child: GestureDetector(
                                                 onTap: () => ref
-                                                    .read(themeProvider.notifier)
-                                                    .updateCustomTheme(isDark: false),
+                                                    .read(
+                                                      themeProvider.notifier,
+                                                    )
+                                                    .updateCustomTheme(
+                                                      isDark: false,
+                                                    ),
                                                 child: Container(
                                                   height: 38,
                                                   decoration: BoxDecoration(
-                                                    color: !themeConfig.customIsDark
-                                                        ? themeConfig.customPrimary.withOpacity(0.15)
-                                                        : Colors.white.withOpacity(0.02),
-                                                    borderRadius: BorderRadius.circular(10),
+                                                    color:
+                                                        !themeConfig
+                                                            .customIsDark
+                                                        ? themeConfig
+                                                              .customPrimary
+                                                              .withOpacity(0.15)
+                                                        : Colors.white
+                                                              .withOpacity(
+                                                                0.02,
+                                                              ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
                                                     border: Border.all(
-                                                      color: !themeConfig.customIsDark
-                                                          ? themeConfig.customPrimary
-                                                          : Colors.white.withOpacity(0.08),
+                                                      color:
+                                                          !themeConfig
+                                                              .customIsDark
+                                                          ? themeConfig
+                                                                .customPrimary
+                                                          : Colors.white
+                                                                .withOpacity(
+                                                                  0.08,
+                                                                ),
                                                     ),
                                                   ),
                                                   child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: [
                                                       Icon(
-                                                        Icons.light_mode_rounded,
-                                                        color: !themeConfig.customIsDark
-                                                            ? themeConfig.customPrimary
+                                                        Icons
+                                                            .light_mode_rounded,
+                                                        color:
+                                                            !themeConfig
+                                                                .customIsDark
+                                                            ? themeConfig
+                                                                  .customPrimary
                                                             : Colors.white54,
                                                         size: 16,
                                                       ),
@@ -945,13 +1050,18 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                       Text(
                                                         '明亮极客模式',
                                                         style: TextStyle(
-                                                          color: !themeConfig.customIsDark
+                                                          color:
+                                                              !themeConfig
+                                                                  .customIsDark
                                                               ? Colors.white
                                                               : Colors.white54,
                                                           fontSize: 12,
-                                                          fontWeight: !themeConfig.customIsDark
+                                                          fontWeight:
+                                                              !themeConfig
+                                                                  .customIsDark
                                                               ? FontWeight.bold
-                                                              : FontWeight.normal,
+                                                              : FontWeight
+                                                                    .normal,
                                                         ),
                                                       ),
                                                     ],
@@ -964,7 +1074,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                         const SizedBox(height: 20),
                                         _buildCustomColorPickerSection(
                                           title: '系统主色 (Primary Color)',
-                                          selectedColor: themeConfig.customPrimary,
+                                          selectedColor:
+                                              themeConfig.customPrimary,
                                           presets: const [
                                             Color(0xFF7C4DFF),
                                             Color(0xFF2979FF),
@@ -976,11 +1087,14 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                           ],
                                           onColorSelected: (color) => ref
                                               .read(themeProvider.notifier)
-                                              .updateCustomTheme(primary: color),
+                                              .updateCustomTheme(
+                                                primary: color,
+                                              ),
                                         ),
                                         _buildCustomColorPickerSection(
                                           title: '系统辅色 (Secondary Color)',
-                                          selectedColor: themeConfig.customSecondary,
+                                          selectedColor:
+                                              themeConfig.customSecondary,
                                           presets: const [
                                             Color(0xFF18FFFF),
                                             Color(0xFFFF007F),
@@ -992,11 +1106,14 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                           ],
                                           onColorSelected: (color) => ref
                                               .read(themeProvider.notifier)
-                                              .updateCustomTheme(secondary: color),
+                                              .updateCustomTheme(
+                                                secondary: color,
+                                              ),
                                         ),
                                         _buildCustomColorPickerSection(
                                           title: '底板底色 (Surface Color)',
-                                          selectedColor: themeConfig.customSurface,
+                                          selectedColor:
+                                              themeConfig.customSurface,
                                           presets: themeConfig.customIsDark
                                               ? const [
                                                   Color(0xFF0A0714),
@@ -1014,7 +1131,9 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                 ],
                                           onColorSelected: (color) => ref
                                               .read(themeProvider.notifier)
-                                              .updateCustomTheme(surface: color),
+                                              .updateCustomTheme(
+                                                surface: color,
+                                              ),
                                         ),
                                       ],
                                     )
@@ -1788,7 +1907,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     getToolChineseName(toolKey),
@@ -1946,7 +2066,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             )
           : null,
       trailing:
-          trailing ?? Icon(Icons.chevron_right_rounded, color: faintTextColor, size: 20),
+          trailing ??
+          Icon(Icons.chevron_right_rounded, color: faintTextColor, size: 20),
       onTap: onTap ?? () {},
     );
   }

@@ -34,12 +34,16 @@ class NoiseSoundCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive
             ? themeColor.withOpacity(0.04)
-            : (isDark ? Colors.white.withOpacity(0.015) : Colors.black.withOpacity(0.02)),
+            : (isDark
+                  ? Colors.white.withOpacity(0.015)
+                  : Colors.black.withOpacity(0.02)),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isActive
               ? themeColor.withOpacity(0.3)
-              : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04)),
+              : (isDark
+                    ? Colors.white.withOpacity(0.04)
+                    : Colors.black.withOpacity(0.04)),
           width: 1.2,
         ),
       ),
@@ -55,7 +59,9 @@ class NoiseSoundCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isActive
                           ? themeColor.withOpacity(0.12)
-                          : (isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03)),
+                          : (isDark
+                                ? Colors.white.withOpacity(0.02)
+                                : Colors.black.withOpacity(0.03)),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(emoji, style: const TextStyle(fontSize: 20)),
@@ -95,7 +101,11 @@ class NoiseSoundCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.volume_down_rounded, color: faintTextColor, size: 14),
+                Icon(
+                  Icons.volume_down_rounded,
+                  color: faintTextColor,
+                  size: 14,
+                ),
                 Expanded(
                   child: SliderTheme(
                     data: SliderThemeData(
@@ -104,12 +114,11 @@ class NoiseSoundCard extends StatelessWidget {
                       thumbColor: Colors.white,
                       overlayColor: themeColor.withOpacity(0.1),
                       trackHeight: 2.5,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 6,
+                      ),
                     ),
-                    child: Slider(
-                      value: volume,
-                      onChanged: onVolumeChanged,
-                    ),
+                    child: Slider(value: volume, onChanged: onVolumeChanged),
                   ),
                 ),
                 Text(

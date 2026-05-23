@@ -64,16 +64,18 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
     _logDebounce?.cancel();
     _logDebounce = Timer(const Duration(seconds: 2), () {
       if (_charWithSpaces > 0) {
-        ref.read(toolsAnalyticsProvider).logUsage(
-          toolKey: 'word_counter',
-          parameters: {
-            'char_count': _charWithSpaces,
-            'chinese_chars': _chineseChars,
-            'english_words': _englishWords,
-          },
-          status: 'success',
-          durationMs: 0,
-        );
+        ref
+            .read(toolsAnalyticsProvider)
+            .logUsage(
+              toolKey: 'word_counter',
+              parameters: {
+                'char_count': _charWithSpaces,
+                'chinese_chars': _chineseChars,
+                'english_words': _englishWords,
+              },
+              status: 'success',
+              durationMs: 0,
+            );
       }
     });
   }
@@ -113,12 +115,19 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           '字数与字符统计器',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
       body: Stack(
@@ -127,7 +136,11 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0C091F), Color(0xFF140F2D), Color(0xFF06050C)],
+                colors: [
+                  Color(0xFF0C091F),
+                  Color(0xFF140F2D),
+                  Color(0xFF06050C),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -141,7 +154,11 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                 // Text Input Area
                 const Text(
                   '📝 输入分析文本',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -149,7 +166,9 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.02),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -157,10 +176,17 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                       TextField(
                         controller: _controller,
                         maxLines: 8,
-                        style: const TextStyle(color: Colors.white, fontSize: 13.5, height: 1.5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          height: 1.5,
+                        ),
                         decoration: const InputDecoration(
                           hintText: '在此贴入需要统计分析的文本...',
-                          hintStyle: TextStyle(color: Colors.white24, fontSize: 13.5),
+                          hintStyle: TextStyle(
+                            color: Colors.white24,
+                            fontSize: 13.5,
+                          ),
                           border: InputBorder.none,
                         ),
                       ),
@@ -172,12 +198,19 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                             onTap: () => _controller.clear(),
                             child: const Text(
                               '清空文本',
-                              style: TextStyle(color: Colors.redAccent, fontSize: 11.5, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           Text(
                             '共 $_charWithSpaces 字符',
-                            style: const TextStyle(color: Colors.white30, fontSize: 11),
+                            style: const TextStyle(
+                              color: Colors.white30,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
@@ -209,11 +242,19 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             '✨ 发送至 AI 写作引擎改写',
-                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -225,7 +266,11 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                 // Comprehensive Stats Panel
                 const Text(
                   '📊 文本多维指标统计',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 LayoutBuilder(
@@ -238,12 +283,36 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                       mainAxisSpacing: 12,
                       childAspectRatio: 1.6,
                       children: [
-                        _buildStatCard('总字符数 (带空格)', _charWithSpaces.toString(), Colors.purpleAccent),
-                        _buildStatCard('净字符数 (无空格)', _charNoSpaces.toString(), Colors.cyanAccent),
-                        _buildStatCard('中文字数', _chineseChars.toString(), Colors.orangeAccent),
-                        _buildStatCard('英文单词数', _englishWords.toString(), Colors.lightGreenAccent),
-                        _buildStatCard('数字个数', _numbers.toString(), Colors.amberAccent),
-                        _buildStatCard('段落行数', _lines.toString(), Colors.pinkAccent),
+                        _buildStatCard(
+                          '总字符数 (带空格)',
+                          _charWithSpaces.toString(),
+                          Colors.purpleAccent,
+                        ),
+                        _buildStatCard(
+                          '净字符数 (无空格)',
+                          _charNoSpaces.toString(),
+                          Colors.cyanAccent,
+                        ),
+                        _buildStatCard(
+                          '中文字数',
+                          _chineseChars.toString(),
+                          Colors.orangeAccent,
+                        ),
+                        _buildStatCard(
+                          '英文单词数',
+                          _englishWords.toString(),
+                          Colors.lightGreenAccent,
+                        ),
+                        _buildStatCard(
+                          '数字个数',
+                          _numbers.toString(),
+                          Colors.amberAccent,
+                        ),
+                        _buildStatCard(
+                          '段落行数',
+                          _lines.toString(),
+                          Colors.pinkAccent,
+                        ),
                       ],
                     );
                   },
@@ -263,7 +332,11 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                             color: Colors.purpleAccent.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.timer_outlined, color: Colors.purpleAccent, size: 20),
+                          child: const Icon(
+                            Icons.timer_outlined,
+                            color: Colors.purpleAccent,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -272,14 +345,21 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                             children: [
                               const Text(
                                 '⏱️ 预计阅读所需时间',
-                                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 _charWithSpaces > 0
                                     ? '按照标准语速 350 字/分钟，预计约需 $readingTime 分钟读完。'
                                     : '输入文本后自动计算预计阅读时间。',
-                                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -309,7 +389,10 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+          ),
           const SizedBox(height: 6),
           Text(
             value,

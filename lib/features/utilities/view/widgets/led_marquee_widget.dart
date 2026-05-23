@@ -22,7 +22,8 @@ class LedMarqueeWidget extends StatefulWidget {
   State<LedMarqueeWidget> createState() => _LedMarqueeWidgetState();
 }
 
-class _LedMarqueeWidgetState extends State<LedMarqueeWidget> with SingleTickerProviderStateMixin {
+class _LedMarqueeWidgetState extends State<LedMarqueeWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   double _containerWidth = 0;
   double _textWidth = 0;
@@ -98,7 +99,9 @@ class _LedMarqueeWidgetState extends State<LedMarqueeWidget> with SingleTickerPr
             }
           });
         }
-        final xOffset = _containerWidth - (_containerWidth + _textWidth) * _controller.value;
+        final xOffset =
+            _containerWidth -
+            (_containerWidth + _textWidth) * _controller.value;
         return Stack(
           alignment: Alignment.centerLeft,
           children: [
