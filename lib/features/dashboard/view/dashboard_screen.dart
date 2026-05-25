@@ -538,25 +538,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildAnalyticsHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white38 : Colors.black45;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '数据分析控制台',
             style: TextStyle(
-              color: Colors.white,
+              color: textColor,
               fontSize: 22,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             '实时监控您所有沙盒工具上报的计算流性能与日志',
-            style: TextStyle(color: Colors.white38, fontSize: 12),
+            style: TextStyle(color: subTextColor, fontSize: 12),
           ),
         ],
       ),

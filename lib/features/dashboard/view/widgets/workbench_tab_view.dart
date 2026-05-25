@@ -104,10 +104,10 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
             children: [
               Icon(Icons.grid_view_rounded, color: primaryColor, size: 16),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '全部工具分类库',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: isDark ? Colors.white70 : Colors.black54,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -153,13 +153,19 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
     Color primaryColor,
     Color secondaryColor,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.06),
+        ),
       ),
       child: Row(
         children: [
@@ -188,8 +194,8 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
               children: [
                 Text(
                   '欢迎回来，$email',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -206,9 +212,9 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
+                    Text(
                       '专属黄金加密节点 · 正常连接',
-                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                      style: TextStyle(color: subTextColor, fontSize: 11),
                     ),
                   ],
                 ),
@@ -228,6 +234,7 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
         ? '全双工云端互联已建立 (Sync Enabled)'
         : '安全离线隔离沙盒模式 (Offline Sandbox)';
     final desc = isOnline ? '已连接阿里云高防加密节点 · 延迟 12ms' : '网络离线，已安全切换至本地离线高速计算芯片';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 12),
@@ -263,7 +270,10 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                 const SizedBox(height: 2),
                 Text(
                   desc,
-                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black45,
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
@@ -275,6 +285,11 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
 
   Widget _buildRecentlyUsedSection(BuildContext context, Color primaryColor) {
     if (_recentlyUsed.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white30 : Colors.black45;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,10 +299,10 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
             children: [
               Icon(Icons.history_rounded, color: primaryColor, size: 16),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '最近使用的工具',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: subTextColor,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -323,10 +338,10 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
+                    color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.06),
+                      color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
                       width: 1.0,
                     ),
                   ),
@@ -350,17 +365,17 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                               name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: textColor,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
+                            Text(
                               '点击即刻唤醒',
                               style: TextStyle(
-                                color: Colors.white30,
+                                color: faintTextColor,
                                 fontSize: 9.5,
                               ),
                             ),
@@ -386,12 +401,16 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
     Color secondaryColor, {
     Key? key,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+
     if (categories.isEmpty) {
       return Center(
         key: key,
-        child: const Text(
+        child: Text(
           '无内置工具，请检查数据库配置',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: subTextColor),
         ),
       );
     }
@@ -419,10 +438,10 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                   const SizedBox(width: 8),
                   Text(
                     category['name'] ?? '分类',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -484,10 +503,10 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                                     name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: textColor,
                                     ),
                                   ),
                                   const SizedBox(height: 3),
@@ -495,9 +514,9 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
                                     description,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10.5,
-                                      color: Colors.white54,
+                                      color: subTextColor,
                                     ),
                                   ),
                                 ],

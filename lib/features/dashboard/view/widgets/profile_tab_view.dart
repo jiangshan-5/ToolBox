@@ -505,8 +505,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: subTextColor,
             fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
@@ -532,8 +532,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isPresetSelected
-                                ? Colors.white
-                                : Colors.white24,
+                                ? (isDark ? Colors.white : Colors.black87)
+                                : (isDark ? Colors.white24 : Colors.black12),
                             width: isPresetSelected ? 2.5 : 1,
                           ),
                           boxShadow: isPresetSelected
@@ -557,26 +557,28 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
               width: 95,
               height: 32,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.black.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withOpacity(0.12)),
+                border: Border.all(color: borderDividerColor),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: controller,
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: textColor, fontSize: 11),
+                      decoration: InputDecoration(
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 8,
                         ),
                         border: InputBorder.none,
                         hintText: '#HEX',
                         hintStyle: TextStyle(
-                          color: Colors.white30,
+                          color: faintTextColor,
                           fontSize: 11,
                         ),
                       ),
@@ -817,13 +819,13 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                 MainAxisAlignment.spaceBetween,
                                             children: [
                                               Expanded(
-                                                child: Text(
+                                                                                               child: Text(
                                                   cardName,
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
                                                   style: TextStyle(
-                                                    color: Colors.white,
+                                                    color: textColor,
                                                     fontSize: 11.5,
                                                     fontWeight: isSelected
                                                         ? FontWeight.bold
@@ -835,7 +837,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                 isDark
                                                     ? Icons.dark_mode_rounded
                                                     : Icons.light_mode_rounded,
-                                                color: Colors.white54,
+                                                color: subTextColor,
                                                 size: 12,
                                               ),
                                             ],
@@ -860,7 +862,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                             style: TextStyle(
                                               color: isSelected
                                                   ? pColor
-                                                  : Colors.white30,
+                                                  : faintTextColor,
                                               fontSize: 9.5,
                                               fontWeight: isSelected
                                                   ? FontWeight.bold
@@ -883,23 +885,23 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Divider(
-                                          color: Colors.white12,
+                                        Divider(
+                                          color: borderDividerColor,
                                           height: 1,
                                         ),
                                         const SizedBox(height: 20),
-                                        const Row(
+                                        Row(
                                           children: [
                                             Icon(
                                               Icons.tune_rounded,
-                                              color: Colors.cyanAccent,
+                                              color: primaryColor,
                                               size: 16,
                                             ),
-                                            SizedBox(width: 8),
+                                            const SizedBox(width: 8),
                                             Text(
                                               '自定义配色与模式控制',
                                               style: TextStyle(
-                                                color: Colors.cyanAccent,
+                                                color: primaryColor,
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -907,10 +909,10 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                           ],
                                         ),
                                         const SizedBox(height: 16),
-                                        const Text(
+                                        Text(
                                           '主板明暗模式',
                                           style: TextStyle(
-                                            color: Colors.white70,
+                                            color: subTextColor,
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -935,10 +937,9 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                         ? themeConfig
                                                               .customPrimary
                                                               .withOpacity(0.15)
-                                                        : Colors.white
-                                                              .withOpacity(
-                                                                0.02,
-                                                              ),
+                                                        : (isDark
+                                                            ? Colors.white.withOpacity(0.02)
+                                                            : Colors.black.withOpacity(0.03)),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           10,
@@ -949,10 +950,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                               .customIsDark
                                                           ? themeConfig
                                                                 .customPrimary
-                                                          : Colors.white
-                                                                .withOpacity(
-                                                                  0.08,
-                                                                ),
+                                                          : borderDividerColor,
                                                     ),
                                                   ),
                                                   child: Row(
@@ -967,7 +965,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                                 .customIsDark
                                                             ? themeConfig
                                                                   .customPrimary
-                                                            : Colors.white54,
+                                                            : subTextColor,
                                                         size: 16,
                                                       ),
                                                       const SizedBox(width: 8),
@@ -977,8 +975,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                           color:
                                                               themeConfig
                                                                   .customIsDark
-                                                              ? Colors.white
-                                                              : Colors.white54,
+                                                              ? textColor
+                                                              : subTextColor,
                                                           fontSize: 12,
                                                           fontWeight:
                                                               themeConfig
@@ -1012,10 +1010,9 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                         ? themeConfig
                                                               .customPrimary
                                                               .withOpacity(0.15)
-                                                        : Colors.white
-                                                              .withOpacity(
-                                                                0.02,
-                                                              ),
+                                                        : (isDark
+                                                            ? Colors.white.withOpacity(0.02)
+                                                            : Colors.black.withOpacity(0.03)),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           10,
@@ -1026,10 +1023,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                               .customIsDark
                                                           ? themeConfig
                                                                 .customPrimary
-                                                          : Colors.white
-                                                                .withOpacity(
-                                                                  0.08,
-                                                                ),
+                                                          : borderDividerColor,
                                                     ),
                                                   ),
                                                   child: Row(
@@ -1045,7 +1039,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                                 .customIsDark
                                                             ? themeConfig
                                                                   .customPrimary
-                                                            : Colors.white54,
+                                                            : subTextColor,
                                                         size: 16,
                                                       ),
                                                       const SizedBox(width: 8),
@@ -1055,8 +1049,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                           color:
                                                               !themeConfig
                                                                   .customIsDark
-                                                              ? Colors.white
-                                                              : Colors.white54,
+                                                              ? textColor
+                                                              : subTextColor,
                                                           fontSize: 12,
                                                           fontWeight:
                                                               !themeConfig
@@ -1138,10 +1132,10 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                               ),
                                         ),
                                         const SizedBox(height: 20),
-                                        const Text(
+                                        Text(
                                           '上传应用背景图片 (Custom Background)',
                                           style: TextStyle(
-                                            color: Colors.white70,
+                                            color: subTextColor,
                                             fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -1151,10 +1145,12 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                           Container(
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.04),
+                                              color: isDark
+                                                  ? Colors.white.withOpacity(0.04)
+                                                  : Colors.black.withOpacity(0.04),
                                               borderRadius: BorderRadius.circular(16),
                                               border: Border.all(
-                                                color: Colors.white.withOpacity(0.08),
+                                                color: borderDividerColor,
                                               ),
                                             ),
                                             child: Row(
@@ -1173,11 +1169,11 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 12),
-                                                const Expanded(
+                                                Expanded(
                                                   child: Text(
                                                     '自定义背景图已加载\n(流光模糊滤镜已自动启用)',
                                                     style: TextStyle(
-                                                      color: Colors.white54,
+                                                      color: subTextColor,
                                                       fontSize: 11,
                                                     ),
                                                   ),
@@ -1254,25 +1250,27 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                             child: Container(
                                               height: 48,
                                               decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.04),
+                                                color: isDark
+                                                    ? Colors.white.withOpacity(0.04)
+                                                    : Colors.black.withOpacity(0.04),
                                                 borderRadius: BorderRadius.circular(12),
                                                 border: Border.all(
-                                                  color: Colors.white.withOpacity(0.08),
+                                                  color: borderDividerColor,
                                                 ),
                                               ),
-                                              child: const Row(
+                                              child: Row(
                                                 mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
                                                   Icon(
                                                     Icons.upload_file_rounded,
-                                                    color: Colors.white70,
+                                                    color: subTextColor,
                                                     size: 18,
                                                   ),
-                                                  SizedBox(width: 8),
+                                                  const SizedBox(width: 8),
                                                   Text(
                                                     '上传专属背景图片 (.png/.jpg)',
                                                     style: TextStyle(
-                                                      color: Colors.white70,
+                                                      color: subTextColor,
                                                       fontSize: 12,
                                                       fontWeight: FontWeight.w500,
                                                     ),
