@@ -238,7 +238,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         physics: const BouncingScrollPhysics(),
                         children: [
                           _buildNotificationCard(
-                            title: '🛡️ 局域离线安全沙盒保护已激活',
+                            icon: Icons.shield_rounded,
+                            title: '局域离线安全沙盒保护已激活',
                             time: '2026-05-19 12:00',
                             content:
                                 '所有本地离线计算模块（如随机选择、标准转换、健康BMI）的数据均已采用 AES-256 标准在设备端高强度加密保存。您的运算流绝不会外泄，离线隔离保护罩处于最佳安全状态。',
@@ -246,7 +247,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             badgeColor: Colors.greenAccent,
                           ),
                           _buildNotificationCard(
-                            title: '🚀 新增 Sandbox 自定义换算公式管理',
+                            icon: Icons.rocket_launch_rounded,
+                            title: '新增 Sandbox 自定义换算公式管理',
                             time: '2026-05-19 11:30',
                             content:
                                 '全新 v1.2.0 版本已全面打通 Sandbox 公式系统！现在，您可以在“个人中心”非常方便地实时查看、审查以及一键销毁（一键垃圾桶）已过期或作废的自定义计算因子。',
@@ -254,7 +256,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             badgeColor: primaryColor,
                           ),
                           _buildNotificationCard(
-                            title: '⚙️ 阿里云深圳多活高防服务器已对接',
+                            icon: Icons.dns_rounded,
+                            title: '阿里云深圳多活高防服务器已对接',
                             time: '2026-05-18 18:45',
                             content:
                                 '为了应对可能到来的 1000+ 人高并发计算压力，后端数据网关及 Telemetry 日志管道已完成多维限流与高效降级演练。当前系统可用性达到 99.99%，网络延迟极低。',
@@ -275,6 +278,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildNotificationCard({
+    required IconData icon,
     required String title,
     required String time,
     required String content,
@@ -316,14 +320,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(icon, color: badgeColor, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(

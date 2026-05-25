@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NoiseSoundCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String name;
   final String desc;
   final Color themeColor;
@@ -12,7 +12,7 @@ class NoiseSoundCard extends StatelessWidget {
 
   const NoiseSoundCard({
     super.key,
-    required this.emoji,
+    required this.icon,
     required this.name,
     required this.desc,
     required this.themeColor,
@@ -64,7 +64,11 @@ class NoiseSoundCard extends StatelessWidget {
                                 : Colors.black.withOpacity(0.03)),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(emoji, style: const TextStyle(fontSize: 20)),
+                    child: Icon(
+                      icon,
+                      color: isActive ? themeColor : Colors.white60,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Column(

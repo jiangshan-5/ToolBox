@@ -14,6 +14,7 @@ import '../../../utilities/view/white_noise_screen.dart';
 import '../../../utilities/view/markdown_editor_screen.dart';
 import '../../../utilities/view/led_banner_screen.dart';
 import '../../../utilities/view/dev_encoder_screen.dart';
+import '../../../utilities/view/daily_board_screen.dart';
 
 /// Elite ultra-smooth fade transition route that eliminates page entry stutters
 class FadePageRoute<T> extends PageRouteBuilder<T> {
@@ -71,6 +72,8 @@ Widget? getToolPage(String toolKey) {
       return const DeferredPage(title: 'LED 手持弹幕', child: LedBannerScreen());
     case 'dev_encoder':
       return const DeferredPage(title: '开发者沙盒编码盒', child: DevEncoderScreen());
+    case 'daily_board':
+      return const DeferredPage(title: '今日时事与卡片工坊', child: DailyBoardScreen());
     default:
       return null;
   }
@@ -103,6 +106,8 @@ IconData getToolIcon(String toolKey) {
       return Icons.settings_input_hdmi_rounded;
     case 'dev_encoder':
       return Icons.code_rounded;
+    case 'daily_board':
+      return Icons.newspaper_rounded;
     default:
       return Icons.build_rounded;
   }
@@ -138,6 +143,8 @@ Color getToolColor(String toolKey, BuildContext context) {
       return Colors.pinkAccent;
     case 'dev_encoder':
       return Colors.cyanAccent;
+    case 'daily_board':
+      return Colors.cyanAccent;
     default:
       return secondaryColor;
   }
@@ -170,6 +177,8 @@ String getToolChineseName(String toolKey) {
       return 'LED 手持弹幕';
     case 'dev_encoder':
       return '开发者沙盒编码盒';
+    case 'daily_board':
+      return '今日热闻与卡片工坊';
     default:
       return '常用系统工具';
   }

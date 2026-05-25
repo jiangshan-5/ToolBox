@@ -53,6 +53,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         .read(authProvider.notifier)
         .sendRegisterCode(email);
 
+    if (!mounted) return;
+
     setState(() {
       _isSendingCode = false;
     });

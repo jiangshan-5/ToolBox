@@ -6,6 +6,8 @@ import 'dart:async';
 
 import 'dart:math';
 
+import 'package:just_audio/just_audio.dart';
+
 import '../../../features/dashboard/provider/tools_provider.dart';
 
 import 'widgets/noise_breathing_bubble.dart';
@@ -37,45 +39,51 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   final List<Map<String, dynamic>> _sounds = [
     {
       'id': 'rain',
-      'emoji': '🌧️',
+      'icon': Icons.umbrella_rounded,
       'name': '深山秋雨',
       'desc': '幽静山谷中的淅沥雨声，抚平内心焦虑。',
       'color': Colors.blueAccent,
+      'url': 'https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav',
     },
     {
       'id': 'waves',
-      'emoji': '🌊',
+      'icon': Icons.waves_rounded,
       'name': '极地海浪',
       'desc': '远古冰川海滩上的潮汐起落，回归静止。',
       'color': Colors.cyanAccent,
+      'url': 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav',
     },
     {
       'id': 'pines',
-      'emoji': '🌲',
+      'icon': Icons.forest_rounded,
       'name': '林间松涛',
       'desc': '微风穿过广阔针叶林，带来原野芬芳。',
       'color': Colors.greenAccent,
+      'url': 'https://assets.mixkit.co/active_storage/sfx/2464/2464-84.wav',
     },
     {
       'id': 'fire',
-      'emoji': '🔥',
+      'icon': Icons.local_fire_department_rounded,
       'name': '壁炉篝火',
       'desc': '深夜小木屋里温暖柴火的噼啪爆裂碎响。',
       'color': Colors.orangeAccent,
+      'url': 'https://assets.mixkit.co/active_storage/sfx/2432/2432-84.wav',
     },
     {
       'id': 'brook',
-      'emoji': '🏞️',
+      'icon': Icons.water_rounded,
       'name': '山间溪流',
       'desc': '高山融雪化作林间欢快奔腾的潺潺清泉。',
       'color': Colors.tealAccent,
+      'url': 'https://assets.mixkit.co/active_storage/sfx/1113/1113-84.wav',
     },
     {
       'id': 'insects',
-      'emoji': '🦗',
+      'icon': Icons.audiotrack_rounded,
       'name': '夏夜虫鸣',
       'desc': '繁星点点的仲夏夜里草丛间的自然协奏曲。',
       'color': Colors.amberAccent,
+      'url': 'https://assets.mixkit.co/active_storage/sfx/2438/2438-84.wav',
     },
   ];
 
@@ -83,6 +91,9 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   final Map<String, double> _channelVolumes = {};
   final Map<String, bool> _channelActive = {};
   bool _isMixerPlaying = false;
+
+  // Track AudioPlayers for each channel
+  final Map<String, AudioPlayer> _players = {};
 
   // Visualizer timer and random bars height
   Timer? _visualizerTimer;
@@ -139,10 +150,20 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize mixer volume map
+    // Initialize mixer volume map and audio player instances
     for (var sound in _sounds) {
-      _channelVolumes[sound['id']] = 0.5; // default 50%
-      _channelActive[sound['id']] = false;
+      final id = sound['id'] as String;
+      _channelVolumes[id] = 0.5; // default 50%
+      _channelActive[id] = false;
+
+      final player = AudioPlayer();
+      player.setLoopMode(LoopMode.one);
+      player.setVolume(0.5);
+      // Preload network URL dynamically
+      player.setUrl(sound['url'] as String).catchError((_) {
+        return null;
+      });
+      _players[id] = player;
     }
   }
 
@@ -152,6 +173,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
     _breathingTimer?.cancel();
     _bubbleSmoothTimer?.cancel();
     _sleepTimer?.cancel();
+    // Teardown all active players to prevent audio leaks
+    for (var player in _players.values) {
+      player.stop().catchError((_) => null);
+      player.dispose().catchError((_) => null);
+    }
     super.dispose();
   }
 
@@ -196,9 +222,35 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
     });
   }
 
+  void _syncAudioPlayback() {
+    for (var sound in _sounds) {
+      final id = sound['id'] as String;
+      final player = _players[id];
+      if (player != null) {
+        if (_isMixerPlaying && (_channelActive[id] == true)) {
+          player.setVolume(_channelVolumes[id] ?? 0.5).catchError((_) => null);
+          if (!player.playing) {
+            player.play().catchError((_) => null);
+          }
+        } else {
+          if (player.playing) {
+            player.pause().catchError((_) => null);
+          }
+        }
+      }
+    }
+  }
+
   void _triggerSleepFading() {
     _sleepTimer?.cancel();
     _stopBreathingCoach();
+
+    // Silently stop all playing channels immediately
+    for (var player in _players.values) {
+      player.pause().catchError((_) => null);
+    }
+
+    if (!mounted) return;
 
     // Smoothly silence channels
     setState(() {
@@ -246,6 +298,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       } else {
         _visualizerTimer?.cancel();
       }
+      _syncAudioPlayback();
     });
   }
 
@@ -263,6 +316,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           _visualizerTimer?.cancel();
         }
       }
+      _syncAudioPlayback();
     });
   }
 
@@ -715,7 +769,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           children: _sounds.map((sound) {
             final id = sound['id'];
             return NoiseSoundCard(
-              emoji: sound['emoji'],
+              icon: sound['icon'],
               name: sound['name'],
               desc: sound['desc'],
               themeColor: sound['color'],
@@ -727,6 +781,9 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                   _channelVolumes[id] = newVol;
                   _isMixerPlaying = true;
                   _startVisualizerAnimation();
+                  // Dynamically set volume on active player instance
+                  _players[id]?.setVolume(newVol).catchError((_) => null);
+                  _syncAudioPlayback();
                 });
               },
             );

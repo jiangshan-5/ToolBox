@@ -565,6 +565,11 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> {
         'key': 'dev_encoder',
         'desc': '支持 Base64、URL 编码转换，MD5/SHA256 哈希与 JSON 格式化',
       },
+      {
+        'title': '今日热闻与卡片工坊',
+        'key': 'daily_board',
+        'desc': '60秒读懂世界早报与炫彩卡片一言工坊',
+      },
     ];
 
     final secondaryColor = Theme.of(context).colorScheme.secondary;
