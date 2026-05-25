@@ -695,12 +695,13 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                           hoverColor: Colors.white.withValues(alpha: 0.04),
                           splashColor: Colors.cyanAccent.withValues(alpha: 0.08),
                           onTap: () {
-                            String query = item;
-                            // Clean leading emojis/emoticons cleanly
-                            final emojiRegex = RegExp(
-                              r'^[\u2600-\u27BF\uE000-\uF8FF\uD83C\uDF00-\uD83D\uDFFF\uD83E\uDD00-\uD83E\uDFFF\ud83c\udde6-\ud83c\uddff\ud83c\udd70-\ud83c\udd9a\u200d\u2049\u203c\u3030\u303d\u2139\u2122\u231b\u23f0\u23f3\u23e9-\u23ec\u25b6\u25c0\ud83c\udccf\ud83c\udd8e\ud83c\udd91-\ud83c\udd9a\ud83c\udde6-\ud83c\uddff\ud83c\udf00-\ud83d\ude4f\ud83d\ude80-\ud83d\udeff]\s*',
-                            );
-                            query = query.replaceFirst(emojiRegex, '').trim();
+                            String query = '';
+                            final parts = item.split(' ');
+                            if (parts.length > 1) {
+                              query = parts.sublist(1).join(' ').trim();
+                            } else {
+                              query = item.trim();
+                            }
                             if (query.isNotEmpty) {
                               _launchURL(
                                 'https://www.baidu.com/s?wd=${Uri.encodeComponent(query)}',
