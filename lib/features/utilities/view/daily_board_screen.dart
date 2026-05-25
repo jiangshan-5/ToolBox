@@ -187,6 +187,59 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
     }
   }
 
+  IconData _getNewsIcon(String text, int index, bool isHeader) {
+    if (isHeader) {
+      return Icons.today_rounded;
+    }
+    if (index == _newsList.length - 1) {
+      return Icons.auto_awesome_rounded;
+    }
+    if (text.contains('航天') || text.contains('卫星')) {
+      return Icons.rocket_launch_rounded;
+    }
+    if (text.contains('人工智能') || text.contains('智能') || text.contains('AI')) {
+      return Icons.psychology_rounded;
+    }
+    if (text.contains('车') || text.contains('电池') || text.contains('出行')) {
+      return Icons.electric_car_rounded;
+    }
+    if (text.contains('计算') || text.contains('芯片') || text.contains('量子')) {
+      return Icons.memory_rounded;
+    }
+    if (text.contains('经济') || text.contains('金融') || text.contains('交易')) {
+      return Icons.insights_rounded;
+    }
+    if (text.contains('医学') || text.contains('健康') || text.contains('生物')) {
+      return Icons.medical_services_rounded;
+    }
+    if (text.contains('天文') || text.contains('宇宙') || text.contains('星')) {
+      return Icons.wb_twilight_rounded;
+    }
+    return Icons.fiber_manual_record_rounded;
+  }
+
+  Color _getNewsIconColor(String text, int index, bool isHeader) {
+    if (isHeader) {
+      return Colors.amberAccent;
+    }
+    if (index == _newsList.length - 1) {
+      return Colors.amberAccent;
+    }
+    if (text.contains('航天') || text.contains('计算') || text.contains('天文')) {
+      return Colors.cyanAccent;
+    }
+    if (text.contains('人工智能')) {
+      return Colors.pinkAccent.shade100;
+    }
+    if (text.contains('车') || text.contains('经济')) {
+      return Colors.greenAccent;
+    }
+    if (text.contains('医学')) {
+      return Colors.orangeAccent.shade100;
+    }
+    return Colors.cyanAccent;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -686,8 +739,10 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                     ),
                     itemBuilder: (context, index) {
                       final item = _newsList[index];
-                      // Highlight the dynamic bullet prefix
                       final isHeader = index == 0;
+                      final iconData = _getNewsIcon(item, index, isHeader);
+                      final iconColor = _getNewsIconColor(item, index, isHeader);
+
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
@@ -695,16 +750,9 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                           hoverColor: Colors.white.withValues(alpha: 0.04),
                           splashColor: Colors.cyanAccent.withValues(alpha: 0.08),
                           onTap: () {
-                            String query = '';
-                            final parts = item.split(' ');
-                            if (parts.length > 1) {
-                              query = parts.sublist(1).join(' ').trim();
-                            } else {
-                              query = item.trim();
-                            }
-                            if (query.isNotEmpty) {
+                            if (item.isNotEmpty) {
                               _launchURL(
-                                'https://www.baidu.com/s?wd=${Uri.encodeComponent(query)}',
+                                'https://www.baidu.com/s?wd=${Uri.encodeComponent(item)}',
                               );
                             }
                           },
@@ -716,20 +764,12 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  margin: const EdgeInsets.only(
-                                    top: 6.0,
-                                    right: 10.0,
-                                  ),
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isHeader
-                                        ? Colors.amberAccent
-                                        : Colors.cyanAccent,
-                                  ),
+                                Icon(
+                                  iconData,
+                                  color: iconColor,
+                                  size: isHeader ? 15 : 13.5,
                                 ),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     item,
