@@ -121,6 +121,7 @@ class ThemeConfig {
   final Color customSurface;
   final Color customSurfaceContainer;
   final bool customIsDark;
+  final String? customBgBase64;
 
   ThemeConfig({
     required this.type,
@@ -129,6 +130,7 @@ class ThemeConfig {
     required this.customSurface,
     required this.customSurfaceContainer,
     required this.customIsDark,
+    this.customBgBase64,
   });
 
   ThemeConfig copyWith({
@@ -138,6 +140,8 @@ class ThemeConfig {
     Color? customSurface,
     Color? customSurfaceContainer,
     bool? customIsDark,
+    String? customBgBase64,
+    bool clearBg = false,
   }) {
     return ThemeConfig(
       type: type ?? this.type,
@@ -147,6 +151,7 @@ class ThemeConfig {
       customSurfaceContainer:
           customSurfaceContainer ?? this.customSurfaceContainer,
       customIsDark: customIsDark ?? this.customIsDark,
+      customBgBase64: clearBg ? null : (customBgBase64 ?? this.customBgBase64),
     );
   }
 }
@@ -155,12 +160,13 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
   ThemeNotifier()
     : super(
         ThemeConfig(
-          type: AppThemeType.cyberpunkDark,
-          customPrimary: const Color(0xFF7C4DFF),
-          customSecondary: const Color(0xFF18FFFF),
-          customSurface: const Color(0xFF0A0714),
-          customSurfaceContainer: const Color(0xFF130F24),
-          customIsDark: true,
+          type: AppThemeType.cyberpunkLight,
+          customPrimary: const Color(0xFF6200EE),
+          customSecondary: const Color(0xFF03DAC6),
+          customSurface: const Color(0xFFF5F4FA),
+          customSurfaceContainer: const Color(0xFFEAE7F2),
+          customIsDark: false,
+          customBgBase64: null,
         ),
       ) {
     _loadThemeSettings();
@@ -177,24 +183,26 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
         'theme_custom_surface_container',
       );
       final customIsDarkVal = prefs.getBool('theme_custom_is_dark');
+      final customBgBase64Val = prefs.getString('theme_custom_bg_base64');
 
       state = ThemeConfig(
         type: typeIndex != null
             ? AppThemeType.values[typeIndex]
-            : AppThemeType.cyberpunkDark,
+            : AppThemeType.cyberpunkLight,
         customPrimary: customPrimaryVal != null
             ? Color(customPrimaryVal)
-            : const Color(0xFF7C4DFF),
+            : const Color(0xFF6200EE),
         customSecondary: customSecondaryVal != null
             ? Color(customSecondaryVal)
-            : const Color(0xFF18FFFF),
+            : const Color(0xFF03DAC6),
         customSurface: customSurfaceVal != null
             ? Color(customSurfaceVal)
-            : const Color(0xFF0A0714),
+            : const Color(0xFFF5F4FA),
         customSurfaceContainer: customSurfaceContainerVal != null
             ? Color(customSurfaceContainerVal)
-            : const Color(0xFF130F24),
-        customIsDark: customIsDarkVal ?? true,
+            : const Color(0xFFEAE7F2),
+        customIsDark: customIsDarkVal ?? false,
+        customBgBase64: customBgBase64Val,
       );
     } catch (_) {}
   }
@@ -211,6 +219,8 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
     Color? surface,
     Color? surfaceContainer,
     bool? isDark,
+    String? bgBase64,
+    bool clearBg = false,
   }) async {
     final newPrimary = primary ?? state.customPrimary;
     final newSecondary = secondary ?? state.customSecondary;
@@ -242,6 +252,8 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
       customSurface: newSurface,
       customSurfaceContainer: newSurfaceContainer,
       customIsDark: newIsDark,
+      customBgBase64: bgBase64,
+      clearBg: clearBg,
     );
 
     final prefs = await SharedPreferences.getInstance();
@@ -254,6 +266,12 @@ class ThemeNotifier extends StateNotifier<ThemeConfig> {
       newSurfaceContainer.value,
     );
     await prefs.setBool('theme_custom_is_dark', newIsDark);
+
+    if (clearBg) {
+      await prefs.remove('theme_custom_bg_base64');
+    } else if (bgBase64 != null) {
+      await prefs.setString('theme_custom_bg_base64', bgBase64);
+    }
   }
 }
 

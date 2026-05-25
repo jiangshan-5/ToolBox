@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/app_theme.dart';
@@ -1136,6 +1137,151 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                                                 surface: color,
                                               ),
                                         ),
+                                        const SizedBox(height: 20),
+                                        const Text(
+                                          '上传应用背景图片 (Custom Background)',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        if (themeConfig.customBgBase64 != null) ...[
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.04),
+                                              borderRadius: BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(0.08),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Image.memory(
+                                                    base64Decode(
+                                                      themeConfig.customBgBase64!.contains(',')
+                                                          ? themeConfig.customBgBase64!.split(',')[1]
+                                                          : themeConfig.customBgBase64!,
+                                                    ),
+                                                    width: 50,
+                                                    height: 50,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                const Expanded(
+                                                  child: Text(
+                                                    '自定义背景图已加载\n(流光模糊滤镜已自动启用)',
+                                                    style: TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.delete_forever_rounded,
+                                                    color: Colors.redAccent,
+                                                  ),
+                                                  onPressed: () {
+                                                    ref.read(themeProvider.notifier).updateCustomTheme(clearBg: true);
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('背景图片已成功卸载'),
+                                                        behavior: SnackBarBehavior.floating,
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ] else ...[
+                                          GestureDetector(
+                                            onTap: () async {
+                                              try {
+                                                final result = await FilePicker.platform.pickFiles(
+                                                  type: FileType.image,
+                                                  withData: true,
+                                                );
+                                                if (result != null && result.files.isNotEmpty) {
+                                                  final file = result.files.first;
+                                                  final bytes = file.bytes;
+                                                  if (bytes != null) {
+                                                    if (bytes.length > 2 * 1024 * 1024) {
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          const SnackBar(
+                                                            content: Text('图片体积过大，请上传小于2MB的图片'),
+                                                            backgroundColor: Colors.orangeAccent,
+                                                            behavior: SnackBarBehavior.floating,
+                                                          ),
+                                                        );
+                                                      }
+                                                      return;
+                                                    }
+                                                    final base64Str = base64Encode(bytes);
+                                                    ref.read(themeProvider.notifier).updateCustomTheme(
+                                                      bgBase64: 'data:image/png;base64,$base64Str',
+                                                    );
+                                                    if (context.mounted) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text('自定义背景已就绪！已启用毛玻璃微光融合效果'),
+                                                          backgroundColor: Colors.green,
+                                                          behavior: SnackBarBehavior.floating,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('背景读取失败: $e'),
+                                                      backgroundColor: Colors.redAccent,
+                                                      behavior: SnackBarBehavior.floating,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                            child: Container(
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.04),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: Colors.white.withOpacity(0.08),
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.upload_file_rounded,
+                                                    color: Colors.white70,
+                                                    size: 18,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    '上传专属背景图片 (.png/.jpg)',
+                                                    style: TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ],
                                     )
                                   : const SizedBox.shrink(),

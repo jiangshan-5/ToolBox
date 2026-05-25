@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toolbox_app/features/settings/provider/settings_provider.dart';
+import 'package:toolbox_app/core/providers/theme_provider.dart';
+import 'package:toolbox_app/core/app_theme.dart';
 
 class DynamicBackground extends ConsumerStatefulWidget {
   final Widget child;
@@ -31,9 +35,42 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
     super.dispose();
   }
 
+  Widget? _buildImageBackdrop(ThemeConfig themeConfig, Color surfaceColor, bool isDark) {
+    final isCustomBg = themeConfig.type == AppThemeType.custom && themeConfig.customBgBase64 != null;
+    if (!isCustomBg) return null;
+    try {
+      String base64Str = themeConfig.customBgBase64!;
+      if (base64Str.contains(',')) {
+        base64Str = base64Str.split(',')[1];
+      }
+      final bytes = base64.decode(base64Str);
+      return Positioned.fill(
+        child: ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+          child: Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: MemoryImage(bytes),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  surfaceColor.withOpacity(isDark ? 0.78 : 0.82),
+                  BlendMode.srcOver,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error loading custom background image: $e');
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLowPower = ref.watch(settingsProvider).isLowPowerMode;
+    final themeConfig = ref.watch(themeProvider);
     final theme = Theme.of(context);
     final surfaceColor = theme.colorScheme.surface;
     final primaryColor = theme.colorScheme.primary;
@@ -45,6 +82,8 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
     final double primaryGlowOpacity = isDark ? 0.22 : 0.06;
     final double secondaryGlowOpacity = isDark ? 0.20 : 0.05;
 
+    final imageBackdrop = _buildImageBackdrop(themeConfig, surfaceColor, isDark);
+
     if (isLowPower) {
       if (_controller.isAnimating) {
         _controller.stop();
@@ -53,6 +92,9 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
         children: [
           // Solid Backdrop
           Container(color: surfaceColor),
+
+          // Custom Background Image
+          if (imageBackdrop != null) imageBackdrop,
 
           // Floating Mesh Gradients (Static positions)
           Positioned(
@@ -106,6 +148,9 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
         children: [
           // Solid Backdrop
           Container(color: surfaceColor),
+
+          // Custom Background Image
+          if (imageBackdrop != null) imageBackdrop,
 
           // Floating Mesh Gradients
           AnimatedBuilder(
