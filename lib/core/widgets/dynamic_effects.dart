@@ -47,11 +47,9 @@ class _ScaleOnTapState extends State<ScaleOnTap>
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTapDown: (_) => _controller.forward(),
-        onTapUp: (_) {
-          _controller.reverse();
-          widget.onTap?.call();
-        },
+        onTapUp: (_) => _controller.reverse(),
         onTapCancel: () => _controller.reverse(),
+        onTap: widget.onTap,
         child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/dynamic_effects.dart';
 import '../../auth/provider/auth_provider.dart';
 
 /// 1. Server Stdout Logs Fetcher Provider
@@ -57,9 +58,8 @@ class DebugConsoleScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final logsState = ref.watch(serverLogsProvider);
     final statsState = ref.watch(dbStatsProvider);
-
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: const Color(0xFF0A071E),
         appBar: AppBar(
@@ -97,6 +97,7 @@ class DebugConsoleScreen extends ConsumerWidget {
             tabs: [
               Tab(icon: Icon(Icons.receipt_long_rounded), text: '云端控制台 Stdout'),
               Tab(icon: Icon(Icons.dns_rounded), text: 'PostgreSQL 数据库实况'),
+              Tab(icon: Icon(Icons.cloud_upload_rounded), text: '发布系统更新公告'),
             ],
           ),
           actions: [
@@ -132,6 +133,9 @@ class DebugConsoleScreen extends ConsumerWidget {
 
               // Tab 2: PostgreSQL integrity charts
               _buildStatsTab(context, ref, statsState),
+
+              // Tab 3: Version publish form
+              const _PublishForm(),
             ],
           ),
         ),
@@ -361,6 +365,320 @@ class DebugConsoleScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PublishForm extends ConsumerStatefulWidget {
+  const _PublishForm();
+
+  @override
+  ConsumerState<_PublishForm> createState() => _PublishFormState();
+}
+
+class _PublishFormState extends ConsumerState<_PublishForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _versionNameController = TextEditingController(text: '1.2.0');
+  final _versionCodeController = TextEditingController(text: '3');
+  final _changelogController = TextEditingController(
+    text: '1. 🚀 极客控制台升级：全新上线管理员发布中心，系统公告实时触发广播！\n'
+          '2. 🎨 UI 微观交互：细化磨砂玻璃板态圆角，大幅减少非 web 端阴影渲染折损。\n'
+          '3. ⚡ 内存通信重构：修复了后台更新广播因协程竞态产生的连接状态抛错风险。',
+  );
+  bool _forceUpdate = false;
+  bool _isPublishing = false;
+
+  @override
+  void dispose() {
+    _versionNameController.dispose();
+    _versionCodeController.dispose();
+    _changelogController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitPublish() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isPublishing = true);
+    final apiClient = ref.read(apiClientProvider);
+
+    try {
+      final response = await apiClient.instance.post(
+        '/system/publish',
+        data: {
+          'latest_version': _versionNameController.text.trim(),
+          'version_code': int.parse(_versionCodeController.text.trim()),
+          'changelog': _changelogController.text.trim(),
+          'force_update': _forceUpdate,
+        },
+      );
+
+      if (mounted) {
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎉 系统更新公告发布成功！已实时推送至所有在线客户端。'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          throw Exception('服务器返回错误状态: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ 发布失败，请检查服务连通性: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPublishing = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '📢 管理员更新通告发布面板',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '此处发布的新版本配置会立即更新后端缓存，并通过实时双向 WebSocket 通道广播至所有在线手机 App，自动拉起更新弹窗。',
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 11,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              borderColor: Colors.white.withOpacity(0.08),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _versionNameController,
+                            label: '最新版本名 (Version Name)',
+                            hint: '例如: 1.2.0',
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return '请输入版本名';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _versionCodeController,
+                            label: '内部版本代码 (Version Code)',
+                            hint: '递增整数，例如: 3',
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return '请输入版本代码';
+                              }
+                              if (int.tryParse(val.trim()) == null) {
+                                return '必须为正整数';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '是否强制更新',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              '开启后，客户端将无法关闭更新弹窗，必须完成更新才可使用。',
+                              style: TextStyle(
+                                color: Colors.white30,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _forceUpdate,
+                          activeColor: Colors.purpleAccent,
+                          onChanged: (val) {
+                            setState(() {
+                              _forceUpdate = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _changelogController,
+                      label: '版本更新日志说明 (Changelog)',
+                      hint: '输入详细的版本更新说明...',
+                      maxLines: 5,
+                      validator: (val) {
+                        if (val == null || val.trim().isEmpty) {
+                          return '请输入更新日志说明';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _isPublishing
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.purpleAccent,
+                            ),
+                          )
+                        : ScaleOnTap(
+                            onTap: _submitPublish,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Colors.purpleAccent,
+                                    Colors.deepPurpleAccent,
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.purpleAccent.withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '🚀 立即发布广播并推送',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          validator: validator,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontFamily: 'monospace',
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.03),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: Colors.white.withOpacity(0.08),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Colors.purpleAccent,
+                width: 1.5,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+            errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 10),
+          ),
+        ),
+      ],
     );
   }
 }

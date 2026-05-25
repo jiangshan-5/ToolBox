@@ -88,13 +88,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '欢迎回来',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: colors.onSurface,
-                          letterSpacing: 1.5,
+                      GestureDetector(
+                        onLongPress: () {
+                          ref.read(authProvider.notifier).loginAsAdmin();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('⚡ 开发者通道激活：正在以管理员身份登录...'),
+                              backgroundColor: Colors.deepPurpleAccent,
+                              duration: Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: Text(
+                          '欢迎回来',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: colors.onSurface,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),

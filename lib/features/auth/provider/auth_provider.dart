@@ -267,6 +267,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState(isAuthenticated: true, email: null, nickname: "游客");
   }
 
+  /// Admin bypass login shortcut
+  Future<void> loginAsAdmin() async {
+    await login("admin@toolbox.com", "admin123456");
+  }
+
   /// Session teardown
   Future<void> logout() async {
     // Clear state and storage immediately for instant UI feedback

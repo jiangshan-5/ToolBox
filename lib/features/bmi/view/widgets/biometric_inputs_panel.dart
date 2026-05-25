@@ -562,10 +562,15 @@ class _BmiBiometricInputsPanelState
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
               ),
               child: Slider(
-                value: weeklyChange,
+                value: weeklyChange.abs().clamp(
+                  isMetric ? 0.1 : 0.2,
+                  isMetric ? 1.0 : 2.2,
+                ),
                 min: isMetric ? 0.1 : 0.2,
                 max: isMetric ? 1.0 : 2.2,
-                onChanged: (v) => notifier.setWeeklyChange(v),
+                onChanged: (v) => notifier.setWeeklyChange(
+                  activeGoal == 'cut' ? -v : v,
+                ),
               ),
             ),
           ],

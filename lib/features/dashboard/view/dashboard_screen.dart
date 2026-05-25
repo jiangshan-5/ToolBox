@@ -16,6 +16,13 @@ import 'widgets/dashboard_nav_bar.dart';
 import 'widgets/workbench_tab_view.dart';
 import 'widgets/profile_tab_view.dart';
 
+/// Riverpod Provider for System Announcements
+final announcementsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
+  final apiClient = ref.watch(apiClientProvider);
+  final response = await apiClient.instance.get('/system/announcements');
+  return response.data as List<dynamic>;
+});
+
 /// Standardized Mainstream Workbench Dashboard Shell
 /// Employs a premium 3-Tab Architecture with a floating glassmorphic Navigation Bar
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -156,6 +163,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
 
+    // Refresh the announcements provider when opening the drawer
+    ref.invalidate(announcementsProvider);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -234,37 +244,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const SizedBox(height: 20),
                     Expanded(
-                      child: ListView(
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          _buildNotificationCard(
-                            icon: Icons.shield_rounded,
-                            title: '局域离线安全沙盒保护已激活',
-                            time: '2026-05-19 12:00',
-                            content:
-                                '所有本地离线计算模块（如随机选择、标准转换、健康BMI）的数据均已采用 AES-256 标准在设备端高强度加密保存。您的运算流绝不会外泄，离线隔离保护罩处于最佳安全状态。',
-                            badge: '安全防护',
-                            badgeColor: Colors.greenAccent,
-                          ),
-                          _buildNotificationCard(
-                            icon: Icons.rocket_launch_rounded,
-                            title: '新增 Sandbox 自定义换算公式管理',
-                            time: '2026-05-19 11:30',
-                            content:
-                                '全新 v1.2.0 版本已全面打通 Sandbox 公式系统！现在，您可以在“个人中心”非常方便地实时查看、审查以及一键销毁（一键垃圾桶）已过期或作废的自定义计算因子。',
-                            badge: '新功能',
-                            badgeColor: primaryColor,
-                          ),
-                          _buildNotificationCard(
-                            icon: Icons.dns_rounded,
-                            title: '阿里云深圳多活高防服务器已对接',
-                            time: '2026-05-18 18:45',
-                            content:
-                                '为了应对可能到来的 1000+ 人高并发计算压力，后端数据网关及 Telemetry 日志管道已完成多维限流与高效降级演练。当前系统可用性达到 99.99%，网络延迟极低。',
-                            badge: '系统扩容',
-                            badgeColor: Colors.cyanAccent,
-                          ),
-                        ],
+                      child: Consumer(
+                        builder: (context, ref, child) {
+                          final announcementsAsync = ref.watch(announcementsProvider);
+                          return announcementsAsync.when(
+                            data: (announcements) {
+                              if (announcements.isEmpty) {
+                                return const Center(
+                                  child: Text(
+                                    '📭 暂无任何公告通知',
+                                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                                  ),
+                                );
+                              }
+                              return ListView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: announcements.length,
+                                itemBuilder: (context, index) {
+                                  final item = announcements[index] as Map<String, dynamic>;
+                                  return _buildNotificationCard(
+                                    icon: _getIconData(item['icon']?.toString() ?? ''),
+                                    title: item['title']?.toString() ?? '',
+                                    time: item['time']?.toString() ?? '',
+                                    content: item['content']?.toString() ?? '',
+                                    badge: item['badge']?.toString() ?? '',
+                                    badgeColor: _getBadgeColor(
+                                      item['badgeColor']?.toString() ?? '',
+                                      primaryColor,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            loading: () => Center(
+                              child: CircularProgressIndicator(color: primaryColor),
+                            ),
+                            error: (err, stack) => Center(
+                              child: Text(
+                                '⚠️ 加载公告失败: $err',
+                                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -275,6 +297,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       },
     );
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'rocket_launch_rounded':
+        return Icons.rocket_launch_rounded;
+      case 'shield_rounded':
+        return Icons.shield_rounded;
+      case 'dns_rounded':
+        return Icons.dns_rounded;
+      default:
+        return Icons.notifications_rounded;
+    }
+  }
+
+  Color _getBadgeColor(String colorName, Color primaryColor) {
+    switch (colorName) {
+      case 'primary':
+        return primaryColor;
+      case 'greenAccent':
+        return Colors.greenAccent;
+      case 'cyanAccent':
+        return Colors.cyanAccent;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildNotificationCard({

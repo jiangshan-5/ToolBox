@@ -56,13 +56,17 @@ class _DeferredPageState extends State<DeferredPage>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedCrossFade(
+    return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      firstChild: _buildSkeletonPlaceholder(context),
-      secondChild: widget.child,
-      crossFadeState: _isTransitionComplete
-          ? CrossFadeState.showSecond
-          : CrossFadeState.showFirst,
+      child: _isTransitionComplete
+          ? KeyedSubtree(
+              key: const ValueKey('real_child'),
+              child: widget.child,
+            )
+          : KeyedSubtree(
+              key: const ValueKey('placeholder'),
+              child: _buildSkeletonPlaceholder(context),
+            ),
     );
   }
 

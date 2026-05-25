@@ -17,6 +17,7 @@ import '../../../auth/provider/auth_provider.dart';
 import '../../../settings/provider/settings_provider.dart';
 import '../../../converter/provider/converter_provider.dart';
 import '../../provider/tools_provider.dart';
+import '../../../debug/view/debug_console_screen.dart';
 import 'dashboard_utils.dart';
 
 class ProfileTabView extends ConsumerStatefulWidget {
@@ -1444,6 +1445,19 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
           ),
         ]),
         _buildSettingsGroup('账号与安全', [
+          if (email == 'admin@toolbox.com')
+            _buildListTile(
+              Icons.terminal_rounded,
+              '系统级高级控制台',
+              Colors.purpleAccent,
+              subtitle: '发布更新公告及管理云端系统实况',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DebugConsoleScreen()),
+                );
+              },
+            ),
           _buildListTile(
             Icons.devices_rounded,
             '设备与会话管理',
