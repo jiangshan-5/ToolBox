@@ -613,17 +613,8 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                   tabController: _tabController,
                   onTrendTap: (title, platform) {
                     if (title.isNotEmpty) {
-                      String searchUrl = '';
-                      if (platform == 'weibo') {
-                        searchUrl = 'https://s.weibo.com/weibo?q=${Uri.encodeComponent(title)}';
-                      } else if (platform == 'baidu') {
-                        searchUrl = 'https://www.baidu.com/s?wd=${Uri.encodeComponent(title)}';
-                      } else if (platform == 'bilibili') {
-                        searchUrl = 'https://search.bilibili.com/all?keyword=${Uri.encodeComponent(title)}';
-                      }
-                      if (searchUrl.isNotEmpty) {
-                        _launchURL(searchUrl);
-                      }
+                      final apiBaseUrl = ref.read(apiBaseUrlProvider);
+                      _launchURL('$apiBaseUrl/system/news/redirect?q=${Uri.encodeComponent(title)}&platform=$platform');
                     }
                   },
                 ),
