@@ -14,7 +14,7 @@ import '../../../utilities/view/white_noise_screen.dart';
 import '../../../utilities/view/markdown_editor_screen.dart';
 import '../../../utilities/view/led_banner_screen.dart';
 import '../../../utilities/view/dev_encoder_screen.dart';
-import '../../../utilities/view/daily_board_screen.dart';
+import '../../../daily_board/view/daily_board_screen.dart';
 
 /// Elite ultra-smooth fade transition route that eliminates page entry stutters
 class FadePageRoute<T> extends PageRouteBuilder<T> {
