@@ -6,6 +6,7 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../dashboard/provider/tools_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DailyBoardScreen extends ConsumerStatefulWidget {
   const DailyBoardScreen({super.key});
@@ -167,6 +168,23 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _launchURL(String urlString) async {
+    try {
+      final Uri url = Uri.parse(urlString);
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ 无法打开链接，请重试！'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -670,39 +688,68 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                       final item = _newsList[index];
                       // Highlight the dynamic bullet prefix
                       final isHeader = index == 0;
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(
-                              top: 4.0,
-                              right: 10.0,
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          hoverColor: Colors.white.withValues(alpha: 0.04),
+                          splashColor: Colors.cyanAccent.withValues(alpha: 0.08),
+                          onTap: () {
+                            String query = item;
+                            // Clean leading emojis/emoticons cleanly
+                            final emojiRegex = RegExp(
+                              r'^[\u2600-\u27BF\uE000-\uF8FF\uD83C\uDF00-\uD83D\uDFFF\uD83E\uDD00-\uD83E\uDFFF\ud83c\udde6-\ud83c\uddff\ud83c\udd70-\ud83c\udd9a\u200d\u2049\u203c\u3030\u303d\u2139\u2122\u231b\u23f0\u23f3\u23e9-\u23ec\u25b6\u25c0\ud83c\udccf\ud83c\udd8e\ud83c\udd91-\ud83c\udd9a\ud83c\udde6-\ud83c\uddff\ud83c\udf00-\ud83d\ude4f\ud83d\ude80-\ud83d\udeff]\s*',
+                            );
+                            query = query.replaceFirst(emojiRegex, '').trim();
+                            if (query.isNotEmpty) {
+                              _launchURL(
+                                'https://www.baidu.com/s?wd=${Uri.encodeComponent(query)}',
+                              );
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 6.0,
+                              horizontal: 8.0,
                             ),
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isHeader
-                                  ? Colors.amberAccent
-                                  : Colors.cyanAccent,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(
+                                    top: 6.0,
+                                    right: 10.0,
+                                  ),
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isHeader
+                                        ? Colors.amberAccent
+                                        : Colors.cyanAccent,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    style: TextStyle(
+                                      color: isHeader
+                                          ? Colors.white
+                                          : Colors.white.withValues(
+                                            alpha: 0.85,
+                                          ),
+                                      fontSize: isHeader ? 13.5 : 12.5,
+                                      fontWeight: isHeader
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              item,
-                              style: TextStyle(
-                                color: isHeader
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.85),
-                                fontSize: isHeader ? 13.5 : 12.5,
-                                fontWeight: isHeader
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       );
                     },
                   ),
@@ -751,11 +798,17 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                         _buildTrendingTabList(
                           _weiboTrends,
                           Colors.orangeAccent,
+                          'weibo',
                         ),
-                        _buildTrendingTabList(_baiduTrends, Colors.cyanAccent),
+                        _buildTrendingTabList(
+                          _baiduTrends,
+                          Colors.cyanAccent,
+                          'baidu',
+                        ),
                         _buildTrendingTabList(
                           _bilibiliTrends,
                           Colors.pinkAccent,
+                          'bilibili',
                         ),
                       ],
                     ),
@@ -769,6 +822,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
   Widget _buildTrendingTabList(
     List<Map<String, dynamic>> list,
     Color themeColor,
+    String platform,
   ) {
     if (list.isEmpty) {
       return const Center(
@@ -828,60 +882,89 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
           );
         }
 
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white.withValues(alpha: 0.02),
-                width: 1,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              // Position Index
-              Container(
-                width: 24,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "${index + 1}",
-                  style: TextStyle(
-                    color: index < 3 ? themeColor : Colors.white24,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            hoverColor: Colors.white.withValues(alpha: 0.04),
+            splashColor: themeColor.withValues(alpha: 0.1),
+            onTap: () {
+              if (title.isNotEmpty) {
+                String searchUrl = '';
+                if (platform == 'weibo') {
+                  searchUrl =
+                      'https://s.weibo.com/weibo?q=${Uri.encodeComponent(title)}';
+                } else if (platform == 'baidu') {
+                  searchUrl =
+                      'https://www.baidu.com/s?wd=${Uri.encodeComponent(title)}';
+                } else if (platform == 'bilibili') {
+                  searchUrl =
+                      'https://search.bilibili.com/all?keyword=${Uri.encodeComponent(title)}';
+                }
+                if (searchUrl.isNotEmpty) {
+                  _launchURL(searchUrl);
+                }
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.02),
+                    width: 1,
                   ),
                 ),
               ),
-
-              // Topic Title
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12.5,
-                        ),
+              child: Row(
+                children: [
+                  // Position Index
+                  Container(
+                    width: 24,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "${index + 1}",
+                      style: TextStyle(
+                        color: index < 3 ? themeColor : Colors.white24,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    trendWidget,
-                  ],
-                ),
-              ),
+                  ),
 
-              // Heat Metric
-              if (hot.isNotEmpty)
-                Text(
-                  hot,
-                  style: const TextStyle(color: Colors.white38, fontSize: 10.5),
-                ),
-            ],
+                  // Topic Title
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        trendWidget,
+                      ],
+                    ),
+                  ),
+
+                  // Heat Metric
+                  if (hot.isNotEmpty)
+                    Text(
+                      hot,
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         );
       },
