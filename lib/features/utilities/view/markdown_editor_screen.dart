@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/global_clipboard_provider.dart';
-
+import '../../../core/widgets/pipeline_wrapper.dart';
+import '../../ai/view/ai_text_processor_screen.dart';
 import '../provider/markdown_editor_provider.dart';
 
 class MarkdownEditorScreen extends ConsumerStatefulWidget {
-  const MarkdownEditorScreen({super.key});
+  final String? initialText;
+  const MarkdownEditorScreen({super.key, this.initialText});
 
   @override
   ConsumerState<MarkdownEditorScreen> createState() =>
@@ -39,13 +41,13 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
 
     _tabController = TabController(length: 2, vsync: this);
 
-    final baseText = ref.read(markdownEditorCacheProvider);
+    final String baseText = widget.initialText ?? ref.read(markdownEditorCacheProvider);
 
     final globalClipboardText = ref.read(globalClipboardProvider);
 
     String text = baseText;
 
-    if (globalClipboardText != null && globalClipboardText.trim().isNotEmpty) {
+    if (widget.initialText == null && globalClipboardText != null && globalClipboardText.trim().isNotEmpty) {
       text = baseText.isEmpty
           ? globalClipboardText
           : '$baseText\n\n$globalClipboardText';
@@ -237,6 +239,35 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
             ),
           ),
 
+          actions: [
+            IconButton(
+              icon: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.purpleAccent,
+              ),
+              tooltip: '发送至 AI 写作引擎',
+              onPressed: () {
+                final text = _editorController.text.trim();
+                if (text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('请先输入 Markdown 内容'),
+                      backgroundColor: Colors.orangeAccent,
+                    ),
+                  );
+                  return;
+                }
+                ref.read(globalClipboardProvider.notifier).state = text;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AiTextProcessorScreen(initialText: text),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+          ],
+
           bottom: TabBar(
             controller: _tabController,
 
@@ -254,33 +285,37 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
           ),
         ),
 
-        body: Stack(
-          children: [
-            // Background
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0C091F),
-                    Color(0xFF140F2D),
-                    Color(0xFF06050C),
-                  ],
+        body: PipelineWrapper(
+          toolKey: 'markdown_editor',
+          controller: _editorController,
+          child: Stack(
+            children: [
+              // Background
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF0C091F),
+                      Color(0xFF140F2D),
+                      Color(0xFF06050C),
+                    ],
 
-                  begin: Alignment.topLeft,
+                    begin: Alignment.topLeft,
 
-                  end: Alignment.bottomRight,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
-            ),
 
-            SafeArea(
-              child: TabBarView(
-                controller: _tabController,
+              SafeArea(
+                child: TabBarView(
+                  controller: _tabController,
 
-                children: [_buildEditorTab(), _buildPreviewTab()],
+                  children: [_buildEditorTab(), _buildPreviewTab()],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

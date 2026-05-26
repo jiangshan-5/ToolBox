@@ -85,3 +85,60 @@ final analyticsProvider =
       ref.watch(authProvider);
       return AnalyticsNotifier(ref);
     });
+
+class WorkflowExecution {
+  final String id;
+  final List<String> steps;
+  final Map<int, String> stepInputs;
+  final Map<int, String> stepOutputs;
+  final String status;
+  final DateTime createdAt;
+
+  WorkflowExecution({
+    required this.id,
+    required this.steps,
+    required this.stepInputs,
+    required this.stepOutputs,
+    required this.status,
+    required this.createdAt,
+  });
+
+  factory WorkflowExecution.fromJson(Map<String, dynamic> json) {
+    final Map<int, String> inputs = {};
+    if (json['step_inputs'] != null) {
+      (json['step_inputs'] as Map<dynamic, dynamic>).forEach((k, v) {
+        inputs[int.tryParse(k.toString()) ?? 0] = v.toString();
+      });
+    }
+    final Map<int, String> outputs = {};
+    if (json['step_outputs'] != null) {
+      (json['step_outputs'] as Map<dynamic, dynamic>).forEach((k, v) {
+        outputs[int.tryParse(k.toString()) ?? 0] = v.toString();
+      });
+    }
+
+    return WorkflowExecution(
+      id: json['id'] as String,
+      steps: List<String>.from(json['steps'] as List),
+      stepInputs: inputs,
+      stepOutputs: outputs,
+      status: json['status'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+}
+
+final workflowExecutionsProvider = FutureProvider<List<WorkflowExecution>>((ref) async {
+  try {
+    final auth = ref.watch(authProvider);
+    if (!auth.isAuthenticated || auth.email == null) return const [];
+    
+    final dio = ref.read(apiClientProvider).instance;
+    final response = await dio.get('/tools/workflows/executions');
+    final List data = response.data as List;
+    return data.map((json) => WorkflowExecution.fromJson(json)).toList();
+  } catch (e) {
+    return const [];
+  }
+});
+

@@ -6,7 +6,7 @@ import '../../auth/provider/auth_provider.dart';
 import '../../dashboard/provider/tools_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:js' if (dart.library.html) 'dart:js' as js;
+import 'package:toolbox_app/core/providers/js_stub.dart' if (dart.library.html) 'dart:js' as js;
 import '../../../core/storage/local_storage.dart';
 import '../../../core/providers/api_config_provider.dart';
 import 'package:just_audio/just_audio.dart';
@@ -42,10 +42,12 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
 
   // Push Notification Simulation State
   bool _pushOnStartup = false;
+  bool _pushDaily10am = true; // Defaults to true
   int _pushNewsCount = 3;
   int _pushIntervalSeconds = 10;
   bool _isPeriodicPushRunning = false;
   Timer? _periodicPushTimer;
+  Timer? _daily10amPushTimer;
   final List<Map<String, dynamic>> _pushHistory = [];
   OverlayEntry? _activeNotificationOverlay;
 
@@ -88,6 +90,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
       _fetchHotSearches();
       _logToolUsage();
       _loadPushSettings();
+      _scheduleDaily10amPushChecker();
     });
   }
 
@@ -95,6 +98,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
   void dispose() {
     _tabController.dispose();
     _periodicPushTimer?.cancel();
+    _daily10amPushTimer?.cancel();
     _activeNotificationOverlay?.remove();
     _activeNotificationOverlay = null;
     super.dispose();
@@ -213,6 +217,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
       final prefs = ref.read(sharedPreferencesProvider);
       setState(() {
         _pushOnStartup = prefs.getBool('push_on_startup') ?? false;
+        _pushDaily10am = prefs.getBool('push_daily_10am') ?? true; // Defaults to true
         _pushNewsCount = prefs.getInt('push_news_count') ?? 3;
         _pushIntervalSeconds = prefs.getInt('push_interval_seconds') ?? 10;
       });
@@ -229,6 +234,46 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
         });
       }
     } catch (_) {}
+  }
+
+  void _scheduleDaily10amPushChecker() {
+    _daily10amPushTimer?.cancel();
+    _daily10amPushTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (!_pushDaily10am) return;
+
+      final now = DateTime.now();
+      // Check if it is exactly 10:00 AM (hour == 10 and minute == 0)
+      if (now.hour == 10 && now.minute == 0) {
+        final prefs = ref.read(sharedPreferencesProvider);
+        final lastPushDate = prefs.getString('last_daily_push_date') ?? '';
+        final todayStr = "${now.year}-${now.month}-${now.day}";
+
+        if (lastPushDate != todayStr) {
+          prefs.setString('last_daily_push_date', todayStr);
+          _triggerDaily10amPush();
+        }
+      }
+    });
+  }
+
+  void _triggerDaily10amPush() {
+    final nowTimeStr = DateTime.now().toLocal().toString().substring(11, 19);
+    final pushTitle = "📰 Toolbox Pro 10点时事精选推送";
+    final pushItems = _getCuratedNewsForPush(_pushNewsCount);
+
+    _showFloatingNotification(title: pushTitle, items: pushItems);
+    _playChimeSound();
+    _triggerBrowserNotification(title: pushTitle, items: pushItems);
+
+    if (mounted) {
+      setState(() {
+        _pushHistory.insert(0, {
+          'time': nowTimeStr,
+          'title': pushTitle,
+          'items': pushItems,
+        });
+      });
+    }
   }
 
   void _savePushSetting(String key, dynamic value) async {
@@ -628,6 +673,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                 const SizedBox(height: 12),
                 DailyBoardPushController(
                   pushOnStartup: _pushOnStartup,
+                  pushDaily10am: _pushDaily10am,
                   pushNewsCount: _pushNewsCount,
                   isPeriodicPushRunning: _isPeriodicPushRunning,
                   pushIntervalSeconds: _pushIntervalSeconds,
@@ -635,6 +681,10 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                   onPushOnStartupChanged: (val) {
                     setState(() => _pushOnStartup = val);
                     _savePushSetting('push_on_startup', val);
+                  },
+                  onPushDaily10amChanged: (val) {
+                    setState(() => _pushDaily10am = val);
+                    _savePushSetting('push_daily_10am', val);
                   },
                   onPushNewsCountChanged: (val) {
                     setState(() => _pushNewsCount = val);

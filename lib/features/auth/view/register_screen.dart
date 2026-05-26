@@ -35,10 +35,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _sendVerificationCode() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
+    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    if (email.isEmpty || !emailRegex.hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('请输入正确的邮箱地址'),
+          content: Text('请输入格式正确的邮箱地址'),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -140,69 +141,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           fontWeight: FontWeight.bold,
                           color: colors.onSurface,
                           letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '立即注册，开启您的高级工具箱',
-                        style: TextStyle(
-                          color: colors.onSurface.withOpacity(0.6),
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.secondary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colors.secondary.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: colors.secondary,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "开发测试与真机联调提示",
-                                  style: TextStyle(
-                                    color: colors.secondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "1. 📱 真机测试请点击右上角 🌐 图标配置电脑局域网 IP（如 http://192.168.x.x:8000）以连接服务。",
-                              style: TextStyle(
-                                color: colors.onSurface.withOpacity(0.7),
-                                fontSize: 11,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "2. 🔑 开发调试模式下（SMTP未配置），输入万能验证码 '000000' 即可直接注册成功。",
-                              style: TextStyle(
-                                color: colors.onSurface.withOpacity(0.7),
-                                fontSize: 11,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -363,6 +301,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('请填写完整的注册信息'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
+    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请输入格式正确的邮箱地址'),
           backgroundColor: Colors.orangeAccent,
         ),
       );

@@ -10,6 +10,7 @@ import '../../../core/widgets/dynamic_effects.dart';
 
 import '../../../core/widgets/dynamic_background.dart';
 
+import '../../utilities/view/led_banner_screen.dart';
 import '../provider/randomizer_provider.dart';
 import 'widgets/random_range_row.dart';
 import 'widgets/random_option_row.dart';
@@ -17,7 +18,8 @@ import 'widgets/dice_bouncing_canvas.dart';
 
 /// Sandboxed, highly-customizable Decision & Combinatorial Randomizer Screen with dynamic micro-interactions
 class RandomizerScreen extends ConsumerStatefulWidget {
-  const RandomizerScreen({super.key});
+  final String? initialText;
+  const RandomizerScreen({super.key, this.initialText});
 
   @override
   ConsumerState<RandomizerScreen> createState() => _RandomizerScreenState();
@@ -43,6 +45,13 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 1),
     );
+    if (widget.initialText != null) {
+      _diceLabelsController.text = widget.initialText!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(randomizerProvider.notifier).setCustomDiceLabels(widget.initialText!);
+        ref.read(randomizerProvider.notifier).setMode(RandomizerMode.dice);
+      });
+    }
   }
 
   @override
@@ -1099,44 +1108,85 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
             children: [
               Text(
                 '🎉 随机沙盒抽选结果清单:',
-                style: TextStyle(color: subTextColor, fontSize: 12),
+                style: TextStyle(color: subTextColor, fontSize: 11.5),
               ),
-              ScaleOnTap(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: results.join('\n')));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('⚡ 全部抽取结果已成功复制'),
-                      backgroundColor: Colors.white10,
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: color.withOpacity(0.35)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.copy_rounded, color: color, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        '一键复制',
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ScaleOnTap(
+                    onTap: () {
+                      final joined = results.join('  |  ');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => LedBannerScreen(initialText: joined),
                         ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        color: Colors.cyanAccent.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.cyanAccent.withOpacity(0.35)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.live_tv_rounded, color: Colors.cyanAccent, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            '投屏弹幕',
+                            style: TextStyle(
+                              color: Colors.cyanAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  ScaleOnTap(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: results.join('\n')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('⚡ 全部抽取结果已成功复制'),
+                          backgroundColor: Colors.white10,
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: color.withOpacity(0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.copy_rounded, color: color, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            '一键复制',
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

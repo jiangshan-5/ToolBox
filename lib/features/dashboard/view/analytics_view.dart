@@ -3,17 +3,22 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../provider/analytics_provider.dart';
+import 'widgets/dashboard_utils.dart';
 
 class AnalyticsView extends ConsumerWidget {
   const AnalyticsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+
     final analyticsState = ref.watch(analyticsProvider);
 
     return analyticsState.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.cyanAccent),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: primaryColor),
       ),
       error: (e, st) => Center(
         child: Column(
@@ -23,7 +28,7 @@ class AnalyticsView extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               '数据同步失败: ${e.toString()}',
-              style: const TextStyle(color: Colors.white70),
+              style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
             ),
             TextButton(
               onPressed: () => ref.read(analyticsProvider.notifier).refresh(),
@@ -40,24 +45,34 @@ class AnalyticsView extends ConsumerWidget {
         padding: EdgeInsets.zero,
         children: [
           // AI Productivity Assets
-          _buildProductivitySummary(data),
+          _buildProductivitySummary(context, data),
           const SizedBox(height: 16),
 
           // Health Trend Chart
-          _buildHealthTrendChart(data),
+          _buildHealthTrendChart(context, data),
           const SizedBox(height: 16),
 
           // Developer Heatmap
-          _buildHeatmap(data),
-          const SizedBox(height: 20),
+          _buildHeatmap(context, data),
+          const SizedBox(height: 16),
+
+          // Executions History Timeline
+          _buildExecutionsHistory(context, ref),
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  Widget _buildProductivitySummary(AnalyticsDashboardData data) {
+  Widget _buildProductivitySummary(BuildContext context, AnalyticsDashboardData data) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final primaryColor = theme.colorScheme.primary;
+
     return GlassCard(
-      borderColor: Colors.cyanAccent.withOpacity(0.3),
+      borderColor: primaryColor.withOpacity(0.3),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -68,20 +83,20 @@ class AnalyticsView extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.cyanAccent.withOpacity(0.15),
+                    color: primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.bolt_rounded,
-                    color: Colors.cyanAccent,
+                    color: primaryColor,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'AI 效能与算力资产',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -93,16 +108,19 @@ class AnalyticsView extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildStatItem(
+                  context,
                   '本周生成词汇',
                   '${data.aiWordsGenerated}',
-                  Colors.cyanAccent,
+                  primaryColor,
                 ),
                 _buildStatItem(
+                  context,
                   '为您节省时间',
                   '${data.aiTimeSavedHours} h',
                   Colors.orangeAccent,
                 ),
                 _buildStatItem(
+                  context,
                   '驱动模型调用',
                   '${data.aiModelInvocations} 次',
                   Colors.purpleAccent,
@@ -115,13 +133,16 @@ class AnalyticsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
+  Widget _buildStatItem(BuildContext context, String label, String value, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
+          style: TextStyle(color: faintTextColor, fontSize: 11),
         ),
         const SizedBox(height: 6),
         Text(
@@ -136,16 +157,22 @@ class AnalyticsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthTrendChart(AnalyticsDashboardData data) {
+  Widget _buildHealthTrendChart(BuildContext context, AnalyticsDashboardData data) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     if (data.healthBmiTrend.isEmpty) {
       return GlassCard(
         borderColor: Colors.pinkAccent.withOpacity(0.3),
-        child: const Padding(
-          padding: EdgeInsets.all(20.0),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
           child: Center(
             child: Text(
               '暂无健康趋势数据。去使用 BMI 计算器记录一下吧！',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: subTextColor),
             ),
           ),
         ),
@@ -181,10 +208,10 @@ class AnalyticsView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   '个人体征 BMI 趋势 (云端同步)',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -201,7 +228,7 @@ class AnalyticsView extends ConsumerWidget {
                     drawVerticalLine: false,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.white.withOpacity(0.05),
+                        color: textColor.withOpacity(0.05),
                         strokeWidth: 1,
                       );
                     },
@@ -224,8 +251,8 @@ class AnalyticsView extends ConsumerWidget {
                               padding: const EdgeInsets.only(top: 10.0),
                               child: Text(
                                 data.healthTrendDates[value.toInt()],
-                                style: const TextStyle(
-                                  color: Colors.white38,
+                                style: TextStyle(
+                                  color: faintTextColor,
                                   fontSize: 10,
                                 ),
                               ),
@@ -242,8 +269,8 @@ class AnalyticsView extends ConsumerWidget {
                         getTitlesWidget: (value, meta) {
                           return Text(
                             '${value.toInt()}',
-                            style: const TextStyle(
-                              color: Colors.white54,
+                            style: TextStyle(
+                              color: subTextColor,
                               fontSize: 10,
                             ),
                           );
@@ -257,8 +284,8 @@ class AnalyticsView extends ConsumerWidget {
                     1.0,
                     7.0,
                   ),
-                  minY: minBMI,
-                  maxY: maxBMI,
+                  minY: minY(minBMI),
+                  maxY: maxY(maxBMI),
                   lineBarsData: [
                     LineChartBarData(
                       spots: spots,
@@ -271,7 +298,7 @@ class AnalyticsView extends ConsumerWidget {
                         getDotPainter: (spot, percent, barData, index) {
                           return FlDotCirclePainter(
                             radius: 4,
-                            color: Colors.white,
+                            color: isDark ? Colors.white : Colors.black,
                             strokeWidth: 2,
                             strokeColor: Colors.pinkAccent,
                           );
@@ -292,7 +319,15 @@ class AnalyticsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeatmap(AnalyticsDashboardData data) {
+  double minY(double val) => val.isInfinite || val.isNaN ? 15.0 : val;
+  double maxY(double val) => val.isInfinite || val.isNaN ? 30.0 : val;
+
+  Widget _buildHeatmap(BuildContext context, AnalyticsDashboardData data) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return GlassCard(
       borderColor: Colors.greenAccent.withOpacity(0.2),
       child: Padding(
@@ -315,10 +350,10 @@ class AnalyticsView extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   '云端应用生态活跃度图谱',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -328,7 +363,6 @@ class AnalyticsView extends ConsumerWidget {
             const SizedBox(height: 20),
             LayoutBuilder(
               builder: (context, constraints) {
-                // Determine box size to fit ~18 columns
                 final boxSize = (constraints.maxWidth - (17 * 4)) / 18;
                 final heatmapLength = 18 * 7;
                 return Wrap(
@@ -340,7 +374,7 @@ class AnalyticsView extends ConsumerWidget {
                         : 0.0;
                     Color color;
                     if (intensity <= 0.0) {
-                      color = Colors.white.withOpacity(0.04);
+                      color = textColor.withOpacity(0.04);
                     } else if (intensity < 0.3) {
                       color = Colors.greenAccent.withOpacity(0.3);
                     } else if (intensity < 0.6) {
@@ -361,27 +395,251 @@ class AnalyticsView extends ConsumerWidget {
               },
             ),
             const SizedBox(height: 16),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   '少',
-                  style: TextStyle(color: Colors.white38, fontSize: 10),
+                  style: TextStyle(color: faintTextColor, fontSize: 10),
                 ),
-                SizedBox(width: 6),
-                _ColorBox(opacity: 0.04),
-                SizedBox(width: 3),
-                _ColorBox(opacity: 0.3),
-                SizedBox(width: 3),
-                _ColorBox(opacity: 0.6),
-                SizedBox(width: 3),
-                _ColorBox(opacity: 1.0),
-                SizedBox(width: 6),
+                const SizedBox(width: 6),
+                _ColorBox(opacity: 0.04, isDark: isDark),
+                const SizedBox(width: 3),
+                _ColorBox(opacity: 0.3, isDark: isDark),
+                const SizedBox(width: 3),
+                _ColorBox(opacity: 0.6, isDark: isDark),
+                const SizedBox(width: 3),
+                _ColorBox(opacity: 1.0, isDark: isDark),
+                const SizedBox(width: 6),
                 Text(
                   '多',
-                  style: TextStyle(color: Colors.white38, fontSize: 10),
+                  style: TextStyle(color: faintTextColor, fontSize: 10),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExecutionsHistory(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+    final primaryColor = theme.colorScheme.primary;
+
+    final executionsAsync = ref.watch(workflowExecutionsProvider);
+
+    return GlassCard(
+      borderColor: primaryColor.withOpacity(0.25),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.history_rounded,
+                    color: primaryColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '🗄️ 全工具历史流水线运行记录',
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            executionsAsync.when(
+              loading: () => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2),
+                ),
+              ),
+              error: (e, st) => Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: Text('获取流水线记录失败', style: TextStyle(color: subTextColor)),
+                ),
+              ),
+              data: (logs) {
+                if (logs.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0),
+                      child: Column(
+                        children: [
+                          Icon(Icons.history_toggle_off_rounded, color: faintTextColor, size: 36),
+                          const SizedBox(height: 8),
+                          Text(
+                            '暂无流水线运行记录。\n快去工作流车间组合运行一套试试吧！',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: faintTextColor, fontSize: 12, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: logs.length,
+                  separatorBuilder: (c, i) => Divider(
+                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+                    height: 16,
+                  ),
+                  itemBuilder: (context, index) {
+                    final log = logs[index];
+                    final timeStr = formatTime(log.createdAt.toIso8601String());
+
+                    return Theme(
+                      data: theme.copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.all(12),
+                        expandedAlignment: Alignment.topLeft,
+                        iconColor: primaryColor,
+                        collapsedIconColor: subTextColor,
+                        title: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.greenAccent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.greenAccent.withOpacity(0.2)),
+                              ),
+                              child: const Text(
+                                'SUCCESS',
+                                style: TextStyle(color: Colors.greenAccent, fontSize: 8, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '流水线 #${log.id.substring(0, 6)}',
+                                style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Text(
+                              timeStr,
+                              style: TextStyle(color: faintTextColor, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6.0),
+                          child: Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: List.generate(log.steps.length, (idx) {
+                              final stepKey = log.steps[idx];
+                              final stepName = getToolChineseName(stepKey);
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (idx > 0)
+                                    Icon(Icons.arrow_right_rounded, color: faintTextColor, size: 14),
+                                  Text(
+                                    stepName,
+                                    style: TextStyle(color: primaryColor, fontSize: 10.5, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                        ),
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: (isDark ? Colors.white : Colors.black).withOpacity(0.06),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: List.generate(log.steps.length, (idx) {
+                                final stepKey = log.steps[idx];
+                                final stepName = getToolChineseName(stepKey);
+                                final stepInput = log.stepInputs[idx] ?? '';
+                                final stepOutput = log.stepOutputs[idx] ?? '';
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(getToolIcon(stepKey), color: getToolColor(stepKey, context), size: 12),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '步骤 ${idx + 1}: $stepName',
+                                            style: TextStyle(color: textColor, fontSize: 11.5, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 18.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '📥 输入:',
+                                              style: TextStyle(color: faintTextColor, fontSize: 10),
+                                            ),
+                                            Text(
+                                              stepInput.isEmpty ? '[空]' : stepInput,
+                                              style: TextStyle(color: subTextColor, fontSize: 11),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '📤 输出:',
+                                              style: TextStyle(color: faintTextColor, fontSize: 10),
+                                            ),
+                                            Text(
+                                              stepOutput.isEmpty ? '[空]' : stepOutput,
+                                              style: TextStyle(color: getToolColor(stepKey, context), fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ],
         ),
@@ -392,7 +650,8 @@ class AnalyticsView extends ConsumerWidget {
 
 class _ColorBox extends StatelessWidget {
   final double opacity;
-  const _ColorBox({required this.opacity});
+  final bool isDark;
+  const _ColorBox({required this.opacity, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -401,7 +660,7 @@ class _ColorBox extends StatelessWidget {
       height: 10,
       decoration: BoxDecoration(
         color: opacity <= 0.05
-            ? Colors.white.withOpacity(0.04)
+            ? (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04))
             : Colors.greenAccent.withOpacity(opacity),
         borderRadius: BorderRadius.circular(2),
       ),

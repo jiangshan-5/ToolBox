@@ -9,6 +9,7 @@ import '../../../core/providers/global_clipboard_provider.dart';
 import '../../utilities/provider/markdown_editor_provider.dart';
 import '../../utilities/view/markdown_editor_screen.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/pipeline_wrapper.dart';
 import 'ai_config_screen.dart';
 
 class TypewriterText extends StatefulWidget {
@@ -110,6 +111,7 @@ class AiTextProcessorScreen extends ConsumerStatefulWidget {
 
 class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
   final TextEditingController _textController = TextEditingController();
+  final TextEditingController _outputController = TextEditingController();
   bool _hasPromptedConfig = false;
   String _selectedAction = 'polish'; // Actions: polish, translate, summarize
   String _targetLanguage = 'en'; // Defaults to English for translation
@@ -163,6 +165,7 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
   @override
   void dispose() {
     _textController.dispose();
+    _outputController.dispose();
     super.dispose();
   }
 
@@ -338,6 +341,16 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
   Widget build(BuildContext context) {
     final processorState = ref.watch(aiTextProcessorProvider);
 
+    if (processorState.result != null) {
+      if (_outputController.text != processorState.result) {
+        _outputController.text = processorState.result!;
+      }
+    } else {
+      if (_outputController.text != _textController.text) {
+        _outputController.text = _textController.text;
+      }
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -386,8 +399,12 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Stack(
-        children: [
+      body: PipelineWrapper(
+        toolKey: 'ai_text_processor',
+        controller: _outputController,
+        inputController: _textController,
+        child: Stack(
+          children: [
           // Theme Background Gradient
           Container(
             decoration: const BoxDecoration(
@@ -829,8 +846,9 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildActionChip(String action, IconData icon, String label) {
     final isSelected = _selectedAction == action;

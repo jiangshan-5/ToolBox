@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/providers/theme_provider.dart';
@@ -19,6 +20,16 @@ void main() async {
   );
 }
 
+
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+      };
+}
+
 class ToolboxApp extends ConsumerWidget {
   const ToolboxApp({super.key});
 
@@ -29,6 +40,7 @@ class ToolboxApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Toolbox Pro',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: AppScrollBehavior(),
       theme: themeData,
       home: const AuthWrapper(),
     );

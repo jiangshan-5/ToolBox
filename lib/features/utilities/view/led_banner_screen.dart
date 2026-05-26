@@ -7,12 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/dashboard/provider/tools_provider.dart';
+import '../../../core/widgets/pipeline_wrapper.dart';
 import 'widgets/led_marquee_widget.dart';
 import 'widgets/led_grid_painter.dart';
 import 'widgets/led_control_panel.dart';
 
 class LedBannerScreen extends ConsumerStatefulWidget {
-  const LedBannerScreen({super.key});
+  final String? initialText;
+  const LedBannerScreen({super.key, this.initialText});
 
   @override
   ConsumerState<LedBannerScreen> createState() => _LedBannerScreenState();
@@ -26,9 +28,7 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
   Color get borderDividerColor =>
       isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 
-  final TextEditingController _textController = TextEditingController(
-    text: "CYBERPUNK NEON LED BANNER 🚀",
-  );
+  late final TextEditingController _textController;
 
   double _fontSize = 64.0;
   double _scrollSpeed = 3.0; // 1 (Slow) to 10 (Fast)
@@ -60,6 +60,9 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
   @override
   void initState() {
     super.initState();
+    _textController = TextEditingController(
+      text: widget.initialText ?? "CYBERPUNK NEON LED BANNER 🚀",
+    );
     _startBlinkTimer();
     // Telemetry: log tool launch
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -222,8 +225,11 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
           const SizedBox(width: 8),
         ],
       ),
-      body: Stack(
-        children: [
+      body: PipelineWrapper(
+        toolKey: 'led_banner',
+        controller: _textController,
+        child: Stack(
+          children: [
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -352,8 +358,9 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildBannerView({required bool isFullscreen}) {
     return Stack(

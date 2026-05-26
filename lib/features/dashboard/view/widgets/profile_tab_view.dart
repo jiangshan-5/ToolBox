@@ -1392,7 +1392,288 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
     );
   }
 
+  static const List<Map<String, String>> cyberAvatars = [
+    {'name': 'Matrix Hacker ⚡', 'value': '⚡'},
+    {'name': 'Neon Cyborg 🤖', 'value': '🤖'},
+    {'name': 'Cyber Sakura 🌸', 'value': '🌸'},
+    {'name': 'Pixel Runner 🏃', 'value': '🏃'},
+    {'name': 'Aero Pilot 🚀', 'value': '🚀'},
+    {'name': 'Cosmic Sage 🔮', 'value': '🔮'},
+  ];
+
+  Widget _buildAvatarWidget(String? avatarUrl, double radius) {
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: const Color(0xFF0F0C29),
+        child: Icon(
+          Icons.person_rounded,
+          size: radius * 1.1,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    if (avatarUrl.startsWith('data:image/') || avatarUrl.length > 50) {
+      try {
+        final cleanBase64 = avatarUrl.contains(',') ? avatarUrl.split(',')[1] : avatarUrl;
+        return CircleAvatar(
+          radius: radius,
+          backgroundColor: Colors.transparent,
+          backgroundImage: MemoryImage(base64Decode(cleanBase64)),
+        );
+      } catch (_) {}
+    }
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFF100E26),
+      child: Text(
+        avatarUrl,
+        style: TextStyle(fontSize: radius * 1.1),
+      ),
+    );
+  }
+
+  void _showAvatarSelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            borderColor: primaryColor.withOpacity(0.3),
+            glowColor: primaryColor,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.face_retouching_natural_rounded, color: Colors.pinkAccent),
+                      const SizedBox(width: 8),
+                      Text(
+                        '自定义赛博头像',
+                        style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 160,
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 1.0,
+                      ),
+                      itemCount: cyberAvatars.length,
+                      itemBuilder: (context, index) {
+                        final avatar = cyberAvatars[index];
+                        return GestureDetector(
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await ref.read(authProvider.notifier).updateProfile(avatarUrl: avatar['value']);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('✨ 赛博头像设置成功！已同步至云端'),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: primaryColor.withOpacity(0.2)),
+                            ),
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(avatar['value']!, style: const TextStyle(fontSize: 28)),
+                                const SizedBox(height: 4),
+                                Text(avatar['name']!.split(' ').first, style: TextStyle(color: subTextColor, fontSize: 9)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.image,
+                            withData: true,
+                          );
+                          if (result != null && result.files.isNotEmpty) {
+                            final file = result.files.first;
+                            final bytes = file.bytes;
+                            if (bytes != null) {
+                              if (bytes.length > 1 * 1024 * 1024) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('头像大小超出 1MB 限制'),
+                                      backgroundColor: Colors.orangeAccent,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                              final base64Str = base64Encode(bytes);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
+                              await ref.read(authProvider.notifier).updateProfile(
+                                avatarUrl: 'data:image/png;base64,$base64Str',
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('✨ 自定义头像上传成功！已同步至云端'),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          debugPrint('Error uploading custom avatar: $e');
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.cloud_upload_rounded, color: Colors.black),
+                      label: const Text('上传本地图片作为头像', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditBioDialog(BuildContext context, String currentBio) {
+    final TextEditingController bioController = TextEditingController(text: currentBio);
+    bool isLoading = false;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF140F2D),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: primaryColor.withOpacity(0.3), width: 1.5),
+            ),
+            title: const Text(
+              '修改专属个性签名',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: bioController,
+                  maxLines: 3,
+                  maxLength: 50,
+                  style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                  cursorColor: primaryColor,
+                  decoration: InputDecoration(
+                    hintText: '写下您的签名，彰显极客身份...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: primaryColor, width: 1),
+                    ),
+                  ),
+                ),
+                if (isLoading) ...[
+                  const SizedBox(height: 16),
+                  LinearProgressIndicator(color: primaryColor),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(context),
+                child: const Text('取消', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor.withOpacity(0.8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final newBio = bioController.text.trim();
+                        setState(() => isLoading = true);
+                        final success = await ref
+                            .read(authProvider.notifier)
+                            .updateProfile(bio: newBio);
+                        setState(() => isLoading = false);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✨ 个性签名已同步至云端！'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('网络故障，修改失败。'),
+                                backgroundColor: Colors.redAccent,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: const Text('保存至云端', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildProfileHeader(String email, String nickname) {
+    final auth = ref.watch(authProvider);
+    final currentAvatarUrl = auth.avatarUrl;
+    final signature = auth.bio ?? '这个人很懒，什么都没有留下...';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -1432,21 +1713,19 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [primaryColor, secondaryColor],
-                    ),
-                  ),
-                  child: const CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Color(0xFF0F0C29),
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 36,
-                      color: Colors.white,
+                GestureDetector(
+                  onTap: () => _showAvatarSelectionDialog(context),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [primaryColor, secondaryColor],
+                        ),
+                      ),
+                      child: _buildAvatarWidget(currentAvatarUrl, 32),
                     ),
                   ),
                 ),
@@ -1457,31 +1736,71 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                     children: [
                       GestureDetector(
                         onTap: () => _showEditProfileDialog(context, nickname),
-                        child: Row(
-                          children: [
-                            Text(
-                              nickname,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Row(
+                            children: [
+                              Text(
+                                nickname,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.edit_rounded,
-                              color: Colors.white54,
-                              size: 16,
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.edit_rounded,
+                                color: Colors.white54,
+                                size: 16,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        email,
+                        email.isEmpty ? '游客模式体验中' : email,
                         style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Inline Bio Signature Box
+                      GestureDetector(
+                        onTap: () => _showEditBioDialog(context, signature),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white.withOpacity(0.04)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.psychology_outlined, color: Colors.cyanAccent, size: 12),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    signature,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.85),
+                                      fontSize: 10.5,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(Icons.mode_edit_outline_rounded, color: Colors.white.withOpacity(0.3), size: 10),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),

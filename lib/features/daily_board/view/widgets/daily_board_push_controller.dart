@@ -4,11 +4,13 @@ import '../../../../core/widgets/dynamic_effects.dart';
 
 class DailyBoardPushController extends StatelessWidget {
   final bool pushOnStartup;
+  final bool pushDaily10am;
   final int pushNewsCount;
   final bool isPeriodicPushRunning;
   final int pushIntervalSeconds;
   final List<Map<String, dynamic>> pushHistory;
   final ValueChanged<bool> onPushOnStartupChanged;
+  final ValueChanged<bool> onPushDaily10amChanged;
   final ValueChanged<int> onPushNewsCountChanged;
   final ValueChanged<bool> onPeriodicPushRunningChanged;
   final ValueChanged<int> onPushIntervalSecondsChanged;
@@ -19,11 +21,13 @@ class DailyBoardPushController extends StatelessWidget {
   const DailyBoardPushController({
     super.key,
     required this.pushOnStartup,
+    required this.pushDaily10am,
     required this.pushNewsCount,
     required this.isPeriodicPushRunning,
     required this.pushIntervalSeconds,
     required this.pushHistory,
     required this.onPushOnStartupChanged,
+    required this.onPushDaily10amChanged,
     required this.onPushNewsCountChanged,
     required this.onPeriodicPushRunningChanged,
     required this.onPushIntervalSecondsChanged,
@@ -86,6 +90,16 @@ class DailyBoardPushController extends StatelessWidget {
               subtitle: "应用启动加载完毕后自动推送最新时事",
               value: pushOnStartup,
               onChanged: onPushOnStartupChanged,
+            ),
+            const Divider(color: Colors.white10, height: 20),
+
+            // Daily 10 AM scheduled push toggle
+            _buildSettingRow(
+              icon: Icons.notifications_active_rounded,
+              title: "每天早上10点定时推送",
+              subtitle: "默认开启，支持后台推送最新的60秒时事早报",
+              value: pushDaily10am,
+              onChanged: onPushDaily10amChanged,
             ),
             const Divider(color: Colors.white10, height: 20),
 

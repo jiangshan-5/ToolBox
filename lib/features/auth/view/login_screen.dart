@@ -34,6 +34,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    final emailRegex = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    if (!emailRegex.hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请输入格式正确的邮箱地址'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
+
     await ref.read(authProvider.notifier).login(email, password);
 
     if (mounted) {
@@ -116,40 +127,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         style: TextStyle(
                           color: colors.onSurface.withOpacity(0.6),
                           fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.secondary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colors.secondary.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: colors.secondary,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                "📱 真机调试提示：请确保手机与电脑在同一 Wi-Fi，并点击右上角 🌐 图标配置电脑局域网后端 IP 以正常连接。",
-                                style: TextStyle(
-                                  color: colors.onSurface.withOpacity(0.75),
-                                  fontSize: 11,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                       const SizedBox(height: 24),

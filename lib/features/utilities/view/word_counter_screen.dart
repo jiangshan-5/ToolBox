@@ -5,9 +5,12 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../features/dashboard/provider/tools_provider.dart';
 import '../../../core/providers/global_clipboard_provider.dart';
 import '../../ai/view/ai_text_processor_screen.dart';
+import '../../../core/widgets/pipeline_wrapper.dart';
+import '../../../core/widgets/dynamic_effects.dart';
 
 class WordCounterScreen extends ConsumerStatefulWidget {
-  const WordCounterScreen({super.key});
+  final String? initialText;
+  const WordCounterScreen({super.key, this.initialText});
 
   @override
   ConsumerState<WordCounterScreen> createState() => _WordCounterScreenState();
@@ -28,6 +31,9 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
   void initState() {
     super.initState();
     _controller.addListener(_analyzeText);
+    if (widget.initialText != null) {
+      _controller.text = widget.initialText!;
+    }
   }
 
   @override
@@ -130,249 +136,256 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          // Theme Background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0C091F),
-                  Color(0xFF140F2D),
-                  Color(0xFF06050C),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: PipelineWrapper(
+        toolKey: 'word_counter',
+        controller: _controller,
+        child: Stack(
+          children: [
+            // Theme Background
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF0C091F),
+                    Color(0xFF140F2D),
+                    Color(0xFF06050C),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
-          ),
-          SafeArea(
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              children: [
-                // Text Input Area
-                const Text(
-                  '📝 输入分析文本',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.02),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+            SafeArea(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                children: [
+                  // Text Input Area
+                  const Text(
+                    '📝 输入分析文本',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      TextField(
-                        controller: _controller,
-                        maxLines: 8,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13.5,
-                          height: 1.5,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: '在此贴入需要统计分析的文本...',
-                          hintStyle: TextStyle(
-                            color: Colors.white24,
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.02),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        TextField(
+                          controller: _controller,
+                          maxLines: 8,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 13.5,
                           ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _controller.clear(),
-                            child: const Text(
-                              '清空文本',
-                              style: TextStyle(
-                                color: Colors.redAccent,
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '共 $_charWithSpaces 字符',
-                            style: const TextStyle(
+                          decoration: const InputDecoration(
+                            hintText: '在此粘贴或输入需要分析的赛博文本...',
+                            hintStyle: TextStyle(
                               color: Colors.white30,
-                              fontSize: 11,
+                              fontSize: 13.5,
                             ),
+                            border: InputBorder.none,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '当前字数: $_charWithSpaces 字符',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Word Count Grid
+                  const Text(
+                    '📊 深度字数统计沙盒',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.25,
+                    children: [
+                      _buildStatCard('总字符数', '$_charWithSpaces', const Color(0xFF00FF87)),
+                      _buildStatCard('无空格数', '$_charNoSpaces', const Color(0xFF60EFFF)),
+                      _buildStatCard('汉字个数', '$_chineseChars', const Color(0xFFFF0844)),
+                      _buildStatCard('英文单词', '$_englishWords', const Color(0xFFFAD961)),
+                      _buildStatCard('数字个数', '$_numbers', const Color(0xFF7000FF)),
+                      _buildStatCard('段落行数', '$_lines', const Color(0xFFFF13F0)),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // ✨ Send to AI Button (cross-tool linkage)
-                if (_charWithSpaces > 0)
+                  const SizedBox(height: 20),
+                  // Action Tools
+                  const Text(
+                    '⚡ 算子联动链路推荐',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   GestureDetector(
-                    onTap: _sendToAiProcessor,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF7B2FBE), Color(0xFF5C4AE8)],
+                    onTap: () {
+                      if (_controller.text.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AiTextProcessorScreen(
+                              initialText: _controller.text,
+                            ),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('请先输入分析文本以载入算子！')),
+                        );
+                      }
+                    },
+                    child: HoverGlowCard(
+                      glowColor: const Color(0xFFE200FF),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.015),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.04),
+                          ),
                         ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.purpleAccent.withValues(alpha: 0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE200FF).withOpacity(0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome,
+                                color: Color(0xFFE200FF),
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'AI 高级写作引擎联动',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    '将分析的数据一键流转至 AI 大模型进行专业级论文润色与精简。',
+                                    style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: Colors.white38,
+                              size: 14,
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Reading Estimate
+                  HoverGlowCard(
+                    glowColor: const Color(0xFF00FF87),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.015),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.04),
+                        ),
+                      ),
+                      child: Row(
                         children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Colors.white,
-                            size: 16,
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00FF87).withOpacity(0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.menu_book_rounded,
+                              color: Color(0xFF00FF87),
+                              size: 18,
+                            ),
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            '✨ 发送至 AI 写作引擎改写',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '阅读时间预估',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _charWithSpaces > 0
+                                      ? '按照标准语速 350 字/分钟，预计约需 $readingTime 分钟读完。'
+                                      : '输入文本后自动计算预计阅读时间。',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
-                const SizedBox(height: 20),
-
-                // Comprehensive Stats Panel
-                const Text(
-                  '📊 文本多维指标统计',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    return GridView.count(
-                      crossAxisCount: constraints.maxWidth > 600 ? 3 : 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.6,
-                      children: [
-                        _buildStatCard(
-                          '总字符数 (带空格)',
-                          _charWithSpaces.toString(),
-                          Colors.purpleAccent,
-                        ),
-                        _buildStatCard(
-                          '净字符数 (无空格)',
-                          _charNoSpaces.toString(),
-                          Colors.cyanAccent,
-                        ),
-                        _buildStatCard(
-                          '中文字数',
-                          _chineseChars.toString(),
-                          Colors.orangeAccent,
-                        ),
-                        _buildStatCard(
-                          '英文单词数',
-                          _englishWords.toString(),
-                          Colors.lightGreenAccent,
-                        ),
-                        _buildStatCard(
-                          '数字个数',
-                          _numbers.toString(),
-                          Colors.amberAccent,
-                        ),
-                        _buildStatCard(
-                          '段落行数',
-                          _lines.toString(),
-                          Colors.pinkAccent,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Reading time card
-                GlassCard(
-                  borderColor: Colors.purpleAccent.withValues(alpha: 0.15),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.purpleAccent.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.timer_outlined,
-                            color: Colors.purpleAccent,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '⏱️ 预计阅读所需时间',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _charWithSpaces > 0
-                                    ? '按照标准语速 350 字/分钟，预计约需 $readingTime 分钟读完。'
-                                    : '输入文本后自动计算预计阅读时间。',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

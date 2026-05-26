@@ -9,6 +9,8 @@ class AuthState {
   final bool isLoading;
   final String? email;
   final String? nickname;
+  final String? avatarUrl;
+  final String? bio;
   final String? error;
 
   AuthState({
@@ -16,6 +18,8 @@ class AuthState {
     this.isLoading = false,
     this.email,
     this.nickname,
+    this.avatarUrl,
+    this.bio,
     this.error,
   });
 
@@ -24,6 +28,8 @@ class AuthState {
     bool? isLoading,
     String? email,
     String? nickname,
+    String? avatarUrl,
+    String? bio,
     String? error,
   }) {
     return AuthState(
@@ -31,6 +37,8 @@ class AuthState {
       isLoading: isLoading ?? this.isLoading,
       email: email ?? this.email,
       nickname: nickname ?? this.nickname,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bio: bio ?? this.bio,
       error: error ?? this.error,
     );
   }
@@ -57,10 +65,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final response = await _apiClient.instance.get('/auth/me');
         final userProfile = response.data['profile'];
         final nickname = userProfile != null ? userProfile['nickname'] : null;
+        final avatarUrl = userProfile != null ? userProfile['avatar_url'] : null;
+        final bio = userProfile != null ? userProfile['bio'] : null;
         state = AuthState(
           isAuthenticated: true,
           email: email,
           nickname: nickname,
+          avatarUrl: avatarUrl,
+          bio: bio,
         );
       } catch (e) {
         // If expired or network error fails auth checks, wipe session
@@ -95,6 +107,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final responseEmail = response.data['user']['email'] as String;
       final userProfile = response.data['user']['profile'];
       final nickname = userProfile != null ? userProfile['nickname'] : null;
+      final avatarUrl = userProfile != null ? userProfile['avatar_url'] : null;
+      final bio = userProfile != null ? userProfile['bio'] : null;
 
       // Persist credentials securely
       await TokenManager.saveSession(
@@ -107,6 +121,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         email: responseEmail,
         nickname: nickname,
+        avatarUrl: avatarUrl,
+        bio: bio,
       );
     } on DioException catch (e) {
       state = state.copyWith(
@@ -146,6 +162,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final responseEmail = response.data['user']['email'] as String;
       final userProfile = response.data['user']['profile'];
       final nickname = userProfile != null ? userProfile['nickname'] : null;
+      final avatarUrl = userProfile != null ? userProfile['avatar_url'] : null;
+      final bio = userProfile != null ? userProfile['bio'] : null;
 
       // Persist session
       await TokenManager.saveSession(
@@ -158,6 +176,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
         email: responseEmail,
         nickname: nickname,
+        avatarUrl: avatarUrl,
+        bio: bio,
       );
     } on DioException catch (e) {
       state = state.copyWith(
@@ -170,12 +190,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// Update user profile attributes securely via the backend API
-  Future<bool> updateProfile({String? nickname}) async {
+  Future<bool> updateProfile({String? nickname, String? avatarUrl, String? bio}) async {
     if (!state.isAuthenticated) return false;
 
     try {
       final payload = <String, dynamic>{};
       if (nickname != null) payload['nickname'] = nickname;
+      if (avatarUrl != null) payload['avatar_url'] = avatarUrl;
+      if (bio != null) payload['bio'] = bio;
 
       if (payload.isEmpty) return true;
 
@@ -183,7 +205,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _apiClient.instance.put('/auth/profile', data: payload);
 
       // Update local state smoothly without full reload
-      state = state.copyWith(nickname: nickname ?? state.nickname);
+      state = state.copyWith(
+        nickname: nickname ?? state.nickname,
+        avatarUrl: avatarUrl ?? state.avatarUrl,
+        bio: bio ?? state.bio,
+      );
       return true;
     } on DioException catch (e) {
       state = state.copyWith(

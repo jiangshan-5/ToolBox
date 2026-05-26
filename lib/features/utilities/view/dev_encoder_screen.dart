@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crypto/crypto.dart';
 
 import '../../../features/dashboard/provider/tools_provider.dart';
+import '../../../core/widgets/pipeline_wrapper.dart';
 import 'widgets/dev_encoder_constants.dart';
 import 'widgets/dev_selector_chips.dart';
 import 'widgets/dev_json_spacing_options.dart';
@@ -16,7 +17,8 @@ import 'widgets/dev_stats_panel.dart';
 import 'widgets/dev_error_box.dart';
 
 class DevEncoderScreen extends ConsumerStatefulWidget {
-  const DevEncoderScreen({super.key});
+  final String? initialText;
+  const DevEncoderScreen({super.key, this.initialText});
 
   @override
   ConsumerState<DevEncoderScreen> createState() => _DevEncoderScreenState();
@@ -38,9 +40,13 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     super.initState();
     _inputController.addListener(_processInput);
 
-    // Initial seed input just to make it interesting
-    _inputController.text =
-        '{"name": "Cyber Toolbox", "version": "1.0", "status": "online"}';
+    if (widget.initialText != null) {
+      _inputController.text = widget.initialText!;
+    } else {
+      // Initial seed input just to make it interesting
+      _inputController.text =
+          '{"name": "Cyber Toolbox", "version": "1.0", "status": "online"}';
+    }
   }
 
   @override
@@ -245,8 +251,12 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
+      body: PipelineWrapper(
+        toolKey: 'dev_encoder',
+        controller: _outputController,
+        inputController: _inputController,
+        child: Stack(
+          children: [
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -380,6 +390,7 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
