@@ -205,6 +205,15 @@ class NovelNotifier extends StateNotifier<NovelState> {
     try {
       final chs = await _apiClient.getBookChapters(bookId);
       state = state.copyWith(chapters: chs, isContentLoading: false);
+      if (chs.isNotEmpty) {
+        final progress = state.currentBookProgress;
+        int targetIdx = progress?.lastReadChapterIndex ?? 0;
+        bool exists = chs.any((c) => c.chapterIndex == targetIdx);
+        if (!exists) {
+          targetIdx = chs.first.chapterIndex;
+        }
+        await loadChapterContent(bookId, targetIdx);
+      }
     } catch (e) {
       state = state.copyWith(isContentLoading: false, error: e.toString());
     }
