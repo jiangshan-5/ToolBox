@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/theme_provider.dart';
+import '../../../../core/providers/package_info_provider.dart';
 import '../../../../core/widgets/server_config_dialog.dart';
 import '../../../auth/provider/auth_provider.dart';
 import '../../../settings/provider/settings_provider.dart';
@@ -88,6 +89,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
     String nickname,
     bool isWide,
   ) {
+    final packageInfo = ref.watch(packageInfoProvider);
+    final version = packageInfo.version;
     final converterState = ref.watch(converterProvider);
     final customConverters = converterState.customConverters;
     final settingsState = ref.watch(settingsProvider);
@@ -344,7 +347,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             '关于 Toolbox Pro',
             isDark ? Colors.white70 : Colors.black54,
             trailing: Text(
-              'v1.2.0',
+              'v$version',
               style: TextStyle(color: faintTextColor, fontSize: 12),
             ),
             onTap: () => ProfileDialogs.showAboutDialog(context, ref),
@@ -360,7 +363,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
         const SizedBox(height: 24),
         Center(
           child: Text(
-            'Toolbox Pro v1.2.0 · 工业标准级应用底座\nPowered by Advanced Flutter Architecture',
+            'Toolbox Pro v$version · 工业标准级应用底座\nPowered by Advanced Flutter Architecture',
             textAlign: TextAlign.center,
             style: TextStyle(color: faintTextColor, fontSize: 10, height: 1.5),
           ),

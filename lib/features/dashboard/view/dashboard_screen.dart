@@ -8,6 +8,7 @@ import '../../../core/widgets/update_dialog.dart';
 import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/deferred_page.dart';
 import '../../../core/providers/api_config_provider.dart';
+import '../../../core/providers/package_info_provider.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../debug/view/debug_console_screen.dart';
 import 'analytics_view.dart';
@@ -82,7 +83,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               final changelog = data['changelog'] as String;
               final downloadUrl = data['download_url'] as String;
               final forceUpdate = data['force_update'] as bool;
-              const currentVersionCode = 1;
+              
+              final packageInfo = ref.read(packageInfoProvider);
+              final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
 
               if (versionCode > currentVersionCode) {
                 if (mounted) {
@@ -140,7 +143,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final changelog = data['changelog'] as String;
         final downloadUrl = data['download_url'] as String;
         final forceUpdate = data['force_update'] as bool;
-        const currentVersionCode = 1;
+        
+        final packageInfo = ref.read(packageInfoProvider);
+        final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
+        
         if (versionCode > currentVersionCode) {
           if (mounted) {
             UpdateDialog.show(

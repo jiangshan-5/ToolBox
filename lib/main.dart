@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/storage/local_storage.dart';
+import 'core/providers/package_info_provider.dart';
 import 'features/auth/provider/auth_provider.dart';
 import 'features/auth/view/login_screen.dart';
 import 'features/dashboard/view/dashboard_screen.dart';
@@ -11,14 +13,19 @@ import 'features/dashboard/view/dashboard_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
+  final packageInfo = await PackageInfo.fromPlatform();
 
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        packageInfoProvider.overrideWithValue(packageInfo),
+      ],
       child: const ToolboxApp(),
     ),
   );
 }
+
 
 
 class AppScrollBehavior extends MaterialScrollBehavior {

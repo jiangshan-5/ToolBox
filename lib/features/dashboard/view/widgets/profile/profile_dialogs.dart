@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../../../core/providers/theme_provider.dart';
 import '../../../../../core/app_theme.dart';
 import '../../../../../core/providers/api_config_provider.dart';
+import '../../../../../core/providers/package_info_provider.dart';
 import '../../../../../core/widgets/glass_card.dart';
 import '../../../../../core/widgets/update_dialog.dart';
 import '../../../../auth/provider/auth_provider.dart';
@@ -443,13 +444,18 @@ class ProfileDialogs {
                             letterSpacing: 1.0,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Version 1.2.0 (Build 2)',
-                          style: TextStyle(
-                            color: faintTextColorVal,
-                            fontSize: 12,
-                          ),
+                        const SizedBox(height: 16),
+                        Builder(
+                          builder: (context) {
+                            final packageInfo = ref.read(packageInfoProvider);
+                            return Text(
+                              'Version ${packageInfo.version} (Build ${packageInfo.buildNumber})',
+                              style: TextStyle(
+                                color: faintTextColorVal,
+                                fontSize: 12,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -545,7 +551,8 @@ class ProfileDialogs {
                             final changelog = data['changelog'] as String;
                             final downloadUrl = data['download_url'] as String;
                             final forceUpdate = data['force_update'] as bool;
-                            const currentVersionCode = 2;
+                            final packageInfo = ref.read(packageInfoProvider);
+                            final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
                             
                             if (versionCode > currentVersionCode) {
                               Navigator.pop(context);
