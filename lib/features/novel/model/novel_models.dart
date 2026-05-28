@@ -64,6 +64,7 @@ class Book {
   // Custom helper field for search results
   final String? bookUrl;
   final String? sourceId;
+  final String? sourceName;
 
   Book({
     required this.id,
@@ -75,6 +76,7 @@ class Book {
     required this.isAbyss,
     this.bookUrl,
     this.sourceId,
+    this.sourceName,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,7 @@ class Book {
       isAbyss: json['is_abyss'] ?? false,
       bookUrl: json['book_url'],
       sourceId: json['source_id'],
+      sourceName: json['source_name'],
     );
   }
 
@@ -102,6 +105,7 @@ class Book {
       'is_abyss': isAbyss,
       'book_url': bookUrl,
       'source_id': sourceId,
+      'source_name': sourceName,
     };
   }
 }

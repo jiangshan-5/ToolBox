@@ -73,7 +73,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // Exit edit mode to stop the animation and verify persistence by tapping background/empty space text
-    await tester.tap(find.text('欢迎回来，test@example.com'));
+    await tester.tap(find.text('欢迎回来，test@example.com'), warnIfMissed: false);
     await tester.pumpAndSettle(); // Safe to pumpAndSettle now since animation stopped
 
     // Verify it is saved in SharedPreferences (should NOT contain 'randomizer')
@@ -106,7 +106,7 @@ void main() {
 
     // 8. Reorder items: long-press drag "健康 BMI 计算器" to "标准单位转换器"
     // Trigger edit mode again
-    await tester.tap(find.text('编辑布局'));
+    await tester.tap(find.text('编辑布局'), warnIfMissed: false);
     await tester.pump(const Duration(milliseconds: 100));
 
     final dragGesture = await tester.startGesture(
@@ -121,7 +121,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // Save and stop animation by tapping background/empty space text
-    await tester.tap(find.text('欢迎回来，test@example.com'));
+    await tester.tap(find.text('欢迎回来，test@example.com'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     // Verify we exited edit mode

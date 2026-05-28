@@ -19,6 +19,10 @@ class ApiBaseUrlNotifier extends StateNotifier<String> {
   ApiBaseUrlNotifier(this._prefs) : super(_getInitialBaseUrl(_prefs));
 
   static String _getInitialBaseUrl(SharedPreferences prefs) {
+    if (!ApiClient.useLiveServer) {
+      // Force local debug server in local development, ignoring any cached cloud server settings
+      return ApiClient.defaultBaseUrl;
+    }
     final stored = prefs.getString(_storageKey);
     if (stored != null && stored.trim().isNotEmpty) {
       return stored.trim();

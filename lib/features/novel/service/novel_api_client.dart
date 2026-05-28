@@ -1,4 +1,6 @@
 import 'dart:typed_data';
+import 'dart:convert';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
@@ -19,9 +21,70 @@ class NovelApiClient {
           'q': q,
           'in_abyss': inAbyss,
         },
+        options: Options(
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
       final List<dynamic> data = response.data ?? [];
       return data.map((json) => Book.fromJson(json)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// 1b. Search novels via SSE stream
+  Stream<List<Book>> searchNovelsStream(String q, bool inAbyss) async* {
+    try {
+      final response = await _apiClient.instance.get<ResponseBody>(
+        '/novel/search/stream',
+        queryParameters: {
+          'q': q,
+          'in_abyss': inAbyss,
+        },
+        options: Options(
+          responseType: ResponseType.stream,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+
+      final transformer = StreamTransformer<Uint8List, String>.fromHandlers(
+        handleData: (data, sink) {
+          sink.add(utf8.decode(data));
+        },
+      );
+
+      String buffer = '';
+      await for (final chunk in response.data!.stream.transform(transformer)) {
+        buffer += chunk;
+        final lines = buffer.split('\n\n');
+        buffer = lines.last; // retain unfinished buffer
+        for (int i = 0; i < lines.length - 1; i++) {
+          final line = lines[i].trim();
+          if (line.startsWith('data:')) {
+            final jsonStr = line.substring(5).trim();
+            if (jsonStr.isNotEmpty) {
+              try {
+                final List<dynamic> list = jsonDecode(jsonStr);
+                final books = list.map((json) => Book.fromJson(json)).toList();
+                yield books;
+              } catch (_) {}
+            }
+          }
+        }
+      }
+
+      // Process remaining buffer
+      if (buffer.trim().startsWith('data:')) {
+        final jsonStr = buffer.trim().substring(5).trim();
+        if (jsonStr.isNotEmpty) {
+          try {
+            final List<dynamic> list = jsonDecode(jsonStr);
+            yield list.map((json) => Book.fromJson(json)).toList();
+          } catch (_) {}
+        }
+      }
     } catch (e) {
       rethrow;
     }

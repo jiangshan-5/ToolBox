@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../model/novel_models.dart';
 import '../service/novel_api_client.dart';
 import 'package:just_audio/just_audio.dart';
@@ -110,12 +111,39 @@ class NovelNotifier extends StateNotifier<NovelState> {
     }
   }
 
-  /// 2. Search novels
+  /// 2. Search novels via real-time stream (with dynamic Web compatibility fallback)
   Future<void> search(String q, bool inAbyss) async {
     state = state.copyWith(isSearchLoading: true, error: null, searchResults: []);
     try {
-      final results = await _apiClient.searchNovels(q, inAbyss);
-      state = state.copyWith(searchResults: results, isSearchLoading: false);
+      if (kIsWeb) {
+        // Dynamic Fallback: Web environment has constraints on EventSource/SSE streams.
+        // We gracefully fallback to standard one-shot HTTP fetch which works 100% on all browsers.
+        final books = await _apiClient.searchNovels(q, inAbyss);
+        state = state.copyWith(searchResults: books, isSearchLoading: false);
+        return;
+      }
+
+      // Non-Web environments (Desktop & Mobile): Use premium Server-Sent Events (SSE) stream loading
+      final stream = _apiClient.searchNovelsStream(q, inAbyss);
+      await for (final books in stream) {
+        final currentResults = List<Book>.from(state.searchResults);
+        bool hasChanges = false;
+        for (final book in books) {
+          final bool exists = currentResults.any((b) =>
+            b.title.trim() == book.title.trim() &&
+            b.author.trim() == book.author.trim() &&
+            b.sourceId == book.sourceId
+          );
+          if (!exists) {
+            currentResults.add(book);
+            hasChanges = true;
+          }
+        }
+        if (hasChanges) {
+          state = state.copyWith(searchResults: currentResults);
+        }
+      }
+      state = state.copyWith(isSearchLoading: false);
     } catch (e) {
       state = state.copyWith(isSearchLoading: false, error: e.toString());
     }

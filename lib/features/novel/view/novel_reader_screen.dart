@@ -204,6 +204,53 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
           if (_showControlOverlay) ...[
             _buildHeaderOverlay(themeText),
             _buildBottomControlsOverlay(state, themeBg, themeText),
+          ] else ...[
+            // 3. Subtle Glassmorphic Floating Quick Access Dock when overlays are hidden
+            Positioned(
+              bottom: 24,
+              right: 20,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: themeText.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: themeText.withOpacity(0.12), width: 0.8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildDockButton(
+                          icon: Icons.format_list_bulleted_rounded,
+                          tooltip: '章节目录',
+                          onTap: _showTocDrawer,
+                          themeText: themeText,
+                        ),
+                        Container(
+                          width: 1,
+                          height: 14,
+                          color: themeText.withOpacity(0.12),
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                        ),
+                        _buildDockButton(
+                          icon: Icons.settings_rounded,
+                          tooltip: '阅读设置',
+                          onTap: () {
+                            setState(() {
+                              _showControlOverlay = true;
+                            });
+                          },
+                          themeText: themeText,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -601,6 +648,32 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
           },
         );
       },
+    );
+  }
+
+  Widget _buildDockButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    required Color themeText,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Icon(
+              icon,
+              color: themeText.withOpacity(0.7),
+              size: 20,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

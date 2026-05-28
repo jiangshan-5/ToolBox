@@ -147,7 +147,7 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
   }
 
   Widget _buildResultsContent(NovelState state, Color themeColor) {
-    if (state.isSearchLoading) {
+    if (state.isSearchLoading && state.searchResults.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -163,7 +163,7 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
       );
     }
 
-    if (state.error != null) {
+    if (state.error != null && state.searchResults.isEmpty) {
       return Center(
         child: Text(
           '⚠️ 检索失败: ${state.error}',
@@ -204,13 +204,55 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
       );
     }
 
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: state.searchResults.length,
-      itemBuilder: (context, index) {
-        final book = state.searchResults[index];
-        return _buildBookSearchItem(book, themeColor);
-      },
+    return Column(
+      children: [
+        if (state.error != null) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.redAccent.withOpacity(0.3), width: 0.8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '部分书源检索超时，已展示已搜到的书籍',
+                    style: TextStyle(color: Colors.redAccent.withOpacity(0.9), fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (state.isSearchLoading) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                color: themeColor,
+                backgroundColor: themeColor.withOpacity(0.1),
+                minHeight: 2,
+              ),
+            ),
+          ),
+        ],
+        Expanded(
+          child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
+            itemCount: state.searchResults.length,
+            itemBuilder: (context, index) {
+              final book = state.searchResults[index];
+              return _buildBookSearchItem(book, themeColor);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -287,9 +329,28 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
                     style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '作者：${book.author}',
-                    style: const TextStyle(fontSize: 11.5, color: Colors.white54),
+                  Row(
+                    children: [
+                      Text(
+                        '作者：${book.author}',
+                        style: const TextStyle(fontSize: 11.5, color: Colors.white54),
+                      ),
+                      if (book.sourceName != null && book.sourceName!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: themeColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: themeColor.withOpacity(0.24), width: 0.5),
+                          ),
+                          child: Text(
+                            book.sourceName!,
+                            style: TextStyle(fontSize: 9, color: themeColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Text(

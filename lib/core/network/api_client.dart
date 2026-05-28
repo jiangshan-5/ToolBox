@@ -17,7 +17,7 @@ class ApiClient {
 
   /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
   /// Defaults to [kReleaseMode] to use the live cloud server for release builds.
-  static const bool useLiveServer = true;
+  static const bool useLiveServer = false;
 
   /// Dynamic Base URL detection for seamless emulator/simulator local debugging
   static String get defaultBaseUrl {
@@ -122,6 +122,7 @@ class ApiClient {
                   response: error.response,
                   type: error.type,
                   error: "登录已失效，请重新登录",
+                  message: "登录已失效，请重新登录",
                 );
                 return handler.next(customException);
               }
@@ -151,6 +152,7 @@ class ApiClient {
             response: error.response,
             type: error.type,
             error: message,
+            message: message,
           );
 
           return handler.next(customException);
