@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'glass_card.dart';
 import 'dynamic_effects.dart';
+import 'custom_prompt_dialog.dart';
 
 class UpdateDialog extends StatefulWidget {
   final String latestVersion;
@@ -60,6 +62,36 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   Future<void> _startDownload() async {
+    // Check and request install unknown apps permission on Android
+    if (Platform.isAndroid) {
+      try {
+        var status = await Permission.requestInstallPackages.status;
+        if (!status.isGranted) {
+          status = await Permission.requestInstallPackages.request();
+          if (!status.isGranted) {
+            if (mounted) {
+              CustomPromptDialog.showError(
+                context,
+                title: '需要安装权限',
+                message: '需要“允许安装未知应用”权限才能自动安装更新。请在设置中开启，或手动复制链接下载！',
+                showCopyButton: false,
+              );
+            }
+            return;
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          CustomPromptDialog.showError(
+            context,
+            title: '获取权限失败',
+            message: '获取安装权限时发生异常：$e',
+          );
+        }
+        return;
+      }
+    }
+
     setState(() {
       _isDownloading = true;
       _progress = 0.0;
@@ -112,11 +144,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       if (result.type != ResultType.done) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('启动系统安装失败: ${result.message}。请长按下方复制链接手动下载。'),
-              backgroundColor: Colors.red,
-            ),
+          CustomPromptDialog.showError(
+            context,
+            title: '安装启动失败',
+            message: '唤醒系统包安装器失败: ${result.message}\n请点击“复制详情”或尝试手动复制链接下载安装。',
           );
           setState(() {
             _isDownloading = false;
@@ -133,11 +164,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
           _isDownloading = false;
           _progress = 0.0;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('下载更新失败: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        CustomPromptDialog.showError(
+          context,
+          title: '下载更新失败',
+          message: '下载 APK 安装包时发生错误：${e.toString()}',
         );
       }
     }
