@@ -17,7 +17,7 @@ class ApiClient {
 
   /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
   /// Defaults to [kReleaseMode] to use the live cloud server for release builds.
-  static const bool useLiveServer = false;
+  static const bool useLiveServer = true;
 
   /// Dynamic Base URL detection for seamless emulator/simulator local debugging
   static String get defaultBaseUrl {
