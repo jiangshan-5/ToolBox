@@ -88,6 +88,10 @@ class NovelNotifier extends StateNotifier<NovelState> {
 
   NovelNotifier(this._apiClient) : super(NovelState());
 
+  void clearSearchState() {
+    state = state.copyWith(searchResults: [], error: null);
+  }
+
   @override
   void dispose() {
     _ttsTimer?.cancel();

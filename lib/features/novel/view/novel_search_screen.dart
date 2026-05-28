@@ -27,12 +27,13 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialQuery != null) {
-      _searchController.text = widget.initialQuery!;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(novelProvider.notifier).clearSearchState();
+      if (widget.initialQuery != null) {
+        _searchController.text = widget.initialQuery!;
         _performSearch();
-      });
-    }
+      }
+    });
   }
 
   @override
