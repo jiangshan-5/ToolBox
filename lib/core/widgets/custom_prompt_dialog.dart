@@ -131,7 +131,7 @@ class CustomPromptDialog extends StatefulWidget {
     bool showCopyButton = true,
   }) {
     return show<void>(
-      context: context,
+      context,
       type: PromptDialogType.error,
       title: title,
       message: message,
@@ -175,7 +175,7 @@ class CustomPromptDialog extends StatefulWidget {
     String confirmText = '太棒了',
   }) {
     return show<void>(
-      context: context,
+      context,
       type: PromptDialogType.success,
       title: title,
       message: message,
@@ -204,7 +204,7 @@ class CustomPromptDialog extends StatefulWidget {
     bool isDestructive = false,
   }) {
     return show<bool>(
-      context: context,
+      context,
       type: PromptDialogType.confirm,
       title: title,
       message: message,
@@ -236,7 +236,7 @@ class CustomPromptDialog extends StatefulWidget {
     String cancelText = '取消',
   }) {
     return show<List<String>>(
-      context: context,
+      context,
       type: PromptDialogType.input,
       title: title,
       message: message,
@@ -264,7 +264,7 @@ class CustomPromptDialog extends StatefulWidget {
     String title = '正在处理',
   }) {
     return show<void>(
-      context: context,
+      context,
       type: PromptDialogType.loading,
       title: title,
       message: message,
@@ -307,7 +307,7 @@ class _CustomPromptDialogState extends State<CustomPromptDialog> {
       case PromptDialogType.error:
         return Colors.redAccent.shade400;
       case PromptDialogType.success:
-        return Colors.emerald.shade400;
+        return const Color(0xFF10B981);
       case PromptDialogType.warning:
         return Colors.amber.shade500;
       case PromptDialogType.info:
