@@ -210,6 +210,20 @@ class NovelApiClient {
       rethrow;
     }
   }
+
+  /// 9. Remove from bookshelf (Batch delete)
+  Future<void> removeFromBookshelf(List<String> bookIds) async {
+    try {
+      await _apiClient.instance.post(
+        '/novel/bookshelf/remove',
+        data: {
+          'book_ids': bookIds,
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 /// Riverpod provider for NovelApiClient

@@ -171,6 +171,19 @@ class NovelNotifier extends StateNotifier<NovelState> {
     }
   }
 
+  /// 3c. Remove books from shelf (Batch delete)
+  Future<void> removeBooksFromShelf(List<String> bookIds, bool inAbyss) async {
+    state = state.copyWith(isBookshelfLoading: true, error: null);
+    try {
+      await _apiClient.removeFromBookshelf(bookIds);
+      // Refresh bookshelf
+      await fetchBookshelf(inAbyss);
+    } catch (e) {
+      state = state.copyWith(isBookshelfLoading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
   /// 3b. Add a book to shelf if not present, select it, and return its progress
   Future<ReadingProgress?> addAndSelectBook(Book book, bool inAbyss) async {
     // 1. Check if already in bookshelf
