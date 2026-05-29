@@ -443,6 +443,20 @@ class NovelNotifier extends StateNotifier<NovelState> {
       pauseTts();
     }
   }
+
+  /// 9. Direct import book sources from URL or JSON
+  Future<Map<String, dynamic>> importBookSources({
+    String? url,
+    List<dynamic>? jsonData,
+  }) async {
+    try {
+      final res = await _apiClient.importBookSources(url: url, jsonData: jsonData);
+      return res;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    }
+  }
 }
 
 /// Riverpod provider for NovelNotifier

@@ -5,7 +5,6 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/auth_provider.dart';
-import '../../../core/widgets/server_config_dialog.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -112,14 +111,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: BackButton(color: colors.onSurface),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.dns_rounded, color: colors.secondary),
-            tooltip: '服务器配置',
-            onPressed: () => ServerConfigDialog.show(context),
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: DynamicBackground(
         child: Center(

@@ -5,7 +5,6 @@ import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../provider/auth_provider.dart';
 import 'register_screen.dart';
-import '../../../core/widgets/server_config_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -77,14 +76,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.dns_rounded, color: colors.secondary),
-            tooltip: '服务器配置',
-            onPressed: () => ServerConfigDialog.show(context),
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: DynamicBackground(
         child: Center(

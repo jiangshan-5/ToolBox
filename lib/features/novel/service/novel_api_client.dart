@@ -224,6 +224,25 @@ class NovelApiClient {
       rethrow;
     }
   }
+
+  /// 10. Direct import book sources from URL or JSON data
+  Future<Map<String, dynamic>> importBookSources({
+    String? url,
+    List<dynamic>? jsonData,
+  }) async {
+    try {
+      final response = await _apiClient.instance.post(
+        '/novel/sources/import',
+        data: {
+          if (url != null) 'url': url,
+          if (jsonData != null) 'json_data': jsonData,
+        },
+      );
+      return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 /// Riverpod provider for NovelApiClient

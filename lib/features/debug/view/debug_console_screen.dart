@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/dynamic_effects.dart';
 import '../../auth/provider/auth_provider.dart';
+import '../../../core/providers/package_info_provider.dart';
 
 /// 1. Server Stdout Logs Fetcher Provider
 final serverLogsProvider = FutureProvider.autoDispose<List<dynamic>>((
@@ -378,15 +379,41 @@ class _PublishForm extends ConsumerStatefulWidget {
 
 class _PublishFormState extends ConsumerState<_PublishForm> {
   final _formKey = GlobalKey<FormState>();
-  final _versionNameController = TextEditingController(text: '1.2.0');
-  final _versionCodeController = TextEditingController(text: '3');
+  final _versionNameController = TextEditingController();
+  final _versionCodeController = TextEditingController();
   final _changelogController = TextEditingController(
-    text: '1. 🚀 极客控制台升级：全新上线管理员发布中心，系统公告实时触发广播！\n'
-          '2. 🎨 UI 微观交互：细化磨砂玻璃板态圆角，大幅减少非 web 端阴影渲染折损。\n'
-          '3. ⚡ 内存通信重构：修复了后台更新广播因协程竞态产生的连接状态抛错风险。',
+    text: '1. 💥 直接导入书源：现已支持与“阅读”(Legado) App 相同的书源导入功能，管理员可在移动端直接粘贴 URL 或 JSON 格式规则批量导入/热更新书源！\n'
+          '2. 🔮 顶级磨砂玻璃态：新增管理员专属毛玻璃书源导入窗口，视觉交互更具赛博深空美感！\n'
+          '3. ⚡ 校验与极致去重：智能基于书源唯一标识与 UUID5 进行重复识别与智能覆盖，极致防止重复数据！',
   );
   bool _forceUpdate = false;
   bool _isPublishing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load package info to suggest next version and code dynamically
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final packageInfo = ref.read(packageInfoProvider);
+      final currentCode = int.tryParse(packageInfo.buildNumber) ?? 0;
+      
+      // Guess next version name (e.g. 1.1.1 -> 1.1.2)
+      String nextVersion = packageInfo.version;
+      final parts = packageInfo.version.split('.');
+      if (parts.length == 3) {
+        final patch = int.tryParse(parts[2]) ?? 0;
+        nextVersion = '${parts[0]}.${parts[1]}.${patch + 1}';
+      } else {
+        nextVersion = '1.1.2';
+      }
+      
+      setState(() {
+        _versionNameController.text = nextVersion;
+        _versionCodeController.text = (currentCode + 1).toString();
+      });
+    });
+  }
 
   @override
   void dispose() {

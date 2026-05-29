@@ -15,25 +15,8 @@ class ApiClient {
   /// The live production cloud server URL (Alibaba Cloud Shenzhen)
   static const String liveServerUrl = 'http://47.106.119.62:1234/api/v1';
 
-  /// Set to [true] to connect to the live server, or [false] to debug with local FastAPI server!
-  /// Defaults to [kReleaseMode] to use the live cloud server for release builds.
-  static const bool useLiveServer = true;
-
-  /// Dynamic Base URL detection for seamless emulator/simulator local debugging
-  static String get defaultBaseUrl {
-    if (useLiveServer) {
-      return liveServerUrl;
-    }
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000/api/v1';
-    }
-    // Android Emulator bridges to local host loopback via 10.0.2.2
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000/api/v1';
-    }
-    // iOS Simulator, Windows, macOS, Linux desktop
-    return 'http://127.0.0.1:8000/api/v1';
-  }
+  /// Default base URL points to the live cloud server
+  static String get defaultBaseUrl => liveServerUrl;
 
   final String _baseUrl;
 

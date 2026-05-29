@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/providers/package_info_provider.dart';
-import '../../../../core/widgets/server_config_dialog.dart';
 import '../../../auth/provider/auth_provider.dart';
 import '../../../settings/provider/settings_provider.dart';
 import '../../../converter/provider/converter_provider.dart';
@@ -177,13 +176,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             Colors.orangeAccent,
             onTap: () => ProfileDialogs.showChangePasswordDialog(context, ref),
           ),
-          _buildListTile(
-            Icons.dns_rounded,
-            '服务器连接设置',
-            Colors.cyanAccent,
-            subtitle: '自定义 API 地址与延迟测试',
-            onTap: () => ServerConfigDialog.show(context),
-          ),
+
         ]),
         _buildSettingsGroup('数据与云端', [
           _buildListTile(

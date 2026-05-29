@@ -9,6 +9,7 @@ import '../../../core/widgets/dynamic_background.dart';
 import '../../../core/widgets/deferred_page.dart';
 import '../../../core/providers/api_config_provider.dart';
 import '../../../core/providers/package_info_provider.dart';
+import '../../../core/storage/local_storage.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../debug/view/debug_console_screen.dart';
 import 'analytics_view.dart';
@@ -122,13 +123,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-  void _reconnectWebSocket(String newUrl) {
-    if (kIsWeb) return;
-    _socket?.close();
-    _socket = null;
-    _connectedUrl = null;
-    _connectWebSocket(newUrl);
-  }
+
 
   /// Perform system update validation
   Future<void> _checkForUpdates() async {
@@ -148,14 +143,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
         
         if (versionCode > currentVersionCode) {
-          if (mounted) {
-            UpdateDialog.show(
-              context,
-              latestVersion: latestVersion,
-              changelog: changelog,
-              downloadUrl: downloadUrl,
-              forceUpdate: forceUpdate,
-            );
+          final prefs = ref.read(sharedPreferencesProvider);
+          final ignoredVersion = prefs.getInt('ignored_version_code') ?? 0;
+          if (forceUpdate || versionCode > ignoredVersion) {
+            if (mounted) {
+              UpdateDialog.show(
+                context,
+                latestVersion: latestVersion,
+                changelog: changelog,
+                downloadUrl: downloadUrl,
+                forceUpdate: forceUpdate,
+                onIgnore: () async {
+                  await prefs.setInt('ignored_version_code', versionCode);
+                },
+              );
+            }
           }
         }
       }
@@ -407,11 +409,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<String>(apiBaseUrlProvider, (previous, next) {
-      if (previous != next && next.isNotEmpty) {
-        _reconnectWebSocket(next);
-      }
-    });
 
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;

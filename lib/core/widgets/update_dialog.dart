@@ -15,6 +15,7 @@ class UpdateDialog extends StatefulWidget {
   final String changelog;
   final String downloadUrl;
   final bool forceUpdate;
+  final VoidCallback? onIgnore;
 
   const UpdateDialog({
     super.key,
@@ -22,6 +23,7 @@ class UpdateDialog extends StatefulWidget {
     required this.changelog,
     required this.downloadUrl,
     required this.forceUpdate,
+    this.onIgnore,
   });
 
   /// Static helper to trigger the dialog beautifully
@@ -31,6 +33,7 @@ class UpdateDialog extends StatefulWidget {
     required String changelog,
     required String downloadUrl,
     required bool forceUpdate,
+    VoidCallback? onIgnore,
   }) {
     showDialog(
       context: context,
@@ -41,6 +44,7 @@ class UpdateDialog extends StatefulWidget {
         changelog: changelog,
         downloadUrl: downloadUrl,
         forceUpdate: forceUpdate,
+        onIgnore: onIgnore,
       ),
     );
   }
@@ -403,6 +407,29 @@ class _UpdateDialogState extends State<UpdateDialog> {
                                   ),
                                 ),
                               ),
+                              if (!widget.forceUpdate) ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () {
+                                      _cancelToken?.cancel("User cancelled download");
+                                      setState(() {
+                                        _isDownloading = false;
+                                        _statusText = '已取消下载';
+                                      });
+                                    },
+                                    child: const Text(
+                                      '取消下载',
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ] else ...[
@@ -412,7 +439,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
                               if (!widget.forceUpdate) ...[
                                 Expanded(
                                   child: ScaleOnTap(
-                                    onTap: () => Navigator.pop(context),
+                                    onTap: () {
+                                      widget.onIgnore?.call();
+                                      Navigator.pop(context);
+                                    },
                                     child: Container(
                                       height: 48,
                                       decoration: BoxDecoration(
@@ -506,7 +536,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
                           Icons.close,
                           color: Colors.white.withOpacity(0.5),
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          widget.onIgnore?.call();
+                          Navigator.pop(context);
+                        },
                       ),
                     ),
                 ],
