@@ -291,6 +291,15 @@ class NovelNotifier extends StateNotifier<NovelState> {
           chapterIndex: chapterIndex,
           charOffset: 0,
         ).ignore();
+
+        // 🚀 方案 C：智能静默后台并发预加载后续 3 章节，后端提前预下载清洗，持久化存入 PostgreSQL 缓存
+        for (int i = 1; i <= 3; i++) {
+          final nextIdx = chapterIndex + i;
+          final hasNext = state.chapters.any((c) => c.chapterIndex == nextIdx);
+          if (hasNext) {
+            _apiClient.getChapterContent(bookId, nextIdx).ignore();
+          }
+        }
       } else {
         state = state.copyWith(currentChapter: chap, isContentLoading: false);
       }
