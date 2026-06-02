@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../model/novel_models.dart';
 import '../service/novel_api_client.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class NovelState {
   final List<ReadingProgress> bookshelf;
@@ -95,12 +96,34 @@ class NovelNotifier extends StateNotifier<NovelState> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   Timer? _ttsTimer;
   Timer? _sleepTimer;
+  final FlutterTts _flutterTts = FlutterTts();
+  int _ttsBaseIndex = 0;
 
   // Ambient soundscapes players
   final Map<String, AudioPlayer> _ambientPlayers = {};
 
   NovelNotifier(this._apiClient) : super(NovelState()) {
     _initAmbientPlayers();
+    _initTts();
+  }
+
+  void _initTts() {
+    _flutterTts.setLanguage("zh-CN");
+    _flutterTts.setProgressHandler((String text, int start, int end, String word) {
+      if (state.isTtsPlaying) {
+        state = state.copyWith(ttsHighlightCharIndex: _ttsBaseIndex + start);
+      }
+    });
+
+    _flutterTts.setCompletionHandler(() {
+      if (state.isTtsPlaying) {
+        _loadNextChapterForTts();
+      }
+    });
+
+    _flutterTts.setErrorHandler((msg) {
+      pauseTts();
+    });
   }
 
   void _initAmbientPlayers() {
@@ -129,6 +152,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
     _ttsTimer?.cancel();
     _sleepTimer?.cancel();
     _audioPlayer.dispose();
+    _flutterTts.stop();
     for (var player in _ambientPlayers.values) {
       player.stop().catchError((_) => null);
       player.dispose().catchError((_) => null);
@@ -190,7 +214,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
   }
 
   /// 3. Add a searched book to shelf
-  Future<Book?> addBookToShelf(Book book, bool inAbyss) async {
+  Future<Book?> addBookToShelf(Book book, bool inAbyss, {bool isTrial = false}) async {
     state = state.copyWith(isBookshelfLoading: true, error: null);
     try {
       final newBook = await _apiClient.addToBookshelf(
@@ -201,6 +225,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
         sourceId: book.sourceId ?? book.currentSourceId ?? '',
         isAbyss: inAbyss,
         bookUrl: book.bookUrl ?? '',
+        isTrial: isTrial,
       );
       // Refresh bookshelf
       await fetchBookshelf(inAbyss);
@@ -245,33 +270,67 @@ class NovelNotifier extends StateNotifier<NovelState> {
       }
     }
     
-    // 2. Add to shelf
-    final newBook = await addBookToShelf(book, inAbyss);
+    // 2. Add to shelf as trial preview
+    final newBook = await addBookToShelf(book, inAbyss, isTrial: true);
     if (newBook != null) {
-      // Find again in the refreshed shelf list
-      final updatedList = inAbyss ? state.abyssBookshelf : state.bookshelf;
-      ReadingProgress? added;
-      for (final p in updatedList) {
-        if (p.bookId == newBook.id) {
-          added = p;
-          break;
-        }
-      }
-      if (added == null) {
-        added = ReadingProgress(
-          id: '',
-          userId: '',
-          bookId: newBook.id,
-          lastReadChapterIndex: 0,
-          lastReadCharOffset: 0,
-          updatedAt: '',
-          book: newBook,
-        );
-      }
+      final added = ReadingProgress(
+        id: '',
+        userId: '',
+        bookId: newBook.id,
+        lastReadChapterIndex: 0,
+        lastReadCharOffset: 0,
+        updatedAt: '',
+        book: newBook,
+      );
       await selectBook(added);
       return added;
     }
     return null;
+  }
+
+  /// Upgrade a trial book to a full bookshelf item
+  Future<void> upgradeTrialBook(Book book, bool inAbyss) async {
+    state = state.copyWith(isBookshelfLoading: true, error: null);
+    try {
+      final newBook = await _apiClient.addToBookshelf(
+        title: book.title,
+        author: book.author,
+        coverUrl: book.coverUrl,
+        summary: book.summary,
+        sourceId: book.sourceId ?? book.currentSourceId ?? '',
+        isAbyss: inAbyss,
+        bookUrl: book.bookUrl ?? '',
+        isTrial: false,
+      );
+      // Refresh bookshelf
+      await fetchBookshelf(inAbyss);
+      // Upgrade local progress reference
+      final updatedList = inAbyss ? state.abyssBookshelf : state.bookshelf;
+      ReadingProgress? upgraded;
+      for (final p in updatedList) {
+        if (p.bookId == newBook.id) {
+          upgraded = p;
+          break;
+        }
+      }
+      if (upgraded != null) {
+        state = state.copyWith(currentBookProgress: upgraded);
+      }
+    } catch (e) {
+      state = state.copyWith(isBookshelfLoading: false, error: e.toString());
+    }
+  }
+
+  /// Import local EPUB or TXT file to database bookshelf
+  Future<void> importBookFile(String filePath, String fileName, bool inAbyss) async {
+    state = state.copyWith(isBookshelfLoading: true, error: null);
+    try {
+      await _apiClient.importBookFile(filePath: filePath, fileName: fileName);
+      await fetchBookshelf(inAbyss);
+    } catch (e) {
+      state = state.copyWith(isBookshelfLoading: false, error: e.toString());
+      rethrow;
+    }
   }
 
   /// 4. Load book details: Chapter list and set current book progress
@@ -444,61 +503,74 @@ class NovelNotifier extends StateNotifier<NovelState> {
     if (state.currentChapter == null || state.currentChapter!.content == null) return;
     _ttsTimer?.cancel();
     
-    // Play relaxing background ambient sound (simulating audio player stream)
     try {
       state = state.copyWith(isTtsPlaying: true);
       _applyDucking(true); // Apply Ducking to active ambient players!
       
-      // Character reading speeds: Average human reading speed is ~300 chars per min, i.e., 5 chars per second.
-      // Under ttsSpeed multiplier, we schedule a timer ticking.
-      final baseIntervalMs = (200 / state.ttsSpeed).round(); // ms per character roughly
-      
-      _ttsTimer = Timer.periodic(Duration(milliseconds: baseIntervalMs), (timer) {
-        if (!state.isTtsPlaying) {
-          timer.cancel();
-          return;
-        }
-        final contentLen = state.currentChapter!.content!.length;
-        if (state.ttsHighlightCharIndex >= contentLen - 1) {
-          // Chapter finished! Auto-load next chapter if exists
-          timer.cancel();
-          _loadNextChapterForTts();
-        } else {
-          // Increment word highlight index
-          final nextIndex = state.ttsHighlightCharIndex + 1;
-          state = state.copyWith(ttsHighlightCharIndex: nextIndex);
-          
-          // Trigger progress updates every 50 characters to reduce API spam
-          if (nextIndex % 50 == 0) {
-            saveProgress(nextIndex);
-          }
-        }
-      });
+      _ttsBaseIndex = state.ttsHighlightCharIndex;
+      final text = state.currentChapter!.content!;
+      final speakText = text.substring(_ttsBaseIndex);
+
+      if (speakText.trim().isNotEmpty) {
+        await _flutterTts.setSpeechRate(state.ttsSpeed * 0.5); // standard speed is 0.5 for flutter_tts
+        await _flutterTts.speak(speakText);
+      } else {
+        // Empty content, load next chapter
+        _loadNextChapterForTts();
+      }
     } catch (e) {
-      // Audio engine error fallback
+      // Audio engine error fallback: fallback to mock timer
+      _startMockTtsTimer();
     }
+  }
+
+  void _startMockTtsTimer() {
+    final baseIntervalMs = (200 / state.ttsSpeed).round(); // ms per character roughly
+    _ttsTimer = Timer.periodic(Duration(milliseconds: baseIntervalMs), (timer) {
+      if (!state.isTtsPlaying) {
+        timer.cancel();
+        return;
+      }
+      final contentLen = state.currentChapter!.content!.length;
+      if (state.ttsHighlightCharIndex >= contentLen - 1) {
+        timer.cancel();
+        _loadNextChapterForTts();
+      } else {
+        final nextIndex = state.ttsHighlightCharIndex + 1;
+        state = state.copyWith(ttsHighlightCharIndex: nextIndex);
+        if (nextIndex % 50 == 0) {
+          saveProgress(nextIndex);
+        }
+      }
+    });
   }
 
   void pauseTts() {
     _ttsTimer?.cancel();
+    _flutterTts.stop();
     state = state.copyWith(isTtsPlaying: false);
     _applyDucking(false); // Restore full volume!
   }
 
-  void setTtsSpeed(double speed) {
+  void setTtsSpeed(double speed) async {
     state = state.copyWith(ttsSpeed: speed);
     if (state.isTtsPlaying) {
-      // Restart timer to apply new speed interval
+      await _flutterTts.stop();
       startTts();
     }
   }
 
-  void setTtsHighlightIndex(int index) {
+  void setTtsHighlightIndex(int index) async {
     if (state.currentChapter == null || state.currentChapter!.content == null) return;
     final len = state.currentChapter!.content!.length;
     final target = index.clamp(0, len - 1);
     state = state.copyWith(ttsHighlightCharIndex: target);
     saveProgress(target);
+    
+    if (state.isTtsPlaying) {
+      await _flutterTts.stop();
+      startTts();
+    }
   }
 
   void setTtsTimer(int? minutes) {

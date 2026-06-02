@@ -9,6 +9,7 @@ import '../model/novel_models.dart';
 
 class NovelApiClient {
   final ApiClient _apiClient;
+  static String? lastFailoverSource;
 
   NovelApiClient(this._apiClient);
 
@@ -109,6 +110,7 @@ class NovelApiClient {
     required String sourceId,
     required bool isAbyss,
     required String bookUrl,
+    bool isTrial = false,
   }) async {
     try {
       final response = await _apiClient.instance.post(
@@ -121,6 +123,7 @@ class NovelApiClient {
           'source_id': sourceId,
           'is_abyss': isAbyss,
           'book_url': bookUrl,
+          'is_trial': isTrial,
         },
       );
       return Book.fromJson(response.data);
@@ -146,6 +149,7 @@ class NovelApiClient {
   /// 5. Get book chapters (TOC)
   Future<List<BookChapter>> getBookChapters(String bookId, {bool forceRefresh = false}) async {
     try {
+      lastFailoverSource = null;
       final response = await _apiClient.instance.get(
         '/novel/chapters',
         queryParameters: {
@@ -153,6 +157,10 @@ class NovelApiClient {
           'force_refresh': forceRefresh,
         },
       );
+      final headerVal = response.headers.value('X-Failover-Source');
+      if (headerVal != null && headerVal.isNotEmpty) {
+        lastFailoverSource = headerVal;
+      }
       final List<dynamic> data = response.data ?? [];
       return data.map((json) => BookChapter.fromJson(json)).toList();
     } catch (e) {
@@ -163,6 +171,7 @@ class NovelApiClient {
   /// 6. Get chapter content
   Future<BookChapter> getChapterContent(String bookId, int chapterIndex) async {
     try {
+      lastFailoverSource = null;
       final response = await _apiClient.instance.get(
         '/novel/content',
         queryParameters: {
@@ -170,6 +179,10 @@ class NovelApiClient {
           'chapter_index': chapterIndex,
         },
       );
+      final headerVal = response.headers.value('X-Failover-Source');
+      if (headerVal != null && headerVal.isNotEmpty) {
+        lastFailoverSource = headerVal;
+      }
       return BookChapter.fromJson(response.data);
     } catch (e) {
       rethrow;
@@ -239,6 +252,50 @@ class NovelApiClient {
         },
       );
       return response.data ?? {};
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// 11. Import local book (TXT/EPUB parsed content)
+  Future<Book> importLocalBook({
+    required String title,
+    required String author,
+    String? summary,
+    String? coverUrl,
+    required List<Map<String, String>> chapters,
+  }) async {
+    try {
+      final response = await _apiClient.instance.post(
+        '/novel/bookshelf/import-local',
+        data: {
+          'title': title,
+          'author': author,
+          if (summary != null) 'summary': summary,
+          if (coverUrl != null) 'cover_url': coverUrl,
+          'chapters': chapters,
+        },
+      );
+      return Book.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// 12. Upload and import local EPUB or TXT file
+  Future<Book> importBookFile({
+    required String filePath,
+    required String fileName,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
+      final response = await _apiClient.instance.post(
+        '/novel/bookshelf/import-file',
+        data: formData,
+      );
+      return Book.fromJson(response.data);
     } catch (e) {
       rethrow;
     }

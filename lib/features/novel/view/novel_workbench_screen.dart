@@ -10,6 +10,7 @@ import 'widgets/novel_shelf_tab.dart';
 import 'widgets/book_oasis_tab.dart';
 import 'novel_search_screen.dart';
 import 'abyss_chamber_screen.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../../core/widgets/dynamic_background.dart';
 
 class NovelWorkbenchScreen extends ConsumerStatefulWidget {
@@ -40,6 +41,46 @@ class _NovelWorkbenchScreenState extends ConsumerState<NovelWorkbenchScreen> {
   void dispose() {
     _gestureTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _handleLocalFileImport(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['epub', 'txt'],
+      );
+      
+      if (result != null && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final fileName = result.files.single.name;
+        
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⏳ 正在解析并上传书籍 "$fileName"...'),
+            backgroundColor: Colors.pinkAccent,
+          ),
+        );
+        
+        await ref.read(novelProvider.notifier).importBookFile(filePath, fileName, false);
+        
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 书籍 "$fileName" 导入成功！'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ 导入失败: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   void _onGestureStart() {
@@ -165,6 +206,11 @@ class _NovelWorkbenchScreenState extends ConsumerState<NovelWorkbenchScreen> {
                     tooltip: '导入书源',
                     onPressed: () => _showImportSourcesDialog(context),
                   ),
+                IconButton(
+                  icon: const Icon(Icons.upload_file_rounded, color: Colors.white70),
+                  tooltip: '导入本地书籍 (TXT/EPUB)',
+                  onPressed: () => _handleLocalFileImport(context),
+                ),
                 IconButton(
                   icon: const Icon(Icons.search_rounded, color: Colors.white70),
                   onPressed: () {
