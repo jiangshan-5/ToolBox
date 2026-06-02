@@ -25,6 +25,10 @@ class NovelState {
   final int ttsTimeRemainingSeconds;
   final int ttsHighlightCharIndex;
 
+  // Ambient soundscapes mixer state
+  final Map<String, double> ambientVolumes;
+  final Map<String, bool> ambientActive;
+
   NovelState({
     this.bookshelf = const [],
     this.abyssBookshelf = const [],
@@ -41,6 +45,8 @@ class NovelState {
     this.ttsTimerMinutes,
     this.ttsTimeRemainingSeconds = 0,
     this.ttsHighlightCharIndex = 0,
+    this.ambientVolumes = const {'rain': 0.5, 'waves': 0.5, 'fire': 0.5},
+    this.ambientActive = const {'rain': false, 'waves': false, 'fire': false},
   });
 
   NovelState copyWith({
@@ -59,6 +65,8 @@ class NovelState {
     int? ttsTimerMinutes,
     int? ttsTimeRemainingSeconds,
     int? ttsHighlightCharIndex,
+    Map<String, double>? ambientVolumes,
+    Map<String, bool>? ambientActive,
   }) {
     return NovelState(
       bookshelf: bookshelf ?? this.bookshelf,
@@ -76,6 +84,8 @@ class NovelState {
       ttsTimerMinutes: ttsTimerMinutes ?? this.ttsTimerMinutes,
       ttsTimeRemainingSeconds: ttsTimeRemainingSeconds ?? this.ttsTimeRemainingSeconds,
       ttsHighlightCharIndex: ttsHighlightCharIndex ?? this.ttsHighlightCharIndex,
+      ambientVolumes: ambientVolumes ?? this.ambientVolumes,
+      ambientActive: ambientActive ?? this.ambientActive,
     );
   }
 }
@@ -86,7 +96,29 @@ class NovelNotifier extends StateNotifier<NovelState> {
   Timer? _ttsTimer;
   Timer? _sleepTimer;
 
-  NovelNotifier(this._apiClient) : super(NovelState());
+  // Ambient soundscapes players
+  final Map<String, AudioPlayer> _ambientPlayers = {};
+
+  NovelNotifier(this._apiClient) : super(NovelState()) {
+    _initAmbientPlayers();
+  }
+
+  void _initAmbientPlayers() {
+    final urls = {
+      'rain': 'https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav',
+      'waves': 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav',
+      'fire': 'https://assets.mixkit.co/active_storage/sfx/2432/2432-84.wav',
+    };
+    urls.forEach((id, url) {
+      try {
+        final player = AudioPlayer();
+        player.setLoopMode(LoopMode.one);
+        player.setVolume(0.5);
+        player.setUrl(url).catchError((_) => null);
+        _ambientPlayers[id] = player;
+      } catch (_) {}
+    });
+  }
 
   void clearSearchState() {
     state = state.copyWith(searchResults: [], error: null);
@@ -97,6 +129,10 @@ class NovelNotifier extends StateNotifier<NovelState> {
     _ttsTimer?.cancel();
     _sleepTimer?.cancel();
     _audioPlayer.dispose();
+    for (var player in _ambientPlayers.values) {
+      player.stop().catchError((_) => null);
+      player.dispose().catchError((_) => null);
+    }
     super.dispose();
   }
 
@@ -201,8 +237,12 @@ class NovelNotifier extends StateNotifier<NovelState> {
     }
     
     if (existing != null) {
-      await selectBook(existing);
-      return existing;
+      final targetSourceId = book.sourceId ?? book.currentSourceId ?? '';
+      final targetBookUrl = book.bookUrl ?? '';
+      if (existing.book?.currentSourceId == targetSourceId && existing.book?.bookUrl == targetBookUrl) {
+        await selectBook(existing);
+        return existing;
+      }
     }
     
     // 2. Add to shelf
@@ -349,17 +389,65 @@ class NovelNotifier extends StateNotifier<NovelState> {
   // 🎙️ TTS Audio Player & Word Highlighter Logic
   // ==========================================
 
+  // Ambient soundscapes control methods
+  void toggleAmbient(String id) {
+    final currentActive = Map<String, bool>.from(state.ambientActive);
+    final isActive = !(currentActive[id] ?? false);
+    currentActive[id] = isActive;
+    state = state.copyWith(ambientActive: currentActive);
+
+    final player = _ambientPlayers[id];
+    if (player != null) {
+      if (isActive) {
+        final baseVol = state.ambientVolumes[id] ?? 0.5;
+        final vol = state.isTtsPlaying ? baseVol * 0.35 : baseVol;
+        player.setVolume(vol).catchError((_) => null);
+        player.play().catchError((_) => null);
+      } else {
+        player.pause().catchError((_) => null);
+      }
+    }
+  }
+
+  void setAmbientVolume(String id, double volume) {
+    final currentVolumes = Map<String, double>.from(state.ambientVolumes);
+    currentVolumes[id] = volume;
+    state = state.copyWith(ambientVolumes: currentVolumes);
+
+    final player = _ambientPlayers[id];
+    if (player != null && (state.ambientActive[id] ?? false)) {
+      final vol = state.isTtsPlaying ? volume * 0.35 : volume;
+      player.setVolume(vol).catchError((_) => null);
+    }
+  }
+
+  void _applyDucking(bool isDucked) {
+    _ambientPlayers.forEach((id, player) {
+      if (state.ambientActive[id] ?? false) {
+        final baseVol = state.ambientVolumes[id] ?? 0.5;
+        final vol = isDucked ? baseVol * 0.35 : baseVol;
+        player.setVolume(vol).catchError((_) => null);
+      }
+    });
+  }
+
+  void pauseAllAudio() {
+    pauseTts();
+    _ambientPlayers.forEach((id, player) {
+      player.pause().catchError((_) => null);
+    });
+    final resetActive = {'rain': false, 'waves': false, 'fire': false};
+    state = state.copyWith(ambientActive: resetActive);
+  }
+
   void startTts() async {
     if (state.currentChapter == null || state.currentChapter!.content == null) return;
     _ttsTimer?.cancel();
     
     // Play relaxing background ambient sound (simulating audio player stream)
     try {
-      // Set to a loop of soothing low-frequency binaural white noise/zen audio or system tick.
-      // Since it's a sandbox demo, we play a assets/sounds, or if not present, configure a dummy silent source.
-      // We will loop a small silent sound or asset if available.
-      // For visual/audio premium feeling, we start a dynamic character-by-character scanner timer.
       state = state.copyWith(isTtsPlaying: true);
+      _applyDucking(true); // Apply Ducking to active ambient players!
       
       // Character reading speeds: Average human reading speed is ~300 chars per min, i.e., 5 chars per second.
       // Under ttsSpeed multiplier, we schedule a timer ticking.
@@ -394,6 +482,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
   void pauseTts() {
     _ttsTimer?.cancel();
     state = state.copyWith(isTtsPlaying: false);
+    _applyDucking(false); // Restore full volume!
   }
 
   void setTtsSpeed(double speed) {

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
+import 'dart:async';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../model/novel_models.dart';
 import '../provider/novel_provider.dart';
+import '../../../core/storage/local_storage.dart';
+import 'dart:math';
+import 'package:flutter/services.dart';
 
 class NovelReaderScreen extends ConsumerStatefulWidget {
   final String bookId;
@@ -25,6 +30,10 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   bool _isSerif = true; // Georgia/Serif vs default
   double _marginHorizontal = 20.0;
 
+  // Sensors & Panic Mode states
+  StreamSubscription? _sensorsSubscription;
+  bool _isPanicTriggered = false;
+
   // Eye-care color themes: [Background Color, Text Color, Name]
   final List<List<dynamic>> _themes = [
     [const Color(0xFFF7F1E3), const Color(0xFF2C2518), '宣纸'],
@@ -42,14 +51,74 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   void initState() {
     super.initState();
     _pageController = PageController();
-    _autoApplyTimeTheme();
+    _loadPreferences();
+    _initSensors();
+  }
+
+  void _initSensors() {
+    try {
+      _sensorsSubscription = accelerometerEventStream().listen((AccelerometerEvent event) {
+        if (!mounted || _isPanicTriggered) return;
+        // Z-axis goes below -8.0 when phone is flipped face down on a flat surface
+        if (event.z < -8.0) {
+          _triggerPanicMode();
+        }
+      });
+    } catch (_) {}
+  }
+
+  void _triggerPanicMode() {
+    if (_isPanicTriggered) return;
+    _isPanicTriggered = true;
+    
+    // 1. Immediately pause all TTS and ambient loops
+    ref.read(novelProvider.notifier).pauseAllAudio();
+    
+    // 2. Perform a physical haptic vibration
+    try {
+      HapticFeedback.heavyImpact();
+    } catch (_) {}
+
+    // 3. Immediately redirect back to safe environment
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚡ 极密避让机制已激活：深渊进程休眠，已切回安全时事卡片板！'),
+          backgroundColor: Colors.teal,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).pop(); // Go back to the workbench/shelf
+    }
+  }
+
+
+  void _loadPreferences() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      setState(() {
+        _fontSize = prefs.getDouble('novel_reader_font_size') ?? 18.0;
+        _lineHeight = prefs.getDouble('novel_reader_line_height') ?? 1.6;
+        _isSerif = prefs.getBool('novel_reader_is_serif') ?? true;
+        
+        final savedThemeIndex = prefs.getInt('novel_reader_theme_index');
+        if (savedThemeIndex != null && savedThemeIndex >= 0 && savedThemeIndex < _themes.length) {
+          _activeThemeIndex = savedThemeIndex;
+        } else {
+          _autoApplyTimeTheme();
+        }
+      });
+    } catch (_) {
+      _autoApplyTimeTheme();
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    // Pause TTS on exit to avoid background ghost running and network spam
-    ref.read(novelProvider.notifier).pauseTts();
+    _sensorsSubscription?.cancel();
+    // Pause all audio playbacks on exit to avoid background ghost running
+    ref.read(novelProvider.notifier).pauseAllAudio();
     super.dispose();
   }
 
@@ -90,12 +159,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     final themeText = _themes[_activeThemeIndex][1] as Color;
 
     if (state.isContentLoading && state.currentChapter == null) {
-      return Scaffold(
-        backgroundColor: themeBg,
-        body: const Center(
-          child: CircularProgressIndicator(color: Colors.pinkAccent),
-        ),
-      );
+      return _NovelReaderSkeleton(themeBg: themeBg, themeText: themeText);
     }
 
     final chapter = state.currentChapter;
@@ -131,6 +195,15 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                 setState(() {
                   _showControlOverlay = !_showControlOverlay;
                 });
+              },
+              onDoubleTap: _triggerPanicMode,
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity == null) return;
+                if (details.primaryVelocity! > 300) {
+                  _onPrevChapter(state);
+                } else if (details.primaryVelocity! < -300) {
+                  _onNextChapter(state);
+                }
               },
               child: Container(
                 color: Colors.transparent,
@@ -383,7 +456,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 1. Sliders for fontSize and lineHeight
+                  // 1. Font size slider
                   Row(
                     children: [
                       const Icon(Icons.text_fields_rounded, color: Colors.white54, size: 16),
@@ -399,6 +472,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                             setState(() {
                               _fontSize = val;
                             });
+                            ref.read(sharedPreferencesProvider).setDouble('novel_reader_font_size', val);
                           },
                         ),
                       ),
@@ -408,7 +482,33 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                       ),
                     ],
                   ),
-                  // 2. Serif switch, margin options
+                  // 1.5 Line height slider
+                  Row(
+                    children: [
+                      const Icon(Icons.format_line_spacing_rounded, color: Colors.white54, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Slider(
+                          value: _lineHeight,
+                          min: 1.2,
+                          max: 2.2,
+                          activeColor: Colors.pinkAccent,
+                          inactiveColor: Colors.white12,
+                          onChanged: (val) {
+                            setState(() {
+                              _lineHeight = val;
+                            });
+                            ref.read(sharedPreferencesProvider).setDouble('novel_reader_line_height', val);
+                          },
+                        ),
+                      ),
+                      Text(
+                        '行高 ${_lineHeight.toStringAsFixed(1)}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  // 2. Serif switch
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -420,6 +520,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                           setState(() {
                             _isSerif = val;
                           });
+                          ref.read(sharedPreferencesProvider).setBool('novel_reader_is_serif', val);
                         },
                       ),
                     ],
@@ -442,6 +543,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                             setState(() {
                               _activeThemeIndex = idx;
                             });
+                            ref.read(sharedPreferencesProvider).setInt('novel_reader_theme_index', idx);
                           },
                           child: Container(
                             margin: const EdgeInsets.only(right: 12),
@@ -545,12 +647,118 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                       ),
                     ],
                   ),
+                  const Divider(height: 20, color: Colors.white10),
+                  // 5. 听书与冥想声景空间混音控制面板
+                  _buildAmbientMixerSection(state),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAmbientMixerSection(NovelState state) {
+    final ambientSounds = [
+      {'id': 'rain', 'name': '幽谷秋雨', 'icon': Icons.umbrella_rounded, 'color': Colors.blueAccent},
+      {'id': 'waves', 'name': '极地海浪', 'icon': Icons.waves_rounded, 'color': Colors.cyanAccent},
+      {'id': 'fire', 'name': '壁炉柴火', 'icon': Icons.local_fire_department_rounded, 'color': Colors.orangeAccent},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.music_note_rounded, color: Colors.cyanAccent, size: 14),
+            const SizedBox(width: 6),
+            const Text(
+              '听书背景声景混音 (Ducking 智能避让)',
+              style: TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            if (state.isTtsPlaying) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.cyanAccent.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  '避让中 -35%',
+                  style: TextStyle(color: Colors.cyanAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 10),
+        Column(
+          children: ambientSounds.map((sound) {
+            final id = sound['id'] as String;
+            final name = sound['name'] as String;
+            final icon = sound['icon'] as IconData;
+            final color = sound['color'] as Color;
+            
+            final isActive = state.ambientActive[id] ?? false;
+            final volume = state.ambientVolumes[id] ?? 0.5;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      ref.read(novelProvider.notifier).toggleAmbient(id);
+                    },
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isActive ? color.withOpacity(0.2) : Colors.white10,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isActive ? color : Colors.transparent,
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(icon, color: isActive ? color : Colors.white38, size: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 2,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                        activeTrackColor: color.withOpacity(0.8),
+                        inactiveTrackColor: Colors.white12,
+                        thumbColor: color,
+                      ),
+                      child: Slider(
+                        value: volume,
+                        min: 0.0,
+                        max: 1.0,
+                        onChanged: (val) {
+                          ref.read(novelProvider.notifier).setAmbientVolume(id, val);
+                        },
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${(volume * 100).toInt()}%',
+                    style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'monospace'),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -674,6 +882,108 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
           ),
         ),
       ),
+    );
+  }
+}
+
+class _NovelReaderSkeleton extends StatefulWidget {
+  final Color themeBg;
+  final Color themeText;
+
+  const _NovelReaderSkeleton({
+    required this.themeBg,
+    required this.themeText,
+  });
+
+  @override
+  State<_NovelReaderSkeleton> createState() => _NovelReaderSkeletonState();
+}
+
+class _NovelReaderSkeletonState extends State<_NovelReaderSkeleton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shimmerColor = widget.themeText.withOpacity(0.15);
+    return Scaffold(
+      backgroundColor: widget.themeBg,
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: 0.3 + (_controller.value * 0.5), // Pulses between 0.3 and 0.8
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top header line
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(width: 80, height: 12, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
+                        Container(width: 40, height: 12, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
+                      ],
+                    ),
+                    const SizedBox(height: 48),
+                    // Title skeleton
+                    Container(width: 160, height: 28, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(6))),
+                    const SizedBox(height: 36),
+                    // Paragraph 1
+                    _buildParagraph(shimmerColor, [0.95, 0.9, 0.92, 0.4]),
+                    const SizedBox(height: 24),
+                    // Paragraph 2
+                    _buildParagraph(shimmerColor, [0.93, 0.95, 0.85, 0.35]),
+                    const SizedBox(height: 24),
+                    // Paragraph 3
+                    _buildParagraph(shimmerColor, [0.9, 0.92, 0.94, 0.78, 0.45]),
+                    const SizedBox(height: 24),
+                    // Paragraph 4
+                    _buildParagraph(shimmerColor, [0.95, 0.93, 0.3]),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParagraph(Color color, List<double> widths) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widths.map((w) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: FractionallySizedBox(
+            widthFactor: w,
+            child: Container(
+              height: 16,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

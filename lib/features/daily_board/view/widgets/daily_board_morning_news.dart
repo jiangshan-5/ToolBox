@@ -66,6 +66,48 @@ class DailyBoardMorningNews extends StatelessWidget {
     return Colors.cyanAccent;
   }
 
+  Widget _buildParsedNewsText(String itemText, TextStyle baseStyle) {
+    final spans = <TextSpan>[];
+    final regExp = RegExp(r'\*\*(.*?)\*\*|`(.*?)`');
+    int start = 0;
+    
+    for (final match in regExp.allMatches(itemText)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: itemText.substring(start, match.start)));
+      }
+      if (match.group(1) != null) {
+        spans.add(TextSpan(
+          text: match.group(1),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.amberAccent,
+          ),
+        ));
+      } else if (match.group(2) != null) {
+        spans.add(TextSpan(
+          text: match.group(2),
+          style: TextStyle(
+            fontFamily: 'monospace',
+            backgroundColor: Colors.white.withValues(alpha: 0.12),
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.w600,
+          ),
+        ));
+      }
+      start = match.end;
+    }
+    if (start < itemText.length) {
+      spans.add(TextSpan(text: itemText.substring(start)));
+    }
+    if (spans.isEmpty) {
+      return Text(itemText, style: baseStyle);
+    }
+    return Text.rich(
+      TextSpan(children: spans),
+      style: baseStyle,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GlassCard(
@@ -156,9 +198,9 @@ class DailyBoardMorningNews extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
+                                  child: _buildParsedNewsText(
                                     item,
-                                    style: TextStyle(
+                                    TextStyle(
                                       color: isHeader
                                           ? Colors.white
                                           : Colors.white.withValues(
