@@ -161,7 +161,8 @@ class WorkbenchToolGrid extends ConsumerWidget {
       );
     }
     return ListView.builder(
-      physics: const BouncingScrollPhysics(),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: categories.length,
       padding: const EdgeInsets.only(bottom: 24),
       itemBuilder: (context, catIndex) {
@@ -328,7 +329,8 @@ class WorkbenchToolGrid extends ConsumerWidget {
 
     final secondaryColor = Theme.of(context).colorScheme.secondary;
     return ListView(
-      physics: const BouncingScrollPhysics(),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 24),
       children: [
         Padding(

@@ -175,6 +175,38 @@ class NovelNotifier extends StateNotifier<NovelState> {
     }
   }
 
+  void _sortSearchResults(List<Book> list, String query) {
+    final qLower = query.trim().toLowerCase();
+    list.sort((a, b) {
+      final aTitle = a.title.trim().toLowerCase();
+      final bTitle = b.title.trim().toLowerCase();
+      final aAuthor = a.author.trim().toLowerCase();
+      final bAuthor = b.author.trim().toLowerCase();
+
+      int getScore(String title, String author) {
+        int score = 0;
+        if (title == qLower) {
+          score += 1000;
+        } else if (title.startsWith(qLower)) {
+          score += 500;
+        } else if (title.contains(qLower)) {
+          score += 200;
+        }
+
+        if (author == qLower) {
+          score += 800;
+        } else if (author.contains(qLower)) {
+          score += 100;
+        }
+        return score;
+      }
+
+      final scoreA = getScore(aTitle, aAuthor);
+      final scoreB = getScore(bTitle, bAuthor);
+      return scoreB.compareTo(scoreA); // descending
+    });
+  }
+
   /// 2. Search novels via real-time stream (with dynamic Web compatibility fallback)
   Future<void> search(String q, bool inAbyss) async {
     state = state.copyWith(isSearchLoading: true, error: null, searchResults: []);
@@ -183,7 +215,9 @@ class NovelNotifier extends StateNotifier<NovelState> {
         // Dynamic Fallback: Web environment has constraints on EventSource/SSE streams.
         // We gracefully fallback to standard one-shot HTTP fetch which works 100% on all browsers.
         final books = await _apiClient.searchNovels(q, inAbyss);
-        state = state.copyWith(searchResults: books, isSearchLoading: false);
+        final mutableBooks = List<Book>.from(books);
+        _sortSearchResults(mutableBooks, q);
+        state = state.copyWith(searchResults: mutableBooks, isSearchLoading: false);
         return;
       }
 
@@ -204,6 +238,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
           }
         }
         if (hasChanges) {
+          _sortSearchResults(currentResults, q);
           state = state.copyWith(searchResults: currentResults);
         }
       }
@@ -463,7 +498,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
         player.setVolume(vol).catchError((_) => null);
         player.play().catchError((_) => null);
       } else {
-        player.pause().catchError((_) => null);
+        player.stop().catchError((_) => null);
       }
     }
   }
@@ -490,10 +525,10 @@ class NovelNotifier extends StateNotifier<NovelState> {
     });
   }
 
-  void pauseAllAudio() {
+  void stopAllAudio() {
     pauseTts();
     _ambientPlayers.forEach((id, player) {
-      player.pause().catchError((_) => null);
+      player.stop().catchError((_) => null);
     });
     final resetActive = {'rain': false, 'waves': false, 'fire': false};
     state = state.copyWith(ambientActive: resetActive);
@@ -588,7 +623,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
     _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.ttsTimeRemainingSeconds <= 1) {
         timer.cancel();
-        pauseTts();
+        stopAllAudio();
         state = state.copyWith(ttsTimerMinutes: null, ttsTimeRemainingSeconds: 0);
       } else {
         state = state.copyWith(

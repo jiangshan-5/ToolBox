@@ -126,7 +126,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
 
   /// Send message and dynamically sync multi-turn history to the backend
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty || state.isLoading) return;
 
     final userMessage = Message(role: 'user', content: text);
     state = state.copyWith(
@@ -273,7 +273,7 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
     required String action,
     String? targetLanguage,
   }) async {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty || state.isLoading) return;
 
     state = AiTextProcessorState(isLoading: true);
 

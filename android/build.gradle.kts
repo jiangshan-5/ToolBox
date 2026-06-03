@@ -1,7 +1,10 @@
 allprojects {
     repositories {
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        // Use Aliyun mirrors for local development in China, bypass in CI/CD environments to avoid timeouts
+        if (System.getenv("CI") == null || System.getenv("USE_ALIYUN_MIRROR") == "true") {
+            maven { url = uri("https://maven.aliyun.com/repository/google") }
+            maven { url = uri("https://maven.aliyun.com/repository/public") }
+        }
         google()
         mavenCentral()
     }

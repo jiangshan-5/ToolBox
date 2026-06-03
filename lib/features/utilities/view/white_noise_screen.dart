@@ -234,7 +234,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           }
         } else {
           if (player.playing) {
-            player.pause().catchError((_) => null);
+            player.stop().catchError((_) => null);
           }
         }
       }
@@ -247,7 +247,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
 
     // Silently stop all playing channels immediately
     for (var player in _players.values) {
-      player.pause().catchError((_) => null);
+      player.stop().catchError((_) => null);
     }
 
     if (!mounted) return;

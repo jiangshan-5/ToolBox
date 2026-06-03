@@ -41,6 +41,7 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with Ticker
     'led_banner',
     'dev_encoder',
     'daily_board',
+    'novel_reader',
   ];
 
   List<String> _myToolsKeys = [];
@@ -145,69 +146,70 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with Ticker
           });
         }
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          WorkbenchHeader(
-            email: widget.userEmail,
-            primaryColor: primaryColor,
-            secondaryColor: theme.colorScheme.secondary,
-          ),
-          ConnectionIndicator(state: categoriesState),
-          const WorkbenchPipelineSection(),
-          const SizedBox(height: 12),
-          WorkbenchRecentlyUsed(
-            recentlyUsed: _recentlyUsed,
-            primaryColor: primaryColor,
-            onToolClicked: _onDynamicToolClicked,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-            child: Row(
-              children: [
-                Icon(Icons.grid_view_rounded, color: primaryColor, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  _isEditingTools ? '⚙️ 正在编辑布局 (拖动排序/右上角删除)' : '全部工具分类库',
-                  style: TextStyle(
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black54,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      if (_isEditingTools) {
-                        _saveMyTools(_myToolsKeys);
-                        _wiggleController.stop();
-                        _wiggleController.value = 0.0;
-                      } else {
-                        _wiggleController.repeat(reverse: true);
-                      }
-                      _isEditingTools = !_isEditingTools;
-                    });
-                  },
-                  icon: Icon(
-                    _isEditingTools ? Icons.check_circle_outline_rounded : Icons.edit_note_rounded,
-                    size: 16,
-                    color: Colors.pinkAccent,
-                  ),
-                  label: Text(
-                    _isEditingTools ? '保存完成' : '编辑布局',
-                    style: const TextStyle(
-                      color: Colors.pinkAccent,
-                      fontSize: 12,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            WorkbenchHeader(
+              email: widget.userEmail,
+              primaryColor: primaryColor,
+              secondaryColor: theme.colorScheme.secondary,
+            ),
+            ConnectionIndicator(state: categoriesState),
+            const WorkbenchPipelineSection(),
+            const SizedBox(height: 12),
+            WorkbenchRecentlyUsed(
+              recentlyUsed: _recentlyUsed,
+              primaryColor: primaryColor,
+              onToolClicked: _onDynamicToolClicked,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  Icon(Icons.grid_view_rounded, color: primaryColor, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isEditingTools ? '⚙️ 正在编辑布局 (拖动排序/右上角删除)' : '全部工具分类库',
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black54,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        if (_isEditingTools) {
+                          _saveMyTools(_myToolsKeys);
+                          _wiggleController.stop();
+                          _wiggleController.value = 0.0;
+                        } else {
+                          _wiggleController.repeat(reverse: true);
+                        }
+                        _isEditingTools = !_isEditingTools;
+                      });
+                    },
+                    icon: Icon(
+                      _isEditingTools ? Icons.check_circle_outline_rounded : Icons.edit_note_rounded,
+                      size: 16,
+                      color: Colors.pinkAccent,
+                    ),
+                    label: Text(
+                      _isEditingTools ? '保存完成' : '编辑布局',
+                      style: const TextStyle(
+                        color: Colors.pinkAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: WorkbenchToolGrid(
+            WorkbenchToolGrid(
               myToolsKeys: _myToolsKeys,
               isEditingTools: _isEditingTools,
               wiggleController: _wiggleController,
@@ -238,9 +240,9 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with Ticker
                 });
               },
             ),
-          ),
-          const SizedBox(height: 80),
-        ],
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }

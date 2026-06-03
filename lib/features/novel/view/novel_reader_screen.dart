@@ -9,6 +9,8 @@ import '../service/novel_api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import 'dart:math';
 import 'package:flutter/services.dart';
+import '../../bmi/view/bmi_screen.dart';
+import '../../dashboard/view/widgets/dashboard_utils.dart';
 
 class NovelReaderScreen extends ConsumerStatefulWidget {
   final String bookId;
@@ -42,6 +44,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   double? _lastWidth;
   double? _lastHeight;
   List<int>? _cachedPageOffsets;
+  bool _landingOnLastPage = false;
+  String? _lastBookId;
+  int? _lastChapterIndex;
 
   // Sensors & Panic Mode states
   StreamSubscription? _sensorsSubscription;
@@ -84,24 +89,20 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     if (_isPanicTriggered) return;
     _isPanicTriggered = true;
     
-    // 1. Immediately pause all TTS and ambient loops
-    ref.read(novelProvider.notifier).pauseAllAudio();
+    // 1. Immediately stop all TTS and ambient loops
+    ref.read(novelProvider.notifier).stopAllAudio();
     
     // 2. Perform a physical haptic vibration
     try {
       HapticFeedback.heavyImpact();
     } catch (_) {}
 
-    // 3. Immediately redirect back to safe environment
+    // 3. Immediately redirect back to safe environment (Decoy mode)
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚡ 极密避让机制已激活：深渊进程休眠，已切回安全时事卡片板！'),
-          backgroundColor: Colors.teal,
-          behavior: SnackBarBehavior.floating,
-        ),
+      Navigator.of(context).pushAndRemoveUntil(
+        FadePageRoute(child: const BmiScreen()),
+        (route) => route.isFirst,
       );
-      Navigator.of(context).pop(); // Go back to the workbench/shelf
     }
   }
 
@@ -152,8 +153,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     _pageController.dispose();
     _sensorsSubscription?.cancel();
     _failoverTimer?.cancel();
-    // Pause all audio playbacks on exit to avoid background ghost running
-    ref.read(novelProvider.notifier).pauseAllAudio();
+    // Stop all audio playbacks on exit to avoid background ghost running
+    ref.read(novelProvider.notifier).stopAllAudio();
     super.dispose();
   }
 
@@ -175,6 +176,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     if (state.currentBookProgress == null) return;
     final curIdx = state.currentBookProgress!.lastReadChapterIndex;
     if (curIdx > 1) {
+      setState(() {
+        _landingOnLastPage = true;
+      });
       ref.read(novelProvider.notifier).loadChapterContent(widget.bookId, curIdx - 1);
     }
   }
@@ -183,6 +187,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     if (state.currentBookProgress == null) return;
     final curIdx = state.currentBookProgress!.lastReadChapterIndex;
     if (curIdx < state.chapters.length) {
+      setState(() {
+        _landingOnLastPage = false;
+      });
       ref.read(novelProvider.notifier).loadChapterContent(widget.bookId, curIdx + 1);
     }
   }
@@ -1179,30 +1186,78 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     final pageOffsets = _getPageOffsets(textToPaginate, textStyle, maxWidth, maxHeight);
     final totalPages = pageOffsets.length - 1;
 
-    final int lastOffset = (state.currentBookProgress?.lastReadCharOffset ?? 0) + titleLen;
+    final bool hasPrevChapter = state.currentBookProgress != null &&
+        state.currentBookProgress!.lastReadChapterIndex > 1;
+    final bool hasNextChapter = state.currentBookProgress != null &&
+        state.currentBookProgress!.lastReadChapterIndex < state.chapters.length;
+
     int initialPage = 0;
-    for (int i = 0; i < totalPages; i++) {
-      if (lastOffset >= pageOffsets[i] && lastOffset < pageOffsets[i + 1]) {
-        initialPage = i;
-        break;
+    if (_landingOnLastPage) {
+      initialPage = totalPages - 1;
+      // Save progress to start offset of the last page
+      final startOffset = pageOffsets[initialPage];
+      ref.read(novelProvider.notifier).saveProgress(max(0, startOffset - titleLen));
+      _landingOnLastPage = false;
+    } else {
+      final int lastOffset = (state.currentBookProgress?.lastReadCharOffset ?? 0) + titleLen;
+      for (int i = 0; i < totalPages; i++) {
+        if (lastOffset >= pageOffsets[i] && lastOffset < pageOffsets[i + 1]) {
+          initialPage = i;
+          break;
+        }
       }
     }
 
-    final bool hasNextChapter = state.currentBookProgress != null &&
-        state.currentBookProgress!.lastReadChapterIndex < state.chapters.length;
-    final int itemCount = totalPages + (hasNextChapter ? 1 : 0);
+    final int itemOffsetShift = hasPrevChapter ? 1 : 0;
+    final int itemCount = totalPages + itemOffsetShift + (hasNextChapter ? 1 : 0);
+    final int initialPageViewPage = initialPage + itemOffsetShift;
+
+    final currentChapterIndex = state.currentBookProgress?.lastReadChapterIndex;
+    final currentBookId = widget.bookId;
+
+    if (_lastBookId != currentBookId || _lastChapterIndex != currentChapterIndex) {
+      final oldController = _pageController;
+      _lastBookId = currentBookId;
+      _lastChapterIndex = currentChapterIndex;
+      _pageController = PageController(initialPage: initialPageViewPage);
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        oldController.dispose();
+      });
+    }
 
     return PageView.builder(
-      controller: PageController(initialPage: initialPage),
+      key: ValueKey('${widget.bookId}_${state.currentBookProgress?.lastReadChapterIndex}'),
+      controller: _pageController,
       itemCount: itemCount,
       onPageChanged: (pageIndex) {
-        if (pageIndex < totalPages) {
-          final startOffset = pageOffsets[pageIndex];
+        if (hasPrevChapter && pageIndex == 0) {
+          return;
+        }
+        if (pageIndex < totalPages + itemOffsetShift) {
+          final contentPageIndex = pageIndex - itemOffsetShift;
+          final startOffset = pageOffsets[contentPageIndex];
           ref.read(novelProvider.notifier).saveProgress(max(0, startOffset - titleLen));
         }
       },
       itemBuilder: (context, pageIndex) {
-        if (pageIndex == totalPages) {
+        if (hasPrevChapter && pageIndex == 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _onPrevChapter(state);
+          });
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: themeText.withOpacity(0.5)),
+                const SizedBox(height: 16),
+                Text('正在加载上一章...', style: TextStyle(color: themeText.withOpacity(0.5), fontSize: 13)),
+              ],
+            ),
+          );
+        }
+
+        if (pageIndex == totalPages + itemOffsetShift) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _onNextChapter(state);
           });
@@ -1218,8 +1273,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
           );
         }
 
-        final start = pageOffsets[pageIndex];
-        final end = pageOffsets[pageIndex + 1];
+        final contentPageIndex = pageIndex - itemOffsetShift;
+        final start = pageOffsets[contentPageIndex];
+        final end = pageOffsets[contentPageIndex + 1];
         final pageText = textToPaginate.substring(start, end);
 
         Widget textWidget;
@@ -1269,7 +1325,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                     ),
                   ),
                   Text(
-                    '第 ${pageIndex + 1} / $totalPages 页',
+                    '第 ${contentPageIndex + 1} / $totalPages 页',
                     style: TextStyle(
                       fontSize: 12,
                       color: themeText.withOpacity(0.5),
@@ -1409,12 +1465,69 @@ class NovelTextPaginator {
       textDirection: TextDirection.ltr,
     );
 
+    final double fontSize = style.fontSize ?? 18.0;
+    final double lineHeight = style.height ?? 1.6;
+    final double charArea = fontSize * fontSize * lineHeight;
+    final int estimatedChars = max(100, (maxWidth * maxHeight / charArea).round());
+
     int start = 0;
     while (start < text.length) {
       int end = text.length;
-      int low = start + 1;
-      int high = text.length;
 
+      // Estimate the character range for this page
+      int est = start + estimatedChars;
+      if (est > text.length) est = text.length;
+
+      textPainter.text = TextSpan(text: text.substring(start, est), style: style);
+      textPainter.layout(maxWidth: maxWidth);
+
+      int low, high;
+      if (textPainter.height <= maxHeight) {
+        // Fits! The end is >= est.
+        if (est == text.length) {
+          pages.add(est);
+          start = est;
+          continue;
+        }
+        low = est;
+        high = start + (estimatedChars * 1.5).round();
+        if (high > text.length) high = text.length;
+        if (high < low) high = low;
+
+        // Check if high fits
+        textPainter.text = TextSpan(text: text.substring(start, high), style: style);
+        textPainter.layout(maxWidth: maxWidth);
+        if (textPainter.height <= maxHeight) {
+          // Even high fits! Search between high and text.length
+          if (high == text.length) {
+            pages.add(high);
+            start = high;
+            continue;
+          }
+          low = high;
+          high = text.length;
+        } else {
+          // low fits, high overflows. The end is in [low, high - 1]
+          high = high - 1;
+        }
+      } else {
+        // Overflows! The end is < est.
+        high = est - 1;
+        low = start + (estimatedChars * 0.5).round();
+        if (low <= start) low = start + 1;
+        if (low > high) low = high;
+
+        // Check if low fits
+        textPainter.text = TextSpan(text: text.substring(start, low), style: style);
+        textPainter.layout(maxWidth: maxWidth);
+        if (textPainter.height > maxHeight) {
+          // Even low overflows! Search between start + 1 and low - 1
+          high = low - 1;
+          low = start + 1;
+        }
+      }
+
+      // Narrowed binary search
       while (low <= high) {
         int mid = (low + high) ~/ 2;
         final sub = text.substring(start, mid);
