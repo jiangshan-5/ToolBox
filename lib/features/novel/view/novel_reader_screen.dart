@@ -63,11 +63,13 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   int _activeThemeIndex = 0;
 
   late PageController _pageController;
+  late final NovelNotifier _novelNotifier;
   bool _showControlOverlay = false;
 
   @override
   void initState() {
     super.initState();
+    _novelNotifier = ref.read(novelProvider.notifier);
     _pageController = PageController();
     _loadPreferences();
     _initSensors();
@@ -90,7 +92,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     _isPanicTriggered = true;
     
     // 1. Immediately stop all TTS and ambient loops
-    ref.read(novelProvider.notifier).stopAllAudio();
+    _novelNotifier.stopAllAudio();
     
     // 2. Perform a physical haptic vibration
     try {
@@ -154,7 +156,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     _sensorsSubscription?.cancel();
     _failoverTimer?.cancel();
     // Stop all audio playbacks on exit to avoid background ghost running
-    ref.read(novelProvider.notifier).stopAllAudio();
+    _novelNotifier.stopAllAudio();
     super.dispose();
   }
 
@@ -299,7 +301,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                     // Scrollable novel content
                     Expanded(
                       child: _isPageViewMode
-                          ? _buildPageViewReader(content, themeText)
+                          ? _buildPageViewReader(state, content, themeText)
                           : SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
                               child: Column(
@@ -318,7 +320,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                                   ),
                                   const SizedBox(height: 24),
                                   // Rich body text with TTS Highlight support
-                                  _buildReaderBodyText(content, themeText),
+                                  _buildReaderBodyText(state, content, themeText),
                                   const SizedBox(height: 50),
                                   // Quick chapter paging
                                   _buildBottomPagingRow(state, themeText),
@@ -533,8 +535,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     );
   }
 
-  Widget _buildReaderBodyText(String content, Color themeText) {
-    final state = ref.watch(novelProvider);
+  Widget _buildReaderBodyText(NovelState state, String content, Color themeText) {
     final textStyle = TextStyle(
       fontSize: _fontSize,
       height: _lineHeight,
@@ -1157,8 +1158,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     return _cachedPageOffsets!;
   }
 
-  Widget _buildPageViewReader(String content, Color themeText) {
-    final state = ref.watch(novelProvider);
+  Widget _buildPageViewReader(NovelState state, String content, Color themeText) {
     final textStyle = TextStyle(
       fontSize: _fontSize,
       height: _lineHeight,
@@ -1186,6 +1186,17 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     final pageOffsets = _getPageOffsets(textToPaginate, textStyle, maxWidth, maxHeight);
     final totalPages = pageOffsets.length - 1;
 
+    print('DEBUG_PV: content length = ${content.length}');
+    print('DEBUG_PV: pageOffsets = $pageOffsets');
+    print('DEBUG_PV: totalPages = $totalPages');
+    print('DEBUG_PV: state.currentBookProgress = ${state.currentBookProgress}');
+    if (state.currentBookProgress != null) {
+      print('DEBUG_PV: progress.bookId = ${state.currentBookProgress!.bookId}');
+      print('DEBUG_PV: progress.lastReadChapterIndex = ${state.currentBookProgress!.lastReadChapterIndex}');
+      print('DEBUG_PV: progress.lastReadCharOffset = ${state.currentBookProgress!.lastReadCharOffset}');
+    }
+    print('DEBUG_PV: state.chapters.length = ${state.chapters.length}');
+
     final bool hasPrevChapter = state.currentBookProgress != null &&
         state.currentBookProgress!.lastReadChapterIndex > 1;
     final bool hasNextChapter = state.currentBookProgress != null &&
@@ -1193,10 +1204,14 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
 
     int initialPage = 0;
     if (_landingOnLastPage) {
-      initialPage = totalPages - 1;
+      initialPage = max(0, totalPages - 1);
       // Save progress to start offset of the last page
-      final startOffset = pageOffsets[initialPage];
-      ref.read(novelProvider.notifier).saveProgress(max(0, startOffset - titleLen));
+      if (initialPage < pageOffsets.length) {
+        final startOffset = pageOffsets[initialPage];
+        if (mounted) {
+          _novelNotifier.saveProgress(max(0, startOffset - titleLen));
+        }
+      }
       _landingOnLastPage = false;
     } else {
       final int lastOffset = (state.currentBookProgress?.lastReadCharOffset ?? 0) + titleLen;
@@ -1236,8 +1251,12 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
         }
         if (pageIndex < totalPages + itemOffsetShift) {
           final contentPageIndex = pageIndex - itemOffsetShift;
-          final startOffset = pageOffsets[contentPageIndex];
-          ref.read(novelProvider.notifier).saveProgress(max(0, startOffset - titleLen));
+          if (contentPageIndex >= 0 && contentPageIndex < pageOffsets.length) {
+            final startOffset = pageOffsets[contentPageIndex];
+            if (mounted) {
+              _novelNotifier.saveProgress(max(0, startOffset - titleLen));
+            }
+          }
         }
       },
       itemBuilder: (context, pageIndex) {

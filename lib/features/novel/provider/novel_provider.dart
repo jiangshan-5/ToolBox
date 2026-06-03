@@ -531,7 +531,11 @@ class NovelNotifier extends StateNotifier<NovelState> {
       player.stop().catchError((_) => null);
     });
     final resetActive = {'rain': false, 'waves': false, 'fire': false};
-    state = state.copyWith(ambientActive: resetActive);
+    Future.microtask(() {
+      if (mounted) {
+        state = state.copyWith(ambientActive: resetActive);
+      }
+    });
   }
 
   void startTts() async {
@@ -583,7 +587,11 @@ class NovelNotifier extends StateNotifier<NovelState> {
   void pauseTts() {
     _ttsTimer?.cancel();
     _flutterTts.stop();
-    state = state.copyWith(isTtsPlaying: false);
+    Future.microtask(() {
+      if (mounted) {
+        state = state.copyWith(isTtsPlaying: false);
+      }
+    });
     _applyDucking(false); // Restore full volume!
   }
 
