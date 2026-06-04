@@ -399,7 +399,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
   }
 
   /// 5. Load chapter content
-  Future<void> loadChapterContent(String bookId, int chapterIndex) async {
+  Future<bool> loadChapterContent(String bookId, int chapterIndex) async {
     state = state.copyWith(isContentLoading: true, error: null);
     try {
       final chap = await _apiClient.getChapterContent(bookId, chapterIndex);
@@ -437,8 +437,10 @@ class NovelNotifier extends StateNotifier<NovelState> {
       } else {
         state = state.copyWith(currentChapter: chap, isContentLoading: false);
       }
+      return true;
     } catch (e) {
       state = state.copyWith(isContentLoading: false, error: e.toString());
+      return false;
     }
   }
 
@@ -606,6 +608,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
   void setTtsHighlightIndex(int index) async {
     if (state.currentChapter == null || state.currentChapter!.content == null) return;
     final len = state.currentChapter!.content!.length;
+    if (len == 0) return;
     final target = index.clamp(0, len - 1);
     state = state.copyWith(ttsHighlightCharIndex: target);
     saveProgress(target);
@@ -650,8 +653,12 @@ class NovelNotifier extends StateNotifier<NovelState> {
     // Check if next chapter is available in our loaded list
     final hasNext = state.chapters.any((c) => c.chapterIndex == nextIndex);
     if (hasNext) {
-      await loadChapterContent(curProg.bookId, nextIndex);
-      startTts();
+      final success = await loadChapterContent(curProg.bookId, nextIndex);
+      if (success) {
+        startTts();
+      } else {
+        pauseTts();
+      }
     } else {
       pauseTts();
     }
