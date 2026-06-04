@@ -89,14 +89,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
 
               if (versionCode > currentVersionCode) {
-                if (mounted) {
-                  UpdateDialog.show(
-                    context,
-                    latestVersion: latestVersion,
-                    changelog: changelog,
-                    downloadUrl: downloadUrl,
-                    forceUpdate: forceUpdate,
-                  );
+                final prefs = ref.read(sharedPreferencesProvider);
+                final ignoredVersion = prefs.getInt('ignored_version_code') ?? 0;
+                if (forceUpdate || versionCode > ignoredVersion) {
+                  if (mounted) {
+                    UpdateDialog.show(
+                      context,
+                      latestVersion: latestVersion,
+                      changelog: changelog,
+                      downloadUrl: downloadUrl,
+                      forceUpdate: forceUpdate,
+                      onIgnore: () async {
+                        await prefs.setInt('ignored_version_code', versionCode);
+                      },
+                    );
+                  }
                 }
               }
             }
