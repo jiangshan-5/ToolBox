@@ -90,7 +90,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         final state = ref.read(novelProvider);
-        if (state.currentBookProgress?.bookId != widget.bookId) {
+        if (state.currentBookProgress?.bookId != widget.bookId ||
+            (state.currentChapter != null && state.currentChapter!.bookId != widget.bookId)) {
           _novelNotifier.loadChapters(widget.bookId);
         }
       }
@@ -431,7 +432,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
       );
     }
 
-    final bool isBookMismatch = state.currentBookProgress?.bookId != widget.bookId;
+    final bool isBookMismatch = state.currentBookProgress?.bookId != widget.bookId ||
+        (state.currentChapter != null && state.currentChapter!.bookId != widget.bookId);
     if (isBookMismatch || (state.isContentLoading && state.currentChapter == null)) {
       return _NovelReaderSkeleton(themeBg: themeBg, themeText: themeText);
     }
