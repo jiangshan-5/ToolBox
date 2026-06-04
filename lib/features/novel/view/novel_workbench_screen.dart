@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -200,12 +201,11 @@ class _NovelWorkbenchScreenState extends ConsumerState<NovelWorkbenchScreen> {
                 ),
               ),
               actions: [
-                if (ref.watch(authProvider).email == 'admin@toolbox.com')
-                  IconButton(
-                    icon: const Icon(Icons.cloud_download_rounded, color: Colors.white70),
-                    tooltip: '导入书源',
-                    onPressed: () => _showImportSourcesDialog(context),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.cloud_download_rounded, color: Colors.white70),
+                  tooltip: '导入书源',
+                  onPressed: () => _showImportSourcesDialog(context),
+                ),
                 IconButton(
                   icon: const Icon(Icons.upload_file_rounded, color: Colors.white70),
                   tooltip: '导入本地书籍 (TXT/EPUB)',
@@ -378,6 +378,8 @@ class _ImportSourcesDialogState extends State<_ImportSourcesDialog> with SingleT
   late TabController _tabController;
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _jsonController = TextEditingController();
+  String? _selectedFileName;
+  String? _selectedFileContent;
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -385,7 +387,7 @@ class _ImportSourcesDialogState extends State<_ImportSourcesDialog> with SingleT
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -394,6 +396,30 @@ class _ImportSourcesDialogState extends State<_ImportSourcesDialog> with SingleT
     _urlController.dispose();
     _jsonController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickSourceFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json', 'txt'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final path = result.files.single.path!;
+        final file = io.File(path);
+        final content = await file.readAsString();
+        setState(() {
+          _selectedFileName = result.files.single.name;
+          _selectedFileContent = content;
+          _errorMessage = null;
+          _successMessage = null;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = "选择文件失败: $e";
+      });
+    }
   }
 
   Future<void> _handleImport() async {
@@ -412,6 +438,29 @@ class _ImportSourcesDialogState extends State<_ImportSourcesDialog> with SingleT
           throw Exception("请输入书源导入 URL");
         }
         result = await widget.ref.read(novelProvider.notifier).importBookSources(url: url);
+      } else if (_tabController.index == 1) {
+        if (_selectedFileContent == null || _selectedFileContent!.trim().isEmpty) {
+          throw Exception("请先选择本地书源文件");
+        }
+        
+        final jsonText = _selectedFileContent!.trim();
+        late final dynamic parsed;
+        try {
+          parsed = jsonDecode(jsonText);
+        } catch (e) {
+          throw Exception("文件 JSON 格式错误: $e");
+        }
+
+        final List<dynamic> jsonData;
+        if (parsed is List) {
+          jsonData = parsed;
+        } else if (parsed is Map) {
+          jsonData = [parsed];
+        } else {
+          throw Exception("不支持的书源 JSON 结构 (必须是数组或对象)");
+        }
+
+        result = await widget.ref.read(novelProvider.notifier).importBookSources(jsonData: jsonData);
       } else {
         final jsonText = _jsonController.text.trim();
         if (jsonText.isEmpty) {
@@ -534,8 +583,9 @@ class _ImportSourcesDialogState extends State<_ImportSourcesDialog> with SingleT
                       labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                       indicatorSize: TabBarIndicatorSize.tab,
                       tabs: const [
-                        Tab(text: '🌐 网络链接导入'),
-                        Tab(text: '📝 粘贴 JSON 文本'),
+                        Tab(text: '🌐 网络链接'),
+                        Tab(text: '📁 本地文件'),
+                        Tab(text: '📝 粘贴文本'),
                       ],
                     ),
                   ),
@@ -579,7 +629,69 @@ class _ImportSourcesDialogState extends State<_ImportSourcesDialog> with SingleT
                             ],
                           ),
 
-                          // Tab 2: Raw JSON text
+                          // Tab 2: Local File
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '选择本地书源文件 (.json 或 .txt)',
+                                style: TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: _pickSourceFile,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.02),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _selectedFileName != null
+                                            ? Colors.pinkAccent.withOpacity(0.5)
+                                            : Colors.white.withOpacity(0.1),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _selectedFileName != null
+                                              ? Icons.insert_drive_file_rounded
+                                              : Icons.upload_file_rounded,
+                                          color: _selectedFileName != null ? Colors.pinkAccent : Colors.white54,
+                                          size: 32,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _selectedFileName ?? '点击选择本地书源文件',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: _selectedFileName != null ? Colors.white : Colors.white54,
+                                            fontSize: 13,
+                                            fontWeight: _selectedFileName != null ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (_selectedFileName != null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '大小: ${((_selectedFileContent?.length ?? 0) / 1024).toStringAsFixed(1)} KB',
+                                            style: const TextStyle(color: Colors.white38, fontSize: 10),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Tab 3: Raw JSON text
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [

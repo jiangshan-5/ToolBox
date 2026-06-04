@@ -148,6 +148,24 @@ class BookChapter {
       'content': content,
     };
   }
+
+  BookChapter copyWith({
+    String? id,
+    String? bookId,
+    int? chapterIndex,
+    String? title,
+    String? sourceChapterUrl,
+    String? content,
+  }) {
+    return BookChapter(
+      id: id ?? this.id,
+      bookId: bookId ?? this.bookId,
+      chapterIndex: chapterIndex ?? this.chapterIndex,
+      title: title ?? this.title,
+      sourceChapterUrl: sourceChapterUrl ?? this.sourceChapterUrl,
+      content: content ?? this.content,
+    );
+  }
 }
 
 class ReadingProgress {

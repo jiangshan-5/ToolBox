@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../model/novel_models.dart';
 import '../service/novel_api_client.dart';
 import 'package:just_audio/just_audio.dart';
@@ -98,6 +98,58 @@ class NovelNotifier extends StateNotifier<NovelState> {
   Timer? _sleepTimer;
   final FlutterTts _flutterTts = FlutterTts();
   int _ttsBaseIndex = 0;
+
+  // In-memory prefetch cache for zero-flicker loading
+  final Map<String, BookChapter> _chapterCache = {};
+
+  String _sanitizeAndFormatContent(String content) {
+    if (content.isEmpty) return content;
+    
+    // 1. Remove common web ads & watermarks
+    final adPatterns = [
+      RegExp(r'【点击加入书签】'),
+      RegExp(r'顶点小说最新章节.*?\.'),
+      RegExp(r'手机用户请访问.*'),
+      RegExp(r'www\.[a-zA-Z0-9\-]+\.[a-zA-Z]{2,4}'),
+      RegExp(r'【.*?】广告.*?'),
+      RegExp(r'\(本章完\)'),
+      RegExp(r'请记住本书首发域名.*'),
+    ];
+    
+    String cleaned = content;
+    for (final pattern in adPatterns) {
+      cleaned = cleaned.replaceAll(pattern, '');
+    }
+    
+    // 2. Format paragraphs: trim spacing and prepend Chinese double full-width space indentation
+    final List<String> lines = cleaned.split('\n');
+    final List<String> formattedLines = [];
+    
+    for (var line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      formattedLines.add('　　$trimmed');
+    }
+    
+    return formattedLines.join('\n\n');
+  }
+
+  void _prefetchNextChapters(String bookId, int chapterIndex) {
+    for (int i = 1; i <= 3; i++) {
+      final nextIdx = chapterIndex + i;
+      final hasNext = state.chapters.any((c) => c.chapterIndex == nextIdx);
+      if (hasNext) {
+        final nextCacheKey = '${bookId}_$nextIdx';
+        if (!_chapterCache.containsKey(nextCacheKey)) {
+          _apiClient.getChapterContent(bookId, nextIdx).then((rawChapter) {
+            final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
+            final chap = rawChapter.copyWith(content: formattedContent);
+            _chapterCache[nextCacheKey] = chap;
+          }).catchError((_) {});
+        }
+      }
+    }
+  }
 
   // Ambient soundscapes players
   final Map<String, AudioPlayer> _ambientPlayers = {};
@@ -383,6 +435,9 @@ class NovelNotifier extends StateNotifier<NovelState> {
     state = state.copyWith(isContentLoading: true, error: null);
     try {
       final chs = await _apiClient.getBookChapters(bookId);
+      if (state.currentBookProgress != null && state.currentBookProgress!.bookId != bookId) {
+        return;
+      }
       state = state.copyWith(chapters: chs, isContentLoading: false);
       if (chs.isNotEmpty) {
         final progress = state.currentBookProgress;
@@ -393,53 +448,94 @@ class NovelNotifier extends StateNotifier<NovelState> {
         }
         await loadChapterContent(bookId, targetIdx);
       }
-    } catch (e) {
-      state = state.copyWith(isContentLoading: false, error: e.toString());
+    } catch (e, stackTrace) {
+      debugPrint("LOAD_CHAPTERS_ERROR: $e");
+      debugPrint("LOAD_CHAPTERS_STACKTRACE: $stackTrace");
+      if (state.currentBookProgress == null || state.currentBookProgress!.bookId == bookId) {
+        state = state.copyWith(isContentLoading: false, error: e.toString());
+      }
     }
   }
 
   /// 5. Load chapter content
   Future<bool> loadChapterContent(String bookId, int chapterIndex) async {
+    final cacheKey = '${bookId}_$chapterIndex';
+    
+    // Check local in-memory cache first for instant zero-flicker loading
+    if (_chapterCache.containsKey(cacheKey)) {
+      final cachedChapter = _chapterCache[cacheKey]!;
+      
+      if (state.currentBookProgress != null) {
+        if (state.currentBookProgress!.bookId != bookId) {
+          return false;
+        }
+        final updatedProgress = state.currentBookProgress!.copyWith(
+          lastReadChapterIndex: chapterIndex,
+          lastReadCharOffset: 0,
+        );
+        
+        state = state.copyWith(
+          currentChapter: cachedChapter,
+          currentBookProgress: updatedProgress,
+          isContentLoading: false,
+          ttsHighlightCharIndex: 0,
+        );
+        
+        _apiClient.updateReadingProgress(
+          bookId: bookId,
+          chapterIndex: chapterIndex,
+          charOffset: 0,
+        ).ignore();
+      } else {
+        state = state.copyWith(currentChapter: cachedChapter, isContentLoading: false);
+      }
+      
+      _prefetchNextChapters(bookId, chapterIndex);
+      return true;
+    }
+    
     state = state.copyWith(isContentLoading: true, error: null);
     try {
-      final chap = await _apiClient.getChapterContent(bookId, chapterIndex);
+      final rawChapter = await _apiClient.getChapterContent(bookId, chapterIndex);
+      if (state.currentBookProgress != null && state.currentBookProgress!.bookId != bookId) {
+        return false;
+      }
+      final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
+      final chap = rawChapter.copyWith(content: formattedContent);
       
-      // Also update local state progress
+      // Save to local cache
+      _chapterCache[cacheKey] = chap;
+      
       if (state.currentBookProgress != null) {
         final updatedProgress = state.currentBookProgress!.copyWith(
           lastReadChapterIndex: chapterIndex,
           lastReadCharOffset: 0,
         );
         
-        // Save state
         state = state.copyWith(
           currentChapter: chap,
           currentBookProgress: updatedProgress,
           isContentLoading: false,
           ttsHighlightCharIndex: 0,
         );
-
-        // Silent backend update
+ 
         _apiClient.updateReadingProgress(
           bookId: bookId,
           chapterIndex: chapterIndex,
           charOffset: 0,
         ).ignore();
-
-        // 🚀 方案 C：智能静默后台并发预加载后续 3 章节，后端提前预下载清洗，持久化存入 PostgreSQL 缓存
-        for (int i = 1; i <= 3; i++) {
-          final nextIdx = chapterIndex + i;
-          final hasNext = state.chapters.any((c) => c.chapterIndex == nextIdx);
-          if (hasNext) {
-            _apiClient.getChapterContent(bookId, nextIdx).ignore();
-          }
-        }
       } else {
         state = state.copyWith(currentChapter: chap, isContentLoading: false);
       }
+      
+      _prefetchNextChapters(bookId, chapterIndex);
       return true;
-    } catch (e) {
-      state = state.copyWith(isContentLoading: false, error: e.toString());
+    } catch (e, stackTrace) {
+      debugPrint("LOAD_CHAPTER_CONTENT_ERROR: $e");
+      debugPrint("LOAD_CHAPTER_CONTENT_STACKTRACE: $stackTrace");
+      if (state.currentBookProgress == null || state.currentBookProgress!.bookId == bookId) {
+        state = state.copyWith(isContentLoading: false, error: e.toString());
+      }
       return false;
     }
   }

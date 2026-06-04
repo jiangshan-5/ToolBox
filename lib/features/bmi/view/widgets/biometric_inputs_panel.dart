@@ -77,14 +77,14 @@ class _BmiBiometricInputsPanelState
           padding: const EdgeInsets.all(2),
           child: Row(
             children: [
-              _buildUnitTab('公制 (Metric)', isMetric, () {
+              _buildUnitTab('公制', isMetric, () {
                 if (!isMetric) {
                   notifier.setUnitSystem(true);
                   widget.heightController.clear();
                   widget.weightController.clear();
                 }
               }),
-              _buildUnitTab('英制 (Imperial)', !isMetric, () {
+              _buildUnitTab('英制', !isMetric, () {
                 if (isMetric) {
                   notifier.setUnitSystem(false);
                   widget.heightController.clear();
