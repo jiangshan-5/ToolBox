@@ -89,6 +89,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "3.0.7"
+  csslib:
+    dependency: transitive
+    description:
+      name: csslib
+      sha256: "09bad715f418841f976c77db72d5398dc1253c21fb9c0c7f0b0b985860b2d58e"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.2"
   csv:
     dependency: "direct main"
     description:
@@ -182,6 +190,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_js:
+    dependency: "direct main"
+    description:
+      name: flutter_js
+      sha256: "046428059ac7bef71e305dc35fc24be933b684684a43e83eab7ebd0dc407ad85"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.8.7"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -296,6 +312,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.0.3"
+  html:
+    dependency: "direct main"
+    description:
+      name: html
+      sha256: "6d1264f2dffa1b1101c25a91dff0dc2daee4c18e87cd8538729773c073dbf602"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.15.6"
   http:
     dependency: transitive
     description:
@@ -632,6 +656,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.2.1"
+  petitparser:
+    dependency: transitive
+    description:
+      name: petitparser
+      sha256: "91bd59303e9f769f108f8df05e371341b15d59e995e6806aefab827b58336675"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "7.0.2"
   platform:
     dependency: transitive
     description:
@@ -813,6 +845,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.4.1"
+  sync_http:
+    dependency: transitive
+    description:
+      name: sync_http
+      sha256: "7f0cd72eca000d2e026bcd6f990b81d0ca06022ef4e32fb257b30d3d1014a961"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.3.1"
   synchronized:
     dependency: transitive
     description:
@@ -957,6 +997,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.1.0"
+  xml:
+    dependency: "direct main"
+    description:
+      name: xml
+      sha256: "67f0aff7be013d107995e9b75bf4e7f2c3ef2dfdb2c8e68024bba0a7fd5756a4"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "7.0.1"
   yaml:
     dependency: transitive
     description:

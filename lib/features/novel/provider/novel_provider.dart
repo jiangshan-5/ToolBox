@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:io' show Platform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../model/novel_models.dart';
@@ -93,7 +94,6 @@ class NovelState {
 
 class NovelNotifier extends StateNotifier<NovelState> {
   final NovelApiClient _apiClient;
-  final AudioPlayer _audioPlayer = AudioPlayer();
   Timer? _ttsTimer;
   Timer? _sleepTimer;
   final FlutterTts _flutterTts = FlutterTts();
@@ -143,7 +143,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
         if (!_chapterCache.containsKey(nextCacheKey)) {
           _apiClient.getChapterContent(bookId, nextIdx).then((rawChapter) {
             final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
-            final chap = rawChapter.copyWith(content: formattedContent);
+            final chap = rawChapter.copyWith(content: formattedContent, bookId: bookId);
             _chapterCache[nextCacheKey] = chap;
           }).catchError((_) {});
         }
@@ -155,7 +155,9 @@ class NovelNotifier extends StateNotifier<NovelState> {
   final Map<String, AudioPlayer> _ambientPlayers = {};
 
   NovelNotifier(this._apiClient) : super(NovelState()) {
-    _initAmbientPlayers();
+    if (!kIsWeb && !Platform.environment.containsKey('FLUTTER_TEST')) {
+      _initAmbientPlayers();
+    }
     _initTts();
   }
 
@@ -203,7 +205,6 @@ class NovelNotifier extends StateNotifier<NovelState> {
   void dispose() {
     _ttsTimer?.cancel();
     _sleepTimer?.cancel();
-    _audioPlayer.dispose();
     _flutterTts.stop();
     for (var player in _ambientPlayers.values) {
       player.stop().catchError((_) => null);
@@ -501,7 +502,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
         return false;
       }
       final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
-      final chap = rawChapter.copyWith(content: formattedContent);
+      final chap = rawChapter.copyWith(content: formattedContent, bookId: bookId);
       
       // Save to local cache
       _chapterCache[cacheKey] = chap;

@@ -527,6 +527,9 @@ void main() {
 
     SharedPreferences.setMockInitialValues({
       'novel_reader_is_page_view_mode': false,
+      'novel_reader_font_size': 18.0,
+      'novel_reader_line_height': 1.6,
+      'novel_reader_is_serif': true,
       'novel_reader_theme_index': 0,
     });
     final prefs = await SharedPreferences.getInstance();
@@ -604,6 +607,9 @@ void main() {
 
     SharedPreferences.setMockInitialValues({
       'novel_reader_is_page_view_mode': true,
+      'novel_reader_font_size': 18.0,
+      'novel_reader_line_height': 1.6,
+      'novel_reader_is_serif': true,
       'novel_reader_theme_index': 0,
     });
     final prefs = await SharedPreferences.getInstance();
@@ -648,6 +654,9 @@ void main() {
 
     SharedPreferences.setMockInitialValues({
       'novel_reader_is_page_view_mode': false,
+      'novel_reader_font_size': 18.0,
+      'novel_reader_line_height': 1.6,
+      'novel_reader_is_serif': true,
       'novel_reader_theme_index': 0,
       'novel_reader_dimmer_opacity': 0.1,
     });
