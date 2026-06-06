@@ -117,7 +117,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       _cancelToken = CancelToken();
 
-      final dio = Dio();
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(minutes: 10),
+      ));
       await dio.download(
         widget.downloadUrl,
         savePath,
@@ -166,6 +169,9 @@ class _UpdateDialogState extends State<UpdateDialog> {
         }
       }
     } catch (e) {
+      if (e is DioException && e.type == DioExceptionType.cancel) {
+        return;
+      }
       if (mounted) {
         setState(() {
           _isDownloading = false;
