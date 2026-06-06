@@ -8,14 +8,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../../../../../core/providers/theme_provider.dart';
-import '../../../../../core/app_theme.dart';
-import '../../../../../core/providers/api_config_provider.dart';
 import '../../../../../core/providers/package_info_provider.dart';
 import '../../../../../core/widgets/glass_card.dart';
 import '../../../../../core/widgets/update_dialog.dart';
 import '../../../../auth/provider/auth_provider.dart';
-import '../dashboard_utils.dart';
 import 'personal_center_panel.dart';
 
 class ProfileDialogs {
@@ -218,7 +214,7 @@ class ProfileDialogs {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: category,
+                    initialValue: category,
                     dropdownColor: isDarkVal ? const Color(0xFF140F2D) : Colors.white,
                     style: TextStyle(color: textColorVal, fontSize: 14),
                     decoration: InputDecoration(

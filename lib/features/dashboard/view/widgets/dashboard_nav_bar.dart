@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../../../core/widgets/dynamic_effects.dart';
+import '../../../../core/widgets/dynamic_effects.dart';
 
 /// Floating Glassmorphic Bottom Navigation Bar mimicking premium mainstream shells
 class DashboardNavBar extends StatelessWidget {
@@ -32,18 +32,18 @@ class DashboardNavBar extends StatelessWidget {
         height: 68,
         decoration: BoxDecoration(
           color: isDark
-              ? colors.surface.withOpacity(0.4)
-              : Colors.white.withOpacity(0.85),
+              ? colors.surface.withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark
-                ? Colors.white.withOpacity(0.08)
-                : colors.primary.withOpacity(0.08),
+                ? Colors.white.withValues(alpha: 0.08)
+                : colors.primary.withValues(alpha: 0.08),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -72,10 +72,10 @@ class DashboardNavBar extends StatelessWidget {
                     heightFactor: 0.72,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: colors.primary.withOpacity(0.12),
+                        color: colors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: colors.primary.withOpacity(0.15),
+                          color: colors.primary.withValues(alpha: 0.15),
                           width: 1.0,
                         ),
                       ),

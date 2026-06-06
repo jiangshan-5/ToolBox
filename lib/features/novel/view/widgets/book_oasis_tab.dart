@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../model/novel_models.dart';
 import '../../provider/novel_provider.dart';
@@ -469,7 +468,8 @@ class _BlindBoxCardStackState extends ConsumerState<BlindBoxCardStack> with Sing
                 child: GestureDetector(
                   onPanUpdate: _onPanUpdate,
                   onPanEnd: (details) => _onPanEnd(details, context),
-                  onTap: () async {
+                  onTap: _toggleFlip,
+                  onDoubleTap: () async {
                     final topBook = _cards.first;
                     final bookObj = Book(
                       id: '',
@@ -490,11 +490,11 @@ class _BlindBoxCardStackState extends ConsumerState<BlindBoxCardStack> with Sing
                     
                     final progress = await ref.read(novelProvider.notifier).addAndSelectBook(bookObj, widget.inAbyss);
                     
-                    if (mounted) {
+                    if (context.mounted) {
                       Navigator.pop(context); // Dismiss loading
                     }
                     
-                    if (progress != null && mounted) {
+                    if (progress != null && context.mounted) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(

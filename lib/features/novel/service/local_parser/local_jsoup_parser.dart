@@ -1,5 +1,4 @@
 import 'package:html/dom.dart' as dom;
-import 'package:html/parser.dart' as html_parser;
 
 class LegadoIndexRange {
   final int? start;
@@ -69,13 +68,13 @@ class LocalJsoupParser {
     }
     
     if (selectorStr.startsWith('class.')) {
-      selectorStr = '.' + selectorStr.substring(6);
+      selectorStr = '.${selectorStr.substring(6)}';
     } else if (selectorStr.contains(' class.')) {
       selectorStr = selectorStr.replaceAll(' class.', ' .');
     }
     
     if (selectorStr.startsWith('id.')) {
-      selectorStr = '#' + selectorStr.substring(3);
+      selectorStr = '#${selectorStr.substring(3)}';
     } else if (selectorStr.contains(' id.')) {
       selectorStr = selectorStr.replaceAll(' id.', ' #');
     }
@@ -147,7 +146,7 @@ class LocalJsoupParser {
     if (match != null) {
       final splitChar = match.group(1)!;
       final indicesStr = match.group(2)!;
-      final beforeRule = ruleStr.substring(0, match.start!).trim();
+      final beforeRule = ruleStr.substring(0, match.start).trim();
       
       final parts = indicesStr.split(':');
       final List<int> indexes = [];

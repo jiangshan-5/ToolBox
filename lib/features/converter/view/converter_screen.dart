@@ -128,24 +128,13 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  Color _getCategoryColor(ConverterCategory cat) {
-    switch (cat) {
-      case ConverterCategory.length:
-        return Colors.cyanAccent;
-
-      case ConverterCategory.mass:
-        return Colors.pinkAccent;
-
-      case ConverterCategory.temperature:
-        return Colors.orangeAccent;
-
-      case ConverterCategory.area:
-        return Colors.greenAccent;
-
-      case ConverterCategory.sandbox:
-        return Colors.purpleAccent;
-    }
-  }
+  Color _getCategoryColor(ConverterCategory cat) => switch (cat) {
+        ConverterCategory.length => Colors.cyanAccent,
+        ConverterCategory.mass => Colors.pinkAccent,
+        ConverterCategory.temperature => Colors.orangeAccent,
+        ConverterCategory.area => Colors.greenAccent,
+        ConverterCategory.sandbox => Colors.purpleAccent,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -262,8 +251,9 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                               ),
                             );
 
-                            if (allConversionsMatrix.isEmpty)
+                            if (allConversionsMatrix.isEmpty) {
                               return const SizedBox.shrink();
+                            }
 
                             return Column(
                               children: [

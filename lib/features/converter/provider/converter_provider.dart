@@ -218,8 +218,9 @@ class ConverterNotifier extends StateNotifier<ConverterState> {
       case ConverterCategory.area:
         return areaFactors.keys.toList();
       case ConverterCategory.sandbox:
-        if (state.activeCustomId == null || state.customConverters.isEmpty)
+        if (state.activeCustomId == null || state.customConverters.isEmpty) {
           return ['源单位', '目标单位'];
+        }
         final cur = state.customConverters.firstWhere(
           (e) => e.id == state.activeCustomId,
         );

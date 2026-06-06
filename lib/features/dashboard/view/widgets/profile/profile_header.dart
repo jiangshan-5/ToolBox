@@ -20,7 +20,6 @@ class ProfileHeader extends ConsumerWidget {
     final secondaryColor = theme.colorScheme.secondary;
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final subTextColor = isDark ? Colors.white70 : Colors.black54;
     final borderDividerColor =
         isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 

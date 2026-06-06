@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../auth/provider/auth_provider.dart';
@@ -33,7 +34,7 @@ class ToolsAnalyticsService {
       _ref.invalidate(telemetryLogsProvider);
     } catch (e) {
       // Telemetry should always be non-blocking. If it fails, log silently to keep UX perfect.
-      print("Telemetry logging failed for $toolKey: $e");
+      debugPrint("Telemetry logging failed for $toolKey: $e");
     }
   }
 }

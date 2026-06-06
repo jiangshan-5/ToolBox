@@ -9,7 +9,6 @@ import '../../../../../core/app_theme.dart';
 class ProfileThemeDialogs {
   ProfileThemeDialogs._();
 
-  static Color _primaryColor(BuildContext context) => Theme.of(context).colorScheme.primary;
   static bool _isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
   static Color _textColor(BuildContext context) => _isDark(context) ? Colors.white : Colors.black87;
   static Color _subTextColor(BuildContext context) => _isDark(context) ? Colors.white70 : Colors.black54;

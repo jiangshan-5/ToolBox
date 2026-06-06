@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/storage/local_storage.dart';
@@ -80,7 +81,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
           state = state.copyWith(messages: messages);
         }
       } catch (e) {
-        print('Failed to load guest chat history: $e');
+        debugPrint('Failed to load guest chat history: $e');
       }
     } else {
       state = state.copyWith(isLoading: true, error: null);
@@ -119,7 +120,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
         );
         await storage.setString('guest_ai_chat_history', serialized);
       } catch (e) {
-        print('Failed to save guest chat history: $e');
+        debugPrint('Failed to save guest chat history: $e');
       }
     }
   }
@@ -197,7 +198,7 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
           if (!mounted) return;
           _ref.invalidate(analyticsProvider);
         } catch (telemetryError) {
-          print('Telemetry sync failed: $telemetryError');
+          debugPrint('Telemetry sync failed: $telemetryError');
         }
       }
     } on DioException catch (e) {
@@ -223,14 +224,14 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
         final storage = _ref.read(localStorageServiceProvider);
         await storage.setString('guest_ai_chat_history', '[]');
       } catch (e) {
-        print('Failed to clear guest chat history: $e');
+        debugPrint('Failed to clear guest chat history: $e');
       }
     } else {
       try {
         final apiClient = _ref.read(apiClientProvider);
         await apiClient.instance.delete('/ai/chat/history');
       } catch (e) {
-        print('Failed to clear cloud chat history: $e');
+        debugPrint('Failed to clear cloud chat history: $e');
       }
     }
   }
@@ -319,7 +320,7 @@ class AiTextProcessorNotifier extends StateNotifier<AiTextProcessorState> {
         if (!mounted) return;
         _ref.invalidate(analyticsProvider);
       } catch (telemetryError) {
-        print('TextProcessor telemetry sync failed: $telemetryError');
+        debugPrint('TextProcessor telemetry sync failed: $telemetryError');
       }
     } on DioException catch (e) {
       if (!mounted) return;

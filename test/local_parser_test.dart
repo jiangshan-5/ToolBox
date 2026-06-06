@@ -4,7 +4,6 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 
 import 'package:toolbox_app/features/novel/service/local_parser/local_jsoup_parser.dart';
-import 'package:toolbox_app/features/novel/service/local_parser/local_jsonpath_parser.dart';
 import 'package:toolbox_app/features/novel/service/local_parser/local_xpath_parser.dart';
 import 'package:toolbox_app/features/novel/service/local_parser/local_js_sandbox.dart';
 import 'package:toolbox_app/features/novel/service/local_parser/local_parser_engine.dart';

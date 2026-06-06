@@ -377,7 +377,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                             ? Image.network(
                                 book.coverUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _buildFallbackCover(book),
+                                errorBuilder: (_, _, _) => _buildFallbackCover(book),
                               )
                             : _buildFallbackCover(book),
                         
@@ -532,7 +532,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
         title: const Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               '确认删除',
               style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),

@@ -65,10 +65,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _connectedUrl = baseUrl;
 
     String wsUrl =
-        baseUrl
+        '${baseUrl
             .replaceAll('http://', 'ws://')
-            .replaceAll('https://', 'wss://') +
-        '/system/ws/updates';
+            .replaceAll('https://', 'wss://')}/system/ws/updates';
 
     try {
       _socket = await WebSocket.connect(
@@ -318,31 +317,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'rocket_launch_rounded':
-        return Icons.rocket_launch_rounded;
-      case 'shield_rounded':
-        return Icons.shield_rounded;
-      case 'dns_rounded':
-        return Icons.dns_rounded;
-      default:
-        return Icons.notifications_rounded;
-    }
-  }
+  IconData _getIconData(String iconName) => switch (iconName) {
+        'rocket_launch_rounded' => Icons.rocket_launch_rounded,
+        'shield_rounded' => Icons.shield_rounded,
+        'dns_rounded' => Icons.dns_rounded,
+        _ => Icons.notifications_rounded,
+      };
 
-  Color _getBadgeColor(String colorName, Color primaryColor) {
-    switch (colorName) {
-      case 'primary':
-        return primaryColor;
-      case 'greenAccent':
-        return Colors.greenAccent;
-      case 'cyanAccent':
-        return Colors.cyanAccent;
-      default:
-        return Colors.grey;
-    }
-  }
+  Color _getBadgeColor(String colorName, Color primaryColor) => switch (colorName) {
+        'primary' => primaryColor,
+        'greenAccent' => Colors.greenAccent,
+        'cyanAccent' => Colors.cyanAccent,
+        _ => Colors.grey,
+      };
 
   Widget _buildNotificationCard({
     required BuildContext context,

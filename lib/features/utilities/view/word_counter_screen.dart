@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/widgets/glass_card.dart';
 import '../../../features/dashboard/provider/tools_provider.dart';
 import '../../../core/providers/global_clipboard_provider.dart';
 import '../../ai/view/ai_text_processor_screen.dart';
@@ -248,22 +247,7 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                   ),
                   const SizedBox(height: 12),
                   GestureDetector(
-                    onTap: () {
-                      if (_controller.text.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AiTextProcessorScreen(
-                              initialText: _controller.text,
-                            ),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('请先输入分析文本以载入算子！')),
-                        );
-                      }
-                    },
+                    onTap: _sendToAiProcessor,
                     child: HoverGlowCard(
                       glowColor: const Color(0xFFE200FF),
                       child: Container(

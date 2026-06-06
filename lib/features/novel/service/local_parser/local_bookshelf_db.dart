@@ -9,7 +9,7 @@ class LocalBookshelfDb {
 
   List<Book> _books = [];
   List<ReadingProgress> _progress = [];
-  Map<String, List<BookChapter>> _chaptersCache = {};
+  final Map<String, List<BookChapter>> _chaptersCache = {};
   bool _initialized = false;
 
   Future<void> init() async {

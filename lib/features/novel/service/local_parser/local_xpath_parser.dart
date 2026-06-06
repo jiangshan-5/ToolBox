@@ -27,6 +27,7 @@ class LocalXpathParser {
       }
 
       final xmlNode = htmlToXmlNode(htmlNode);
+      // ignore: experimental_member_use
       final xpathResult = xmlNode.xpath(xpathStr);
       final List<String> results = [];
       
@@ -50,7 +51,7 @@ class LocalXpathParser {
   /// Recursively converts HTML parsed nodes into valid XML nodes
   static xml.XmlNode htmlToXmlNode(dom.Node htmlNode) {
     if (htmlNode is dom.Text) {
-      return xml.XmlText(htmlNode.text ?? '');
+      return xml.XmlText(htmlNode.text);
     } else if (htmlNode is dom.Element) {
       final name = htmlNode.localName ?? 'div';
       final List<xml.XmlAttribute> attrs = [];

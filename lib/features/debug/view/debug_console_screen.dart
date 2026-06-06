@@ -570,7 +570,7 @@ class _PublishFormState extends ConsumerState<_PublishForm> {
                         ),
                         Switch(
                           value: _forceUpdate,
-                          activeColor: Colors.purpleAccent,
+                          activeThumbColor: Colors.purpleAccent,
                           onChanged: (val) {
                             setState(() {
                               _forceUpdate = val;

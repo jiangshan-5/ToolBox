@@ -745,7 +745,6 @@ class NovelNotifier extends StateNotifier<NovelState> {
     final curProg = state.currentBookProgress;
     if (curProg == null) return;
     final nextIndex = curProg.lastReadChapterIndex + 1;
-    final totalChapters = state.chapters.length;
     
     // Check if next chapter is available in our loaded list
     final hasNext = state.chapters.any((c) => c.chapterIndex == nextIndex);

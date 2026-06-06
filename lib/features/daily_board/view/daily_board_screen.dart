@@ -414,7 +414,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                             ],
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),

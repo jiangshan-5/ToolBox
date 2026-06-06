@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../core/providers/api_config_provider.dart';
 import '../../../../../core/providers/pipeline_provider.dart';
 import '../../../../../core/widgets/glass_card.dart';
 import '../../../../auth/provider/auth_provider.dart';
-import '../../../provider/tools_provider.dart';
 import '../dashboard_utils.dart';
 import 'workbench_dialogs.dart';
 

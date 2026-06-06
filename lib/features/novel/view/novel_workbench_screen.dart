@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import '../provider/novel_provider.dart';
-import '../../auth/provider/auth_provider.dart';
 import 'widgets/novel_shelf_tab.dart';
 import 'widgets/book_oasis_tab.dart';
 import 'novel_search_screen.dart';
@@ -149,8 +148,6 @@ class _NovelWorkbenchScreenState extends ConsumerState<NovelWorkbenchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     // Force a dark theme for the entire novel workbench section to ensure high readability
     // of all text elements and create a gorgeous immersive reading environment
     final darkTheme = ThemeData(

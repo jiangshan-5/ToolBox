@@ -339,7 +339,7 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
                           color: Colors.black,
                           size: 20,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           "💫 开启全屏沉浸播放 (横屏模式)",
                           style: TextStyle(

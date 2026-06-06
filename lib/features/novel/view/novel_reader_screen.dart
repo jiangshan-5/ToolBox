@@ -3,12 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'dart:async';
 import 'package:sensors_plus/sensors_plus.dart';
-import '../model/novel_models.dart';
 import '../provider/novel_provider.dart';
 import '../service/novel_api_client.dart';
 import '../../../core/storage/local_storage.dart';
-import 'dart:math';
-import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../../bmi/view/bmi_screen.dart';
 import '../../dashboard/view/widgets/dashboard_utils.dart';
@@ -39,7 +36,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   double _fontSize = 18.0;
   double _lineHeight = 1.6;
   bool _isSerif = true; // Georgia/Serif vs default
-  double _marginHorizontal = 20.0;
+  final double _marginHorizontal = 20.0;
   bool _isPageViewMode = false;
   String? _failoverMessage;
   Timer? _failoverTimer;

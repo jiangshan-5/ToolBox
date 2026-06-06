@@ -258,7 +258,7 @@ class LocalParserEngine {
     if (selectorStr.contains('##')) {
       final parts = selectorStr.split('##');
       baseSelector = parts[0].trim();
-      regexPart = '##' + parts.sublist(1).join('##');
+      regexPart = '##${parts.sublist(1).join('##')}';
     }
 
     // 4. Extract JS logic (@js:... or <js>...</js>)
@@ -347,7 +347,7 @@ class LocalParserEngine {
     if (selectorStr.contains('##')) {
       final parts = selectorStr.split('##');
       baseSelector = parts[0].trim();
-      regexPart = '##' + parts.sublist(1).join('##');
+      regexPart = '##${parts.sublist(1).join('##')}';
     }
 
     var jsCode = '';

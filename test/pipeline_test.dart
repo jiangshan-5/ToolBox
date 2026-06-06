@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toolbox_app/core/providers/pipeline_provider.dart';
-import 'package:toolbox_app/core/widgets/pipeline_wrapper.dart';
 import 'package:toolbox_app/core/storage/local_storage.dart';
-import 'package:toolbox_app/features/dashboard/view/widgets/dashboard_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

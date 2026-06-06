@@ -73,7 +73,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // Exit edit mode to stop the animation and verify persistence by tapping background/empty space text
-    await tester.tap(find.text('欢迎回来，test@example.com'), warnIfMissed: false);
+    await tester.tap(find.text('欢迎回来，test'), warnIfMissed: false);
     await tester.pumpAndSettle(); // Safe to pumpAndSettle now since animation stopped
 
     // Verify it is saved in SharedPreferences (should NOT contain 'randomizer')
@@ -110,18 +110,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     final dragGesture = await tester.startGesture(
-      tester.getCenter(find.descendant(of: find.byType(GridView), matching: find.text('健康 BMI 计算器'))),
+      tester.getCenter(find.descendant(of: find.byType(Wrap), matching: find.text('健康 BMI 计算器'))),
     );
     await tester.pump(const Duration(milliseconds: 600)); // wait for long press
     await dragGesture.moveTo(
-      tester.getCenter(find.descendant(of: find.byType(GridView), matching: find.text('标准单位转换器'))),
+      tester.getCenter(find.descendant(of: find.byType(Wrap), matching: find.text('标准单位转换器'))),
     );
     await tester.pump(const Duration(milliseconds: 100));
     await dragGesture.up();
     await tester.pump(const Duration(milliseconds: 100));
 
     // Save and stop animation by tapping background/empty space text
-    await tester.tap(find.text('欢迎回来，test@example.com'), warnIfMissed: false);
+    await tester.tap(find.text('欢迎回来，test'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     // Verify we exited edit mode

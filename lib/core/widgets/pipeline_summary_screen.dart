@@ -21,7 +21,6 @@ class PipelineSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final double width = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final subTextColor = isDark ? Colors.white70 : Colors.black54;
@@ -573,13 +572,15 @@ class PipelineSummaryScreen extends ConsumerWidget {
                                           setState(() {
                                             isSaving = false;
                                           });
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('❌ 保存工作流失败: $e'),
-                                              backgroundColor: Colors.red,
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('❌ 保存工作流失败: $e'),
+                                                backgroundColor: Colors.red,
+                                                behavior: SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          }
                                         }
                                       },
                                 style: ElevatedButton.styleFrom(

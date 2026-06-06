@@ -94,7 +94,7 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
           Container(color: surfaceColor),
 
           // Custom Background Image
-          if (imageBackdrop != null) imageBackdrop,
+          ?imageBackdrop,
 
           // Floating Mesh Gradients (Static positions)
           Positioned(
@@ -150,7 +150,7 @@ class _DynamicBackgroundState extends ConsumerState<DynamicBackground>
           Container(color: surfaceColor),
 
           // Custom Background Image
-          if (imageBackdrop != null) imageBackdrop,
+          ?imageBackdrop,
 
           // Floating Mesh Gradients
           AnimatedBuilder(

@@ -298,8 +298,8 @@ class RandomizerNotifier extends StateNotifier<RandomizerState> {
     drawnNumbers.sort();
 
     // Formatter applying zero padding, prefix, and suffix
-    final List<String> formatted = drawnNumbers.map((num) {
-      final padded = num.toString().padLeft(state.padLeft, '0');
+    final List<String> formatted = drawnNumbers.map((number) {
+      final padded = number.toString().padLeft(state.padLeft, '0');
       return '${state.prefix}$padded${state.suffix}';
     }).toList();
 

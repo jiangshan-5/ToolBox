@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'glass_card.dart';
@@ -456,8 +455,6 @@ class _CustomPromptDialogState extends State<CustomPromptDialog> {
     if (widget.type == PromptDialogType.loading) {
       return [];
     }
-
-    final themeColor = _getThemeColor(context);
 
     if (widget.type == PromptDialogType.confirm || widget.type == PromptDialogType.input) {
       return [

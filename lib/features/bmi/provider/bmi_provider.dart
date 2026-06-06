@@ -407,7 +407,7 @@ class BmiNotifier extends StateNotifier<BmiState> {
         // Invalidate to refresh the chart immediately
         _ref.invalidate(analyticsProvider);
       } catch (e) {
-        print('Failed to sync health telemetry: $e');
+        debugPrint('Failed to sync health telemetry: $e');
       }
     }
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import '../../../../core/widgets/deferred_page.dart';
 import '../../../../core/widgets/glass_card.dart';
 import '../../../randomizer/view/randomizer_screen.dart';
@@ -34,164 +33,82 @@ class FadePageRoute<T> extends PageRouteBuilder<T> {
 }
 
 /// Map database tool keys to compiled Flutter widget views wrapped in a deferred-transition container
-Widget? getToolPage(String toolKey) {
-  switch (toolKey) {
-    case 'randomizer':
-      return const DeferredPage(title: '高自由度决策随机沙盒', child: RandomizerScreen());
-    case 'unit_converter':
-    case 'converter':
-      return const DeferredPage(title: '物理量公式沙盒转换站', child: ConverterScreen());
-    case 'bmi_calculator':
-      return const DeferredPage(title: '体征与宏量营养沙盒', child: BmiScreen());
-    case 'ai_chat':
-      return const DeferredPage(title: 'AI 智能多轮对话助理', child: AiChatScreen());
-    case 'ai_text_processor':
-      return const DeferredPage(
-        title: 'AI 高级写作引擎',
-        child: AiTextProcessorScreen(),
-      );
-    case 'word_counter':
-      return const DeferredPage(title: '字数与字符统计器', child: WordCounterScreen());
-    case 'password_generator':
-      return const DeferredPage(
-        title: '密码生成与强度分析',
-        child: PasswordGeneratorScreen(),
-      );
-    case 'world_clock':
-      return const DeferredPage(title: '时区对照与极智番茄钟', child: WorldClockScreen());
-    case 'white_noise':
-      return const DeferredPage(
-        title: '律动呼吸与多声道白噪音',
-        child: WhiteNoiseScreen(),
-      );
-    case 'markdown_editor':
-      return const DeferredPage(
-        title: '极简 Markdown 工作站',
-        child: MarkdownEditorScreen(),
-      );
-    case 'led_banner':
-      return const DeferredPage(title: 'LED 手持弹幕', child: LedBannerScreen());
-    case 'dev_encoder':
-      return const DeferredPage(title: '开发者沙盒编码盒', child: DevEncoderScreen());
-    case 'daily_board':
-      return const DeferredPage(title: '今日时事与卡片工坊', child: DailyBoardScreen());
-    case 'novel_reader':
-      return const DeferredPage(title: '全网去噪智能小说阅读器', child: NovelWorkbenchScreen());
-    default:
-      return null;
-  }
-}
+Widget? getToolPage(String toolKey) => switch (toolKey) {
+      'randomizer' => const DeferredPage(title: '高自由度决策随机沙盒', child: RandomizerScreen()),
+      'unit_converter' || 'converter' => const DeferredPage(title: '物理量公式沙盒转换站', child: ConverterScreen()),
+      'bmi_calculator' => const DeferredPage(title: '体征与宏量营养沙盒', child: BmiScreen()),
+      'ai_chat' => const DeferredPage(title: 'AI 智能多轮对话助理', child: AiChatScreen()),
+      'ai_text_processor' => const DeferredPage(title: 'AI 高级写作引擎', child: AiTextProcessorScreen()),
+      'word_counter' => const DeferredPage(title: '字数与字符统计器', child: WordCounterScreen()),
+      'password_generator' => const DeferredPage(title: '密码生成与强度分析', child: PasswordGeneratorScreen()),
+      'world_clock' => const DeferredPage(title: '时区对照与极智番茄钟', child: WorldClockScreen()),
+      'white_noise' => const DeferredPage(title: '律动呼吸与多声道白噪音', child: WhiteNoiseScreen()),
+      'markdown_editor' => const DeferredPage(title: '极简 Markdown 工作站', child: MarkdownEditorScreen()),
+      'led_banner' => const DeferredPage(title: 'LED 手持弹幕', child: LedBannerScreen()),
+      'dev_encoder' => const DeferredPage(title: '开发者沙盒编码盒', child: DevEncoderScreen()),
+      'daily_board' => const DeferredPage(title: '今日时事与卡片工坊', child: DailyBoardScreen()),
+      'novel_reader' => const DeferredPage(title: '全网去噪智能小说阅读器', child: NovelWorkbenchScreen()),
+      _ => null,
+    };
 
-IconData getToolIcon(String toolKey) {
-  switch (toolKey) {
-    case 'randomizer':
-      return Icons.casino_rounded;
-    case 'unit_converter':
-    case 'converter':
-      return Icons.swap_horiz_rounded;
-    case 'bmi_calculator':
-      return Icons.monitor_weight_outlined;
-    case 'word_counter':
-      return Icons.text_fields_rounded;
-    case 'password_generator':
-      return Icons.lock_reset_rounded;
-    case 'world_clock':
-      return Icons.alarm_rounded;
-    case 'white_noise':
-      return Icons.spa_rounded;
-    case 'markdown_editor':
-      return Icons.edit_note_rounded;
-    case 'ai_chat':
-      return Icons.psychology_rounded;
-    case 'ai_text_processor':
-      return Icons.auto_awesome_rounded;
-    case 'led_banner':
-      return Icons.settings_input_hdmi_rounded;
-    case 'dev_encoder':
-      return Icons.code_rounded;
-    case 'daily_board':
-      return Icons.newspaper_rounded;
-    case 'novel_reader':
-      return Icons.auto_stories_rounded;
-    default:
-      return Icons.build_rounded;
-  }
-}
+IconData getToolIcon(String toolKey) => switch (toolKey) {
+      'randomizer' => Icons.casino_rounded,
+      'unit_converter' || 'converter' => Icons.swap_horiz_rounded,
+      'bmi_calculator' => Icons.monitor_weight_outlined,
+      'word_counter' => Icons.text_fields_rounded,
+      'password_generator' => Icons.lock_reset_rounded,
+      'world_clock' => Icons.alarm_rounded,
+      'white_noise' => Icons.spa_rounded,
+      'markdown_editor' => Icons.edit_note_rounded,
+      'ai_chat' => Icons.psychology_rounded,
+      'ai_text_processor' => Icons.auto_awesome_rounded,
+      'led_banner' => Icons.settings_input_hdmi_rounded,
+      'dev_encoder' => Icons.code_rounded,
+      'daily_board' => Icons.newspaper_rounded,
+      'novel_reader' => Icons.auto_stories_rounded,
+      _ => Icons.build_rounded,
+    };
 
 Color getToolColor(String toolKey, BuildContext context) {
   final theme = Theme.of(context);
   final primaryColor = theme.colorScheme.primary;
   final secondaryColor = theme.colorScheme.secondary;
-  switch (toolKey) {
-    case 'randomizer':
-      return Colors.orangeAccent;
-    case 'unit_converter':
-    case 'converter':
-      return Colors.cyanAccent;
-    case 'bmi_calculator':
-      return Colors.pinkAccent;
-    case 'word_counter':
-      return Colors.lightGreenAccent;
-    case 'password_generator':
-      return Colors.greenAccent;
-    case 'world_clock':
-      return primaryColor;
-    case 'white_noise':
-      return Colors.tealAccent;
-    case 'markdown_editor':
-      return Colors.amberAccent;
-    case 'ai_chat':
-      return primaryColor;
-    case 'ai_text_processor':
-      return Colors.amberAccent;
-    case 'led_banner':
-      return Colors.pinkAccent;
-    case 'dev_encoder':
-      return Colors.cyanAccent;
-    case 'daily_board':
-      return Colors.cyanAccent;
-    case 'novel_reader':
-      return Colors.pinkAccent;
-    default:
-      return secondaryColor;
-  }
+  return switch (toolKey) {
+    'randomizer' => Colors.orangeAccent,
+    'unit_converter' || 'converter' => Colors.cyanAccent,
+    'bmi_calculator' => Colors.pinkAccent,
+    'word_counter' => Colors.lightGreenAccent,
+    'password_generator' => Colors.greenAccent,
+    'world_clock' => primaryColor,
+    'white_noise' => Colors.tealAccent,
+    'markdown_editor' => Colors.amberAccent,
+    'ai_chat' => primaryColor,
+    'ai_text_processor' => Colors.amberAccent,
+    'led_banner' => Colors.pinkAccent,
+    'dev_encoder' => Colors.cyanAccent,
+    'daily_board' => Colors.cyanAccent,
+    'novel_reader' => Colors.pinkAccent,
+    _ => secondaryColor,
+  };
 }
 
-String getToolChineseName(String toolKey) {
-  switch (toolKey) {
-    case 'randomizer':
-      return '随机选择生成器';
-    case 'unit_converter':
-    case 'converter':
-      return '标准单位转换器';
-    case 'bmi_calculator':
-      return '健康 BMI 计算器';
-    case 'word_counter':
-      return '字数与字符统计器';
-    case 'password_generator':
-      return '密码生成与强度分析';
-    case 'world_clock':
-      return '多时区时钟与番茄钟';
-    case 'white_noise':
-      return '律动呼吸与多声道白噪音';
-    case 'markdown_editor':
-      return '极简 Markdown 编辑器';
-    case 'ai_chat':
-      return 'AI 智能多轮对话助理';
-    case 'ai_text_processor':
-      return 'AI 写作引擎';
-    case 'led_banner':
-      return 'LED 手持弹幕';
-    case 'dev_encoder':
-      return '开发者沙盒编码盒';
-    case 'daily_board':
-      return '今日热闻与卡片工坊';
-    case 'novel_reader':
-      return '智能去噪小说阅读器';
-    default:
-      return '常用系统工具';
-  }
-}
+String getToolChineseName(String toolKey) => switch (toolKey) {
+      'randomizer' => '随机选择生成器',
+      'unit_converter' || 'converter' => '标准单位转换器',
+      'bmi_calculator' => '健康 BMI 计算器',
+      'word_counter' => '字数与字符统计器',
+      'password_generator' => '密码生成与强度分析',
+      'world_clock' => '多时区时钟与番茄钟',
+      'white_noise' => '律动呼吸与多声道白噪音',
+      'markdown_editor' => '极简 Markdown 编辑器',
+      'ai_chat' => 'AI 智能多轮对话助理',
+      'ai_text_processor' => 'AI 写作引擎',
+      'led_banner' => 'LED 手持弹幕',
+      'dev_encoder' => '开发者沙盒编码盒',
+      'daily_board' => '今日热闻与卡片工坊',
+      'novel_reader' => '智能去噪小说阅读器',
+      _ => '常用系统工具',
+    };
 
 String formatTime(String isoString) {
   try {

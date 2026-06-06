@@ -124,7 +124,7 @@ class ReaderSettingsPanel extends ConsumerWidget {
                       const Text('选用仿宋/Georgia', style: TextStyle(color: Colors.white70, fontSize: 13)),
                       Switch(
                         value: isSerif,
-                        activeColor: Colors.pinkAccent,
+                        activeThumbColor: Colors.pinkAccent,
                         onChanged: onSerifChanged,
                       ),
                     ],
@@ -228,7 +228,7 @@ class ReaderSettingsPanel extends ConsumerWidget {
                             const SizedBox(width: 10),
                             Switch(
                               value: isAutoScrolling,
-                              activeColor: Colors.pinkAccent,
+                              activeThumbColor: Colors.pinkAccent,
                               onChanged: onAutoScrollingChanged,
                             ),
                           ],

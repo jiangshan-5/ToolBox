@@ -5,9 +5,7 @@ import 'dart:math';
 import '../../../../../core/providers/pipeline_provider.dart';
 import '../../../../../core/widgets/pipeline_automation_player_screen.dart';
 import '../../../../../core/widgets/glass_card.dart';
-import '../../../../../core/providers/api_config_provider.dart';
 import '../../../../auth/provider/auth_provider.dart';
-import '../../../provider/tools_provider.dart';
 import '../dashboard_utils.dart';
 
 class WorkbenchDialogs {
@@ -236,7 +234,7 @@ class WorkbenchDialogs {
                             ),
                             Switch(
                               value: autoRun,
-                              activeColor: themeColor,
+                              activeThumbColor: themeColor,
                               onChanged: (val) {
                                 setDialogState(() {
                                   autoRun = val;
