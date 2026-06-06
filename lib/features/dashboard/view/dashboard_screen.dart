@@ -136,7 +136,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (kIsWeb) return;
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.instance.get('/system/version');
+      final response = await apiClient.instance.get(
+        '/system/version',
+        queryParameters: {'t': DateTime.now().millisecondsSinceEpoch},
+      );
       final data = response.data;
       if (data != null) {
         final latestVersion = data['latest_version'] as String;

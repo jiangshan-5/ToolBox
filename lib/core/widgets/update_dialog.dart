@@ -102,7 +102,11 @@ class _UpdateDialogState extends State<UpdateDialog> {
     });
 
     try {
-      final storageDir = await getTemporaryDirectory();
+      Directory? storageDir;
+      if (Platform.isAndroid) {
+        storageDir = await getExternalStorageDirectory();
+      }
+      storageDir ??= await getTemporaryDirectory();
       final savePath = '${storageDir.path}/toolbox_update.apk';
 
       // Clean up pre-existing download file

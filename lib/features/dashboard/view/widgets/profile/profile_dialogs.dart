@@ -538,7 +538,10 @@ class ProfileDialogs {
                         setState(() => isChecking = true);
                         try {
                           final apiClient = ref.read(apiClientProvider);
-                          final response = await apiClient.instance.get('/system/version');
+                          final response = await apiClient.instance.get(
+                            '/system/version',
+                            queryParameters: {'t': DateTime.now().millisecondsSinceEpoch},
+                          );
                           final data = response.data;
                           setState(() => isChecking = false);
                           if (data != null && context.mounted) {
