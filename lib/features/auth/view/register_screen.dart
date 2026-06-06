@@ -120,21 +120,56 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               padding: const EdgeInsets.all(24.0),
               child: GlassCard(
                 glowColor: colors.primary,
+                borderRadius: 28.0,
                 child: Padding(
-                  padding: const EdgeInsets.all(32.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 36.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '创建账户',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: colors.onSurface,
-                          letterSpacing: 1.5,
+                      // Minimalist Glowing Logo Indicator
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [colors.primary, colors.secondary],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withOpacity(0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          color: Colors.white,
+                          size: 28,
                         ),
                       ),
                       const SizedBox(height: 24),
+                      Text(
+                        '创建账户',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurface,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '注册您的智能云端数字沙盒账户',
+                        style: TextStyle(
+                          color: colors.onSurface.withOpacity(0.55),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
                       _CyberInput(
                         controller: _emailController,
                         label: '邮箱地址',
@@ -152,8 +187,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           const SizedBox(width: 12),
                           SizedBox(
-                            width: 120,
-                            height: 56,
+                            width: 110,
+                            height: 50,
                             child: ScaleOnTap(
                               onTap: (_secondsRemaining > 0 || _isSendingCode)
                                   ? null
@@ -162,22 +197,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withOpacity(0.06)
-                                        : Colors.black.withOpacity(0.08),
+                                    color: _secondsRemaining > 0
+                                        ? Colors.transparent
+                                        : (isDark
+                                            ? Colors.white.withOpacity(0.06)
+                                            : Colors.black.withOpacity(0.08)),
                                   ),
-                                  color:
-                                      (_secondsRemaining > 0 || _isSendingCode)
+                                  color: (_secondsRemaining > 0 || _isSendingCode)
                                       ? (isDark
-                                            ? Colors.white.withOpacity(0.05)
-                                            : Colors.black.withOpacity(0.05))
-                                      : colors.secondary.withOpacity(0.12),
+                                          ? Colors.white.withOpacity(0.04)
+                                          : Colors.black.withOpacity(0.04))
+                                      : colors.secondary.withOpacity(0.08),
                                 ),
                                 alignment: Alignment.center,
                                 child: _isSendingCode
                                     ? SizedBox(
-                                        width: 20,
-                                        height: 20,
+                                        width: 18,
+                                        height: 18,
                                         child: CircularProgressIndicator(
                                           color: colors.secondary,
                                           strokeWidth: 2,
@@ -188,18 +224,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                             ? '${_secondsRemaining}s'
                                             : '获取验证码',
                                         style: TextStyle(
-                                          color:
-                                              (_secondsRemaining > 0 ||
-                                                  _isSendingCode)
-                                              ? colors.onSurface.withOpacity(
-                                                  0.38,
-                                                )
+                                          color: (_secondsRemaining > 0 || _isSendingCode)
+                                              ? colors.onSurface.withOpacity(0.35)
                                               : colors.secondary,
-                                          fontSize: 14,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                              ),
+                                ),
                             ),
                           ),
                         ],
@@ -213,7 +245,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       const SizedBox(height: 32),
                       _buildRegisterButton(colors),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                       ScaleOnTap(
                         onTap: () => Navigator.pop(context),
                         child: Padding(
@@ -221,8 +253,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           child: Text(
                             "已有账户？立即登录",
                             style: TextStyle(
-                              color: colors.onSurface.withOpacity(0.7),
-                              fontSize: 14,
+                              color: colors.onSurface.withOpacity(0.65),
+                              fontSize: 13,
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -243,7 +275,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return ScaleOnTap(
       onTap: _isLoading ? null : _handleRegister,
       child: Container(
-        height: 56,
+        height: 52,
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -254,17 +286,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: colors.primary.withOpacity(0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+              color: colors.primary.withOpacity(0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         alignment: Alignment.center,
         child: _isLoading
             ? SizedBox(
-                width: 24,
-                height: 24,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
                   color: colors.onPrimary,
                   strokeWidth: 2,
@@ -273,10 +305,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             : Text(
                 '注 册',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: colors.onPrimary,
-                  letterSpacing: 2.0,
+                  letterSpacing: 3.0,
                 ),
               ),
       ),
@@ -318,7 +350,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
         );
       } else {
-        // Pop back to login screen on successful registration
         Navigator.pop(context);
       }
     }
@@ -369,27 +400,27 @@ class _CyberInputState extends State<_CyberInput> {
     final isDark = theme.brightness == Brightness.dark;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withOpacity(_isFocused ? 0.07 : 0.03)
-            : Colors.black.withOpacity(_isFocused ? 0.06 : 0.03),
+            ? Colors.white.withOpacity(_isFocused ? 0.05 : 0.02)
+            : Colors.black.withOpacity(_isFocused ? 0.04 : 0.01),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isFocused
               ? colors.primary.withOpacity(0.8)
               : (isDark
-                    ? Colors.white.withOpacity(0.06)
-                    : Colors.black.withOpacity(0.08)),
-          width: _isFocused ? 1.5 : 1.0,
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.black.withOpacity(0.06)),
+          width: _isFocused ? 1.2 : 1.0,
         ),
         boxShadow: [
           if (_isFocused)
             BoxShadow(
-              color: colors.primary.withOpacity(0.20),
-              blurRadius: 14,
-              spreadRadius: 1,
+              color: colors.primary.withOpacity(0.12),
+              blurRadius: 10,
+              spreadRadius: 0.5,
             ),
         ],
       ),
@@ -397,26 +428,27 @@ class _CyberInputState extends State<_CyberInput> {
         controller: widget.controller,
         focusNode: _focusNode,
         obscureText: widget.obscure,
-        style: TextStyle(color: colors.onSurface, fontSize: 15),
+        style: TextStyle(color: colors.onSurface, fontSize: 14.5),
         cursorColor: colors.primary,
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
             color: _isFocused
                 ? colors.primary
-                : colors.onSurface.withOpacity(0.6),
-            fontSize: 14,
+                : colors.onSurface.withOpacity(0.50),
+            fontSize: 13,
           ),
           prefixIcon: Icon(
             widget.icon,
+            size: 20,
             color: _isFocused
                 ? colors.primary
-                : colors.onSurface.withOpacity(0.5),
+                : colors.onSurface.withOpacity(0.40),
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 16,
+            vertical: 14,
           ),
         ),
       ),

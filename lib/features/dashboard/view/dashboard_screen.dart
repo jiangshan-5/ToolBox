@@ -177,6 +177,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void _showNotificationDrawer(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
 
     // Refresh the announcements provider when opening the drawer
     ref.invalidate(announcementsProvider);
@@ -196,14 +199,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Container(
               height: MediaQuery.of(context).size.height * 0.7,
               decoration: BoxDecoration(
-                color: const Color(0xFF0C091F).withOpacity(0.85),
+                color: theme.colorScheme.surface.withOpacity(0.85),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(30),
                   topRight: Radius.circular(30),
                 ),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.08),
-                  width: 1.5,
+                  color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                  width: 1.2,
                 ),
               ),
               child: Padding(
@@ -216,7 +219,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         width: 40,
                         height: 5,
                         decoration: BoxDecoration(
-                          color: Colors.white24,
+                          color: isDark ? Colors.white24 : Colors.black12,
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -233,29 +236,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               size: 24,
                             ),
                             const SizedBox(width: 10),
-                            const Text(
+                            Text(
                               '安全公告与通告中心',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: textColor,
                               ),
                             ),
                           ],
                         ),
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.close_rounded,
-                            color: Colors.white54,
+                            color: subTextColor,
                           ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Toolbox Pro 核心安全隔离通报与版本日志',
-                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      style: TextStyle(color: subTextColor.withOpacity(0.6), fontSize: 12),
                     ),
                     const SizedBox(height: 20),
                     Expanded(
@@ -265,10 +268,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           return announcementsAsync.when(
                             data: (announcements) {
                               if (announcements.isEmpty) {
-                                return const Center(
+                                return Center(
                                   child: Text(
                                     '📭 暂无任何公告通知',
-                                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                                    style: TextStyle(color: subTextColor, fontSize: 13),
                                   ),
                                 );
                               }
@@ -278,6 +281,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 itemBuilder: (context, index) {
                                   final item = announcements[index] as Map<String, dynamic>;
                                   return _buildNotificationCard(
+                                    context: context,
                                     icon: _getIconData(item['icon']?.toString() ?? ''),
                                     title: item['title']?.toString() ?? '',
                                     time: item['time']?.toString() ?? '',
@@ -341,6 +345,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildNotificationCard({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String time,
@@ -348,13 +353,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required String badge,
     required Color badgeColor,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final timeColor = isDark ? Colors.white30 : Colors.black38;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.05),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,7 +378,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.1),
+                  color: badgeColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -379,7 +392,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               Text(
                 time,
-                style: const TextStyle(color: Colors.white30, fontSize: 11),
+                style: TextStyle(color: timeColor, fontSize: 11),
               ),
             ],
           ),
@@ -391,8 +404,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -403,8 +416,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             content,
-            style: const TextStyle(
-              color: Colors.white54,
+            style: TextStyle(
+              color: subTextColor,
               fontSize: 12,
               height: 1.5,
             ),

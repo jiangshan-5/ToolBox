@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../../../core/widgets/dynamic_effects.dart';
 
 /// Floating Glassmorphic Bottom Navigation Bar mimicking premium mainstream shells
 class DashboardNavBar extends StatelessWidget {
@@ -15,48 +16,80 @@ class DashboardNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final width = MediaQuery.of(context).size.width;
+
+    // Constrain width on wide screens (BETA/Tablet/Web layout optimization)
+    final double navBarWidth = width > 600 ? 460 : width - 48;
 
     return Positioned(
       bottom: bottomPadding > 0 ? bottomPadding : 20,
-      left: 20,
-      right: 20,
+      left: (width - navBarWidth) / 2,
+      width: navBarWidth,
       child: Container(
-        height: 70,
+        height: 68,
         decoration: BoxDecoration(
           color: isDark
-              ? const Color(0xFF140F2D).withOpacity(0.4)
+              ? colors.surface.withOpacity(0.4)
               : Colors.white.withOpacity(0.85),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark
                 ? Colors.white.withOpacity(0.08)
-                : Colors.black.withOpacity(0.08),
-            width: 1.5,
+                : colors.primary.withOpacity(0.08),
+            width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Stack(
               children: [
-                _buildNavItem(context, 0, Icons.grid_view_rounded, '工作台'),
-                _buildNavItem(context, 1, Icons.analytics_rounded, '数据分析站'),
-                _buildNavItem(
-                  context,
-                  2,
-                  Icons.manage_accounts_rounded,
-                  '个人中心',
+                // Horizontal Animated Selection Slider block
+                AnimatedAlign(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  alignment: Alignment(
+                    currentIndex == 0
+                        ? -0.66
+                        : currentIndex == 1
+                            ? 0.0
+                            : 0.66,
+                    0.0,
+                  ),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.28,
+                    heightFactor: 0.72,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colors.primary.withOpacity(0.15),
+                          width: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Navigation items
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(context, 0, Icons.grid_view_rounded, '工作台'),
+                    _buildNavItem(context, 1, Icons.bar_chart_rounded, '分析站'),
+                    _buildNavItem(context, 2, Icons.face_retouching_natural_rounded, '个人中心'),
+                  ],
                 ),
               ],
             ),
@@ -76,37 +109,41 @@ class DashboardNavBar extends StatelessWidget {
     final primaryColor = theme.colorScheme.primary;
     final isDark = theme.brightness == Brightness.dark;
     final isSelected = currentIndex == index;
-    final color = isSelected
-        ? primaryColor
-        : (isDark ? Colors.white60 : Colors.black54);
 
-    return GestureDetector(
-      onTap: () => onTabSelected(index),
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? primaryColor.withOpacity(0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: color, size: 24),
+    final Color color = isSelected
+        ? primaryColor
+        : (isDark ? Colors.white54 : Colors.black45);
+
+    return Expanded(
+      child: ScaleOnTap(
+        onTap: () => onTabSelected(index),
+        child: Container(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: isSelected ? 24 : 22,
+                ),
+              ),
+              const SizedBox(height: 3),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  letterSpacing: 0.5,
+                ),
+                child: Text(label),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

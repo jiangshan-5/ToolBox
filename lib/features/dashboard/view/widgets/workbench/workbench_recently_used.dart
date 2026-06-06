@@ -62,10 +62,10 @@ class WorkbenchRecentlyUsed extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+                    color: isDark ? Colors.white.withOpacity(0.03) : Colors.white.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+                      color: color.withOpacity(isDark ? 0.2 : 0.1),
                       width: 1.0,
                     ),
                   ),

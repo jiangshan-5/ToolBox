@@ -7,44 +7,44 @@ final List<AppThemePreset> appThemePresets = [
   const AppThemePreset(
     type: AppThemeType.cyberpunkLight,
     name: '极简纯白 (明)',
-    primary: Color(0xFF007AFF),
-    secondary: Color(0xFF5856D6),
+    primary: Color(0xFF4F46E5), // Premium Indigo
+    secondary: Color(0xFF06B6D4), // Premium Cyan
     surface: Color(0xFFFFFFFF),
-    surfaceContainer: Color(0xFFF2F2F7),
+    surfaceContainer: Color(0xFFF8FAFC), // Very soft slate
     isDark: false,
   ),
   const AppThemePreset(
     type: AppThemeType.neonMidnightLight,
     name: '午夜霓虹 (明)',
-    primary: Color(0xFF00ACC1),
-    secondary: Color(0xFFD81B60),
-    surface: Color(0xFFF1F5F9),
-    surfaceContainer: Color(0xFFE2E8F0),
+    primary: Color(0xFF6366F1),
+    secondary: Color(0xFFEC4899), // Rose
+    surface: Color(0xFFF8FAFC),
+    surfaceContainer: Color(0xFFF1F5F9),
     isDark: false,
   ),
   const AppThemePreset(
     type: AppThemeType.volcanoCyberLight,
     name: '烈焰火山 (明)',
-    primary: Color(0xFFE53935),
-    secondary: Color(0xFFFFB300),
-    surface: Color(0xFFFFF5F5),
-    surfaceContainer: Color(0xFFFED7D7),
+    primary: Color(0xFFE11D48), // Deep Rose Red
+    secondary: Color(0xFFD97706), // Muted Amber
+    surface: Color(0xFFFFF1F2),
+    surfaceContainer: Color(0xFFFFE4E6),
     isDark: false,
   ),
   const AppThemePreset(
     type: AppThemeType.forestMatrixLight,
     name: '矩阵森林 (明)',
-    primary: Color(0xFF43A047),
-    secondary: Color(0xFF00B0FF),
-    surface: Color(0xFFF0FDF4),
-    surfaceContainer: Color(0xFFDCFCE7),
+    primary: Color(0xFF059669), // Emerald Green
+    secondary: Color(0xFF0D9488), // Teal
+    surface: Color(0xFFECFDF5),
+    surfaceContainer: Color(0xFFD1FAE5),
     isDark: false,
   ),
   const AppThemePreset(
     type: AppThemeType.oceanCyberLight,
     name: '赛博海洋 (明)',
-    primary: Color(0xFF1E88E5),
-    secondary: Color(0xFF00E5FF),
+    primary: Color(0xFF2563EB), // Premium Blue
+    secondary: Color(0xFF0EA5E9), // Sky Blue
     surface: Color(0xFFF0F9FF),
     surfaceContainer: Color(0xFFE0F2FE),
     isDark: false,
@@ -52,64 +52,64 @@ final List<AppThemePreset> appThemePresets = [
   const AppThemePreset(
     type: AppThemeType.sakuraDreamLight,
     name: '樱花梦境 (明)',
-    primary: Color(0xFFD81B60),
-    secondary: Color(0xFF8E24AA),
-    surface: Color(0xFFFFF1F2),
-    surfaceContainer: Color(0xFFFFE4E6),
+    primary: Color(0xFFDB2777),
+    secondary: Color(0xFF7C3AED), // Premium Purple
+    surface: Color(0xFFFDF2F8),
+    surfaceContainer: Color(0xFFFCE7F3),
     isDark: false,
   ),
   const AppThemePreset(
     type: AppThemeType.cyberpunkDark,
-    name: '赛博霓虹 (暗)',
-    primary: Color(0xFF7C4DFF),
-    secondary: Color(0xFF18FFFF),
-    surface: Color(0xFF0E0B1E),
-    surfaceContainer: Color(0xFF181335),
+    name: '深邃极光 (暗)', // Renamed for elegance
+    primary: Color(0xFF8B5CF6), // Premium Violet
+    secondary: Color(0xFF06B6D4), // Cyan Glow
+    surface: Color(0xFF090710), // Obsidian black
+    surfaceContainer: Color(0xFF140E20),
     isDark: true,
   ),
   const AppThemePreset(
     type: AppThemeType.neonMidnight,
     name: '午夜霓虹 (暗)',
-    primary: Color(0xFF00E5FF),
-    secondary: Color(0xFFFF007F),
-    surface: Color(0xFF051124),
-    surfaceContainer: Color(0xFF0E1E38),
+    primary: Color(0xFF6366F1),
+    secondary: Color(0xFFEC4899),
+    surface: Color(0xFF030712), // Pitch Black
+    surfaceContainer: Color(0xFF0B0F19),
     isDark: true,
   ),
   const AppThemePreset(
     type: AppThemeType.volcanoCyber,
     name: '烈焰火山 (暗)',
-    primary: Color(0xFFFF3D00),
-    secondary: Color(0xFFFFD600),
-    surface: Color(0xFF1C0909),
-    surfaceContainer: Color(0xFF2D1212),
+    primary: Color(0xFFEF4444), // Coral Red
+    secondary: Color(0xFFF59E0B), // Amber
+    surface: Color(0xFF110909), // Volcano Ash
+    surfaceContainer: Color(0xFF1A1010),
     isDark: true,
   ),
   const AppThemePreset(
     type: AppThemeType.forestMatrix,
     name: '矩阵森林 (暗)',
-    primary: Color(0xFF00E676),
-    secondary: Color(0xFF1DE9B6),
-    surface: Color(0xFF07140B),
-    surfaceContainer: Color(0xFF122818),
+    primary: Color(0xFF10B981),
+    secondary: Color(0xFF34D399),
+    surface: Color(0xFF050C08),
+    surfaceContainer: Color(0xFF0F1813),
     isDark: true,
   ),
   const AppThemePreset(
     type: AppThemeType.oceanCyber,
     name: '赛博海洋 (暗)',
-    primary: Color(0xFF2979FF),
-    secondary: Color(0xFF00E5FF),
-    surface: Color(0xFF081524),
-    surfaceContainer: Color(0xFF13253D),
+    primary: Color(0xFF3B82F6),
+    secondary: Color(0xFF06B6D4),
+    surface: Color(0xFF050B14),
+    surfaceContainer: Color(0xFF0D1624),
     isDark: true,
   ),
   const AppThemePreset(
     type: AppThemeType.sakuraDream,
     name: '樱花梦境 (暗)',
-    primary: Color(0xFFFF4081),
-    secondary: Color(0xFFE040FB),
-    surface: Color(0xFF1D091B),
-    surfaceContainer: Color(0xFF32122F),
+    primary: Color(0xFFEC4899),
+    secondary: Color(0xFF8B5CF6),
+    surface: Color(0xFF110512),
+    surfaceContainer: Color(0xFF1E0C1F),
     isDark: true,
   ),
 ];

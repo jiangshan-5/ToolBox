@@ -8,6 +8,7 @@ class ParallaxGlassCard extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final Color? borderColor;
+  final Color? glowColor;
   final double tiltSensitivity;
 
   const ParallaxGlassCard({
@@ -15,6 +16,7 @@ class ParallaxGlassCard extends StatefulWidget {
     required this.child,
     this.onTap,
     this.borderColor,
+    this.glowColor,
     this.tiltSensitivity = 0.015,
   });
 
@@ -81,6 +83,7 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
           if (widget.onTap != null) widget.onTap!();
         },
         borderColor: widget.borderColor,
+        glowColor: widget.glowColor,
         child: widget.child,
       ),
     );

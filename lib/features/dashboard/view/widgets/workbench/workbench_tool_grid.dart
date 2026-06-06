@@ -109,6 +109,150 @@ class WorkbenchToolGrid extends ConsumerWidget {
     return null;
   }
 
+  bool _isLargeTool(String toolKey) {
+    return toolKey == 'ai_chat' || toolKey == 'ai_text_processor' || toolKey == 'novel_reader';
+  }
+
+  Widget _buildToolItem({
+    required BuildContext context,
+    required String toolKey,
+    required String title,
+    required String description,
+    required Color color,
+    required IconData icon,
+    required double width,
+    required bool isLarge,
+    required bool isDark,
+    required Color textColor,
+    required Color subTextColor,
+  }) {
+    final cardChild = ParallaxGlassCard(
+      tiltSensitivity: isEditingTools ? 0.0 : 0.02,
+      onTap: isEditingTools ? null : () => onToolClicked(toolKey, title),
+      borderColor: color.withOpacity(isDark ? 0.25 : 0.15),
+      glowColor: isLarge ? color : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14.0,
+          vertical: 10.0,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(isDark ? 0.12 : 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: color.withOpacity(isDark ? 0.2 : 0.1),
+                  width: 1,
+                ),
+              ),
+              child: Icon(icon, size: 22, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      if (isLarge && (toolKey.startsWith('ai_'))) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.purpleAccent, color],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'AI',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ] else if (isLarge && toolKey == 'novel_reader') ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+                          ),
+                          child: Text(
+                            'PRO',
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    maxLines: isLarge ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: subTextColor,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isLarge) ...[
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 10,
+                color: textColor.withOpacity(0.3),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    return SizedBox(
+      width: width,
+      height: 76,
+      child: _buildReorderableToolCard(
+        toolKey: toolKey,
+        child: _buildWiggleWrapper(
+          child: _buildToolCardWithDeleteBadge(
+            toolKey: toolKey,
+            cardChild: cardChild,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -208,98 +352,50 @@ class WorkbenchToolGrid extends ConsumerWidget {
             ),
             LayoutBuilder(
               builder: (context, constraints) {
+                final double maxWidth = constraints.maxWidth;
                 int crossAxisCount = isWide
-                    ? (constraints.maxWidth > 1100 ? 3 : 2)
-                    : (constraints.maxWidth > 600 ? 3 : 2);
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 2.3,
-                  ),
-                  itemCount: catTools.length + 1,
-                  itemBuilder: (context, toolIndex) {
-                    if (toolIndex == catTools.length) {
-                      return _buildAddToolCard(context, disabledToolsList: catDisabledTools);
-                    }
-                    final tool = catTools[toolIndex];
-                    final String toolKey = tool['tool_key'] ?? '';
-                    final String name = tool['name'] ?? '';
-                    final String description =
-                        tool['description'] ?? '云端数据库极速计算已就绪';
-                    final Color color = getToolColor(toolKey, context);
-                    final IconData icon = getToolIcon(toolKey);
-                    
-                    final cardChild = ParallaxGlassCard(
-                      tiltSensitivity: isEditingTools ? 0.0 : 0.02,
-                      onTap: isEditingTools ? null : () => onToolClicked(toolKey, name),
-                      borderColor: color.withOpacity(0.2),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14.0,
-                          vertical: 10.0,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: color.withOpacity(0.15),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Icon(icon, size: 22, color: color),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    description,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      color: subTextColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                    ? (maxWidth > 1100 ? 3 : 2)
+                    : (maxWidth > 600 ? 3 : 2);
+                
+                const double spacing = 12;
+                final double normalWidth = (maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount;
 
-                    return _buildReorderableToolCard(
-                      toolKey: toolKey,
-                      child: _buildWiggleWrapper(
-                        child: _buildToolCardWithDeleteBadge(
-                          toolKey: toolKey,
-                          cardChild: cardChild,
-                        ),
-                      ),
-                    );
-                  },
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: [
+                    ...catTools.map((tool) {
+                      final String toolKey = tool['tool_key'] ?? '';
+                      final String name = tool['name'] ?? '';
+                      final String description =
+                          tool['description'] ?? '云端数据库极速计算已就绪';
+                      final Color color = getToolColor(toolKey, context);
+                      final IconData icon = getToolIcon(toolKey);
+                      final isLarge = _isLargeTool(toolKey);
+                      final double itemWidth = isLarge
+                          ? (crossAxisCount == 2 ? maxWidth : (2 * normalWidth + spacing))
+                          : normalWidth;
+
+                      return _buildToolItem(
+                        context: context,
+                        toolKey: toolKey,
+                        title: name,
+                        description: description,
+                        color: color,
+                        icon: icon,
+                        width: itemWidth,
+                        isLarge: isLarge,
+                        isDark: isDark,
+                        textColor: textColor,
+                        subTextColor: subTextColor,
+                      );
+                    }),
+                    _buildAddToolCard(
+                      context,
+                      disabledToolsList: catDisabledTools,
+                      width: normalWidth,
+                    ),
+                  ],
                 );
               },
             ),
@@ -328,6 +424,8 @@ class WorkbenchToolGrid extends ConsumerWidget {
         .toList();
 
     final secondaryColor = Theme.of(context).colorScheme.secondary;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+
     return ListView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -352,98 +450,49 @@ class WorkbenchToolGrid extends ConsumerWidget {
         ),
         LayoutBuilder(
           builder: (context, constraints) {
+            final double maxWidth = constraints.maxWidth;
             int crossAxisCount = isWide
-                ? (constraints.maxWidth > 1100 ? 3 : 2)
-                : (constraints.maxWidth > 600 ? 3 : 2);
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 2.3,
-              ),
-              itemCount: activeStaticTools.length + 1,
-              itemBuilder: (context, index) {
-                if (index == activeStaticTools.length) {
-                  return _buildAddToolCard(context, disabledToolsList: disabledStaticTools);
-                }
-                final tool = activeStaticTools[index];
-                final String toolKey = tool['key'];
-                final String title = tool['title'];
-                final String desc = tool['desc'];
-                final Color color = getToolColor(toolKey, context);
-                final IconData icon = getToolIcon(toolKey);
-                final subTextColor = isDark ? Colors.white70 : Colors.black54;
+                ? (maxWidth > 1100 ? 3 : 2)
+                : (maxWidth > 600 ? 3 : 2);
+            
+            const double spacing = 12;
+            final double normalWidth = (maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount;
 
-                final cardChild = ParallaxGlassCard(
-                  tiltSensitivity: isEditingTools ? 0.0 : 0.02,
-                  onTap: isEditingTools ? null : () => onToolClicked(toolKey, title),
-                  borderColor: color.withOpacity(0.2),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14.0,
-                      vertical: 10.0,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: color.withOpacity(0.15),
-                              width: 1,
-                            ),
-                          ),
-                          child: Icon(icon, size: 22, color: color),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: textColor,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                desc,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  color: subTextColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                ...activeStaticTools.map((tool) {
+                  final String toolKey = tool['key'];
+                  final String title = tool['title'];
+                  final String desc = tool['desc'];
+                  final Color color = getToolColor(toolKey, context);
+                  final IconData icon = getToolIcon(toolKey);
+                  final isLarge = _isLargeTool(toolKey);
+                  final double itemWidth = isLarge
+                      ? (crossAxisCount == 2 ? maxWidth : (2 * normalWidth + spacing))
+                      : normalWidth;
 
-                return _buildReorderableToolCard(
-                  toolKey: toolKey,
-                  child: _buildWiggleWrapper(
-                    child: _buildToolCardWithDeleteBadge(
-                      toolKey: toolKey,
-                      cardChild: cardChild,
-                    ),
-                  ),
-                );
-              },
+                  return _buildToolItem(
+                    context: context,
+                    toolKey: toolKey,
+                    title: title,
+                    description: desc,
+                    color: color,
+                    icon: icon,
+                    width: itemWidth,
+                    isLarge: isLarge,
+                    isDark: isDark,
+                    textColor: textColor,
+                    subTextColor: subTextColor,
+                  );
+                }),
+                _buildAddToolCard(
+                  context,
+                  disabledToolsList: disabledStaticTools,
+                  width: normalWidth,
+                ),
+              ],
             );
           },
         ),
@@ -563,63 +612,71 @@ class WorkbenchToolGrid extends ConsumerWidget {
     );
   }
 
-  Widget _buildAddToolCard(BuildContext context, {required List<String> disabledToolsList}) {
+  Widget _buildAddToolCard(
+    BuildContext context, {
+    required List<String> disabledToolsList,
+    required double width,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white70 : Colors.black54;
 
-    return ParallaxGlassCard(
-      tiltSensitivity: 0.01,
-      onTap: () {
-        if (disabledToolsList.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('💡 该分类下的所有工具都已启用！'),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return;
-        }
-        WorkbenchDialogs.showAddToolsDialog(context, disabledToolsList, onToolAdded);
-      },
-      borderColor: Colors.transparent,
-      child: CustomPaint(
-        painter: DashedBorderPainter(
-          color: Colors.pinkAccent.withOpacity(0.3),
-          borderRadius: 24.0,
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.005) : Colors.black.withOpacity(0.005),
-            borderRadius: BorderRadius.circular(24),
+    return SizedBox(
+      width: width,
+      height: 76,
+      child: ParallaxGlassCard(
+        tiltSensitivity: 0.01,
+        onTap: () {
+          if (disabledToolsList.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('💡 该分类下的所有工具都已启用！'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+          WorkbenchDialogs.showAddToolsDialog(context, disabledToolsList, onToolAdded);
+        },
+        borderColor: Colors.transparent,
+        child: CustomPaint(
+          painter: DashedBorderPainter(
+            color: Colors.pinkAccent.withOpacity(0.3),
+            borderRadius: 24.0,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.pinkAccent.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.pinkAccent.withOpacity(0.2),
-                      width: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.005) : Colors.black.withOpacity(0.005),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.pinkAccent.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.pinkAccent.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(Icons.add_rounded, size: 22, color: Colors.pinkAccent),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '添加工具',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
                     ),
                   ),
-                  child: const Icon(Icons.add_rounded, size: 22, color: Colors.pinkAccent),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '添加工具',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

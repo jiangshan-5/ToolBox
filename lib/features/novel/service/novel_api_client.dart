@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crypto/crypto.dart';
 import '../../../core/network/api_client.dart';
@@ -9,30 +10,12 @@ import '../../auth/provider/auth_provider.dart';
 import '../model/novel_models.dart';
 import 'local_parser/local_book_source_db.dart';
 import 'local_parser/local_bookshelf_db.dart';
-import 'local_parser/local_parser_engine.dart';
-import 'local_parser/local_jsonpath_parser.dart';
-
-class SearchUrlOptions {
-  final String cleanUrl;
-  final String method;
-  final Map<String, String> headers;
-  final dynamic body;
-  final String charset;
-  SearchUrlOptions(this.cleanUrl, this.method, this.headers, this.body, this.charset);
-}
 
 class NovelApiClient {
   final ApiClient _apiClient;
   static String? lastFailoverSource;
-  
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 15),
-    followRedirects: true,
-  ));
 
   NovelApiClient(this._apiClient) {
-    // Make sure databases are initialized on client startup
     _initLocalDbs();
   }
 
@@ -46,203 +29,76 @@ class NovelApiClient {
     return md5.convert(bytes).toString();
   }
 
-  String _decodeContent(List<int> bytes, Map<String, dynamic> headers) {
-    if (bytes.isEmpty) return '';
-    
-    // Check inte_base64 prefix
-    if (bytes.length > 12) {
-      try {
-        final prefix = String.fromCharCodes(bytes.sublist(0, 12));
-        if (prefix == 'inte_base64:') {
-          final wrapperText = utf8.decode(bytes.sublist(12));
-          final payload = jsonDecode(wrapperText);
-          if (payload['c'] != null) {
-            bytes = base64.decode(payload['c'].toString());
-          }
-        }
-      } catch (_) {}
-    }
-    
-    try {
-      return utf8.decode(bytes);
-    } catch (_) {
-      try {
-        return latin1.decode(bytes);
-      } catch (_) {
-        return String.fromCharCodes(bytes);
-      }
-    }
-  }
-
-  SearchUrlOptions _parseSearchUrlOptions(String searchUrl) {
-    var urlPart = searchUrl;
-    String method = 'GET';
-    Map<String, String> headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    };
-    dynamic body;
-    String charset = 'utf-8';
-    
-    if (searchUrl.contains(',')) {
-      final idx = searchUrl.indexOf(',');
-      final candidateUrl = searchUrl.substring(0, idx).trim();
-      final jsonPart = searchUrl.substring(idx + 1).trim();
-      if (jsonPart.startsWith('{')) {
-        try {
-          final options = jsonDecode(jsonPart);
-          urlPart = candidateUrl;
-          method = (options['method']?.toString() ?? 'GET').toUpperCase();
-          charset = options['charset']?.toString()?.toLowerCase() ?? 'utf-8';
-          if (options['headers'] is Map) {
-            (options['headers'] as Map).forEach((k, v) {
-              headers[k.toString()] = v.toString();
-            });
-          }
-          body = options['body'];
-        } catch (_) {}
-      }
-    }
-    return SearchUrlOptions(urlPart, method, headers, body, charset);
-  }
-
-  /// 1. Search novels
+  /// 1. Search novels (Non-stream, browser fallback)
   Future<List<Book>> searchNovels(String q, bool inAbyss) async {
-    final List<Book> results = [];
-    await for (final chunk in searchNovelsStream(q, inAbyss)) {
-      results.addAll(chunk);
+    try {
+      final response = await _apiClient.instance.get(
+        '/novel/search',
+        queryParameters: {'q': q, 'in_abyss': inAbyss},
+      );
+      if (response.statusCode == 200 && response.data is List) {
+        final List<dynamic> list = response.data;
+        return list.map((b) => Book.fromJson(b)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint("searchNovels error: $e");
+      return [];
     }
-    return results;
   }
 
-  /// 1b. Search novels via Stream (Incremental yield)
+  /// 1b. Search novels via Server-Sent Events (SSE) Stream
   Stream<List<Book>> searchNovelsStream(String q, bool inAbyss) async* {
-    await _initLocalDbs();
-    final sources = LocalBookSourceDb.instance.getAllSources()
-        .where((s) => s.isActive && s.isAbyss == inAbyss)
-        .toList();
-    
-    if (sources.isEmpty) {
-      yield [];
-      return;
-    }
+    try {
+      final response = await _apiClient.instance.get<ResponseBody>(
+        '/novel/search/stream',
+        queryParameters: {'q': q, 'in_abyss': inAbyss},
+        options: Options(responseType: ResponseType.stream),
+      );
 
-    for (final source in sources) {
-      try {
-        final Map<String, dynamic> ruleJson = jsonDecode(source.ruleJson);
-        final searchUrlRule = source.searchUrl.isNotEmpty ? source.searchUrl : ruleJson['searchUrl']?.toString() ?? '';
-        if (searchUrlRule.isEmpty) continue;
+      final stream = response.data!.stream
+          .cast<List<int>>()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
 
-        final opts = _parseSearchUrlOptions(searchUrlRule);
-        
-        // URL encode the query based on source charset (normally utf-8 or gbk)
-        // Since Dart natively encodes Uri components as UTF-8, we default to UTF-8.
-        final encodedQuery = Uri.encodeComponent(q);
-        
-        var testUrl = opts.cleanUrl
-            .replaceAll('{{key}}', encodedQuery)
-            .replaceAll('{key}', encodedQuery)
-            .replaceAll('{{page}}', '1')
-            .replaceAll('{page}', '1');
-            
-        if (testUrl.contains('%s')) {
-          testUrl = testUrl.replaceAll('%s', encodedQuery);
-        }
-
-        if (!testUrl.startsWith('http')) {
-          testUrl = Uri.parse(source.sourceUrl).resolve(testUrl).toString();
-        }
-
-        Response<List<int>> response;
-        if (opts.method == 'POST') {
-          dynamic bodyData = opts.body;
-          if (bodyData is String) {
-            bodyData = bodyData
-                .replaceAll('{{key}}', q)
-                .replaceAll('{key}', q)
-                .replaceAll('{{page}}', '1')
-                .replaceAll('{page}', '1');
-          } else if (bodyData is Map) {
-            final Map<String, dynamic> cloned = Map.from(bodyData);
-            cloned.forEach((key, val) {
-              if (val is String) {
-                cloned[key] = val
-                    .replaceAll('{{key}}', q)
-                    .replaceAll('{key}', q)
-                    .replaceAll('{{page}}', '1')
-                    .replaceAll('{page}', '1');
-              }
-            });
-            bodyData = cloned;
-          }
-          response = await _dio.post<List<int>>(
-            testUrl,
-            data: bodyData,
-            options: Options(headers: opts.headers, responseType: ResponseType.bytes),
-          );
-        } else {
-          response = await _dio.get<List<int>>(
-            testUrl,
-            options: Options(headers: opts.headers, responseType: ResponseType.bytes),
-          );
-        }
-
-        if (response.statusCode == 200 && response.data != null) {
-          final html = _decodeContent(response.data!, response.headers.map);
-          final items = LocalParserEngine.evaluateListSelector(html, ruleJson['ruleSearch']?['bookList']?.toString() ?? '', {});
-          final List<Book> booksFound = [];
-          
-          for (final item in items) {
-            final variables = <String, dynamic>{};
-            final title = LocalParserEngine.evaluateSelector(item, ruleJson['ruleSearch']?['name']?.toString() ?? '', variables);
-            var author = LocalParserEngine.evaluateSelector(item, ruleJson['ruleSearch']?['author']?.toString() ?? '', variables);
-            final intro = LocalParserEngine.evaluateSelector(item, ruleJson['ruleSearch']?['intro']?.toString() ?? '', variables);
-            var coverUrl = LocalParserEngine.evaluateSelector(item, ruleJson['ruleSearch']?['coverUrl']?.toString() ?? '', variables);
-            var bookUrl = LocalParserEngine.evaluateSelector(item, ruleJson['ruleSearch']?['bookUrl']?.toString() ?? '', variables);
-
-            if (title.isNotEmpty && bookUrl.isNotEmpty) {
-              bookUrl = Uri.parse(source.sourceUrl).resolve(bookUrl).toString();
-              if (coverUrl.isNotEmpty) {
-                coverUrl = Uri.parse(source.sourceUrl).resolve(coverUrl).toString();
-              }
-              if (author.isEmpty) author = '未知';
-
-              booksFound.add(Book(
-                id: _generateBookId(title, author),
-                title: title,
-                author: author,
-                coverUrl: coverUrl,
-                summary: intro,
-                isAbyss: inAbyss,
-                bookUrl: bookUrl,
-                sourceId: source.id,
-                sourceName: source.sourceName,
-              ));
+      await for (final line in stream) {
+        if (line.startsWith('data:')) {
+          final dataStr = line.substring(5).trim();
+          if (dataStr.isEmpty) continue;
+          try {
+            final Map<String, dynamic> data = jsonDecode(dataStr);
+            if (data['status'] == 'progress' && data['books'] is List) {
+              final List<dynamic> booksJson = data['books'];
+              final List<Book> books = booksJson.map((b) => Book.fromJson(b)).toList();
+              yield books;
+            } else if (data['status'] == 'done') {
+              break;
             }
-          }
-          if (booksFound.isNotEmpty) {
-            yield booksFound;
-          }
+          } catch (_) {}
         }
-      } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint("searchNovelsStream error: $e");
+      yield [];
     }
   }
 
-  /// 2. Silent sync abyss sources (Falls back locally, pulls online if backend is up)
+  /// 2. Sync private/abyss chamber sources from server
   Future<Map<String, dynamic>> syncAbyssSources() async {
     await _initLocalDbs();
     try {
       final response = await _apiClient.instance.get('/novel/abyss/sync');
       final Map<String, dynamic> data = response.data ?? {};
+      final List<BookSourceRule> rules = [];
       if (data['sources'] is List) {
         final List<dynamic> list = data['sources'];
-        final List<BookSourceRule> rules = [];
         for (final item in list) {
           if (item is Map) {
             final name = item['bookSourceName']?.toString() ?? '';
             final sourceUrl = item['bookSourceUrl']?.toString() ?? '';
             if (name.isNotEmpty && sourceUrl.isNotEmpty) {
               rules.add(BookSourceRule(
-                id: _generateBookId(name, sourceUrl),
+                id: item['id']?.toString() ?? _generateBookId(name, sourceUrl),
                 sourceName: name,
                 sourceUrl: sourceUrl,
                 searchUrl: item['searchUrl']?.toString() ?? '',
@@ -257,15 +113,15 @@ class NovelApiClient {
         }
         await LocalBookSourceDb.instance.addSources(rules);
       }
-      return data;
-    } catch (_) {
-      // Offline fallback: returns active local abyss sources count
+      return {'status': 'success', 'sources_count': rules.length};
+    } catch (e) {
+      debugPrint("syncAbyssSources error: $e");
       final sources = LocalBookSourceDb.instance.getAllSources().where((s) => s.isAbyss).toList();
-      return {'sources_count': sources.length, 'local': true};
+      return {'status': 'fallback', 'sources_count': sources.length, 'local': true};
     }
   }
 
-  /// 3. Add to bookshelf
+  /// 3. Add book to shelf
   Future<Book> addToBookshelf({
     required String title,
     required String author,
@@ -290,9 +146,31 @@ class NovelApiClient {
     return await LocalBookshelfDb.instance.addToBookshelf(book);
   }
 
-  /// 4. Get bookshelf items
+  /// 4. Get bookshelf items (Syncs from server and returns merged bookshelf list)
   Future<List<ReadingProgress>> getBookshelf(bool inAbyss) async {
     await _initLocalDbs();
+    try {
+      final response = await _apiClient.instance.get(
+        '/novel/bookshelf',
+        queryParameters: {'in_abyss': inAbyss},
+      );
+      if (response.statusCode == 200 && response.data is List) {
+        final List<dynamic> list = response.data;
+        for (final item in list) {
+          final serverProg = ReadingProgress.fromJson(item);
+          if (serverProg.book != null) {
+            await LocalBookshelfDb.instance.addToBookshelf(serverProg.book!);
+            await LocalBookshelfDb.instance.updateReadingProgress(
+              bookId: serverProg.bookId,
+              chapterIndex: serverProg.lastReadChapterIndex,
+              charOffset: serverProg.lastReadCharOffset,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("getBookshelf sync error: $e");
+    }
     return LocalBookshelfDb.instance.getBookshelf(inAbyss);
   }
 
@@ -311,98 +189,30 @@ class NovelApiClient {
       return [];
     }
 
-    final source = LocalBookSourceDb.instance.getSourceById(book.sourceId!);
-    if (source == null) return [];
-    
-    final Map<String, dynamic> ruleJson = jsonDecode(source.ruleJson);
-    final ruleToc = ruleJson['ruleToc'] is Map ? ruleJson['ruleToc'] as Map : {};
-    
-    final variables = <String, dynamic>{};
-    
-    // Fetch details/TOC page
-    final response = await _dio.get<List<int>>(
-      book.bookUrl!,
-      options: Options(responseType: ResponseType.bytes),
-    );
-    if (response.statusCode != 200 || response.data == null) return [];
-    
-    final html = _decodeContent(response.data!, response.headers.map);
-    
-    // Resolve TOC URL if redirect is required
-    final tocUrl = _resolveTocUrl(html, ruleJson, book.bookUrl!, variables);
-    var tocHtml = html;
-    if (tocUrl != book.bookUrl) {
-      final tocResponse = await _dio.get<List<int>>(
-        tocUrl,
-        options: Options(responseType: ResponseType.bytes),
-      );
-      if (tocResponse.statusCode == 200 && tocResponse.data != null) {
-        tocHtml = _decodeContent(tocResponse.data!, tocResponse.headers.map);
-      }
-    }
-
-    final chapterListSelector = ruleToc['chapterList']?.toString() ?? '';
-    final items = LocalParserEngine.evaluateListSelector(tocHtml, chapterListSelector, variables);
-    final List<BookChapter> chapters = [];
-
-    for (int i = 0; i < items.length; i++) {
-      final name = LocalParserEngine.evaluateSelector(items[i], ruleToc['chapterName']?.toString() ?? '', variables);
-      var url = LocalParserEngine.evaluateSelector(items[i], ruleToc['chapterUrl']?.toString() ?? '', variables);
-      if (name.isNotEmpty && url.isNotEmpty) {
-        url = Uri.parse(tocUrl).resolve(url).toString();
-        chapters.add(BookChapter(
-          id: _generateBookId(name, url),
-          bookId: bookId,
-          chapterIndex: i,
-          title: name,
-          sourceChapterUrl: url,
-        ));
-      }
-    }
-    
-    await LocalBookshelfDb.instance.saveChapters(bookId, chapters);
-    return chapters;
-  }
-
-  String _resolveTocUrl(String htmlContent, Map<String, dynamic> ruleJson, String bookUrl, Map<String, dynamic> variables) {
-    final ruleBookInfo = ruleJson['ruleBookInfo'] is Map ? ruleJson['ruleBookInfo'] as Map : {};
-    final ruleToc = ruleJson['ruleToc'] is Map ? ruleJson['ruleToc'] as Map : {};
-    
-    final tocUrlRule = ruleBookInfo['tocUrl']?.toString() ?? ruleToc['tocUrl']?.toString() ?? '';
-    final initRule = ruleBookInfo['init']?.toString() ?? ruleToc['init']?.toString() ?? '';
-    
-    if (tocUrlRule.isEmpty) {
-      return bookUrl;
-    }
-    
     try {
-      var contextElement = htmlContent;
-      if (initRule.isNotEmpty) {
-        final trimmed = htmlContent.trim();
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-          try {
-            final jsData = jsonDecode(trimmed);
-            final initRes = LocalJsonpathParser.evaluateJsonpath(jsData, initRule);
-            if (initRes is Map || initRes is List) {
-              contextElement = jsonEncode(initRes);
-            } else if (initRes != null) {
-              contextElement = initRes.toString();
-            }
-          } catch (_) {}
-        } else {
-          final initResList = LocalParserEngine.evaluateListSelector(htmlContent, initRule, variables);
-          if (initResList.isNotEmpty) {
-            contextElement = initResList[0].toString();
-          }
-        }
+      final response = await _apiClient.instance.get(
+        '/novel/chapters',
+        queryParameters: {
+          'book_url': book.bookUrl,
+          'source_id': book.sourceId,
+        },
+      );
+      if (response.statusCode == 200 && response.data is List) {
+        final List<dynamic> list = response.data;
+        final List<BookChapter> chapters = list.map((c) => BookChapter.fromJson(c)).toList();
+        
+        // Remap bookId to local bookId reference
+        final List<BookChapter> updatedChapters = chapters
+            .map((c) => c.copyWith(bookId: bookId))
+            .toList();
+            
+        await LocalBookshelfDb.instance.saveChapters(bookId, updatedChapters);
+        return updatedChapters;
       }
-      
-      final evaluatedTocUrl = LocalParserEngine.evaluateSelector(contextElement, tocUrlRule, variables);
-      if (evaluatedTocUrl.isNotEmpty) {
-        return Uri.parse(bookUrl).resolve(evaluatedTocUrl).toString();
-      }
-    } catch (_) {}
-    return bookUrl;
+    } catch (e) {
+      debugPrint("getBookChapters error: $e");
+    }
+    return [];
   }
 
   /// 6. Get chapter content
@@ -421,121 +231,73 @@ class NovelApiClient {
     final book = LocalBookshelfDb.instance.getBookById(bookId);
     if (book == null || book.sourceId == null) return chapter;
 
-    final source = LocalBookSourceDb.instance.getSourceById(book.sourceId!);
-    if (source == null) return chapter;
-
-    final Map<String, dynamic> ruleJson = jsonDecode(source.ruleJson);
-    final ruleContent = ruleJson['ruleContent'] is Map ? ruleJson['ruleContent'] as Map : {};
-    
-    final contentSelector = ruleContent['content']?.toString() ?? '';
-    final nextUrlSelector = ruleContent['nextContentUrl']?.toString() ?? '';
-    final replaceRegexRule = ruleContent['replaceRegex']?.toString() ?? '';
-
-    // Fetch initial page
-    final response = await _dio.get<List<int>>(
-      chapter.sourceChapterUrl,
-      options: Options(responseType: ResponseType.bytes),
-    );
-    if (response.statusCode != 200 || response.data == null) return chapter;
-    
-    final html = _decodeContent(response.data!, response.headers.map);
-    final List<String> contents = [];
-    
-    final variables = <String, dynamic>{};
-    final pageContent = LocalParserEngine.evaluateSelector(html, contentSelector, variables);
-    if (pageContent.isNotEmpty) {
-      contents.add(pageContent);
-    }
-
-    // Handles nextContentUrl pagination loop
-    if (nextUrlSelector.isNotEmpty) {
-      var nextUrlRaw = LocalParserEngine.evaluateSelector(html, nextUrlSelector, variables);
-      var nextUrl = nextUrlRaw.isNotEmpty ? Uri.parse(chapter.sourceChapterUrl).resolve(nextUrlRaw).toString() : '';
-      final Set<String> visited = {chapter.sourceChapterUrl};
-      
-      final nextChapterUrl = (chapterIndex + 1 < chapters.length) ? chapters[chapterIndex + 1].sourceChapterUrl : '';
-
-      while (nextUrl.isNotEmpty && !visited.contains(nextUrl)) {
-        // Prevent chapter overflow
-        if (nextChapterUrl.isNotEmpty) {
-          final nextUri = Uri.parse(nextUrl);
-          final nextChapUri = Uri.parse(nextChapterUrl);
-          if (nextUri.path == nextChapUri.path && nextUri.host == nextChapUri.host) {
-            break;
-          }
-        }
-
-        visited.add(nextUrl);
-        try {
-          final nextResponse = await _dio.get<List<int>>(
-            nextUrl,
-            options: Options(responseType: ResponseType.bytes),
-          );
-          if (nextResponse.statusCode == 200 && nextResponse.data != null) {
-            final nextHtml = _decodeContent(nextResponse.data!, nextResponse.headers.map);
-            final nextPart = LocalParserEngine.evaluateSelector(nextHtml, contentSelector, variables);
-            if (nextPart.isNotEmpty) {
-              contents.add(nextPart);
-            }
-            final nextRaw = LocalParserEngine.evaluateSelector(nextHtml, nextUrlSelector, variables);
-            nextUrl = nextRaw.isNotEmpty ? Uri.parse(nextUrl).resolve(nextRaw).toString() : '';
-          } else {
-            break;
-          }
-        } catch (_) {
-          break;
-        }
+    try {
+      final response = await _apiClient.instance.get(
+        '/novel/content',
+        queryParameters: {
+          'chapter_url': chapter.sourceChapterUrl,
+          'source_id': book.sourceId,
+          'chapter_index': chapterIndex,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final content = response.data['content']?.toString() ?? '';
+        final updatedChapter = chapter.copyWith(content: content);
+        
+        chapters[chapterIndex] = updatedChapter;
+        await LocalBookshelfDb.instance.saveChapters(bookId, chapters);
+        return updatedChapter;
       }
+    } catch (e) {
+      debugPrint("getChapterContent error: $e");
     }
-
-    var fullContent = contents.join('\n');
-    
-    // Apply replaceRegex rules
-    if (replaceRegexRule.isNotEmpty) {
-      final lines = fullContent.split('\n').map((l) => l.trim()).toList();
-      final cleanedText = lines.join('\n');
-      fullContent = LocalParserEngine.evaluateSelector(cleanedText, replaceRegexRule, variables);
-    }
-
-    // Format content with indentations and double line breaks
-    final lines = fullContent.split('\n').map((l) => l.trim()).toList();
-    final List<String> formatted = [];
-    for (final line in lines) {
-      if (line.isNotEmpty) {
-        final stripped = line.replaceFirst(RegExp(r'^[　 \t]+'), '');
-        if (stripped.isNotEmpty) {
-          formatted.add('　　' + stripped);
-        }
-      }
-    }
-    
-    final finalContent = formatted.join('\n\n');
-    final updatedChapter = chapter.copyWith(content: finalContent);
-    
-    // Update cache
-    chapters[chapterIndex] = updatedChapter;
-    await LocalBookshelfDb.instance.saveChapters(bookId, chapters);
-    
-    return updatedChapter;
+    return chapter;
   }
 
-  /// 7. Update reading progress
+  /// 7. Update and sync reading progress
   Future<ReadingProgress> updateReadingProgress({
     required String bookId,
     required int chapterIndex,
     required int charOffset,
   }) async {
     await _initLocalDbs();
-    return await LocalBookshelfDb.instance.updateReadingProgress(
+    final localProgress = await LocalBookshelfDb.instance.updateReadingProgress(
       bookId: bookId,
       chapterIndex: chapterIndex,
       charOffset: charOffset,
     );
+
+    final book = LocalBookshelfDb.instance.getBookById(bookId);
+    if (book != null) {
+      Future<void> syncProgress() async {
+        try {
+          await _apiClient.instance.post(
+            '/novel/progress',
+            data: {
+              'book_id': book.id,
+              'title': book.title,
+              'author': book.author,
+              'cover_url': book.coverUrl,
+              'summary': book.summary,
+              'source_id': book.sourceId ?? '',
+              'book_url': book.bookUrl ?? '',
+              'chapter_index': chapterIndex,
+              'char_offset': charOffset,
+              'is_abyss': book.isAbyss,
+            },
+          );
+        } catch (e) {
+          debugPrint("Failed to sync reading progress: $e");
+        }
+      }
+      syncProgress();
+    }
+
+    return localProgress;
   }
 
   /// 8. Export EPUB stream bytes
   Future<Uint8List> exportEpub(String bookId) async {
-    // Return empty bytes placeholder for local EPUB exporter
     return Uint8List(0);
   }
 
@@ -554,7 +316,8 @@ class NovelApiClient {
     List<dynamic> sources = [];
     try {
       if (url != null && url.isNotEmpty) {
-        final response = await _dio.get<dynamic>(url);
+        final dio = Dio();
+        final response = await dio.get<dynamic>(url);
         if (response.data is List) {
           sources = response.data;
         } else if (response.data is String) {
@@ -563,7 +326,8 @@ class NovelApiClient {
       } else if (jsonData != null) {
         sources = jsonData;
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint("importBookSources error: $e");
       return {'success': false, 'count': 0, 'error': 'Fetch failed'};
     }
     
@@ -639,7 +403,6 @@ class NovelApiClient {
     required String filePath,
     required String fileName,
   }) async {
-    // Standard stub returning a mock book for file uploading
     return Book(
       id: 'mock_file',
       title: fileName,
@@ -653,7 +416,6 @@ class NovelApiClient {
   }
 }
 
-/// Riverpod provider for NovelApiClient
 final novelApiClientProvider = Provider<NovelApiClient>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return NovelApiClient(apiClient);
