@@ -188,6 +188,29 @@ class AppTheme {
           textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
       ),
+
+      // Premium Floating SnackBar Toast Theme
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isDark
+            ? const Color(0xFF140E20).withOpacity(0.92)
+            : Colors.white.withOpacity(0.92),
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: preset.primary.withOpacity(0.4),
+            width: 1.5,
+          ),
+        ),
+        contentTextStyle: GoogleFonts.outfit(
+          color: isDark ? Colors.white : Colors.black87,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+        insetPadding: const EdgeInsets.fromLTRB(24, 0, 24, 60),
+      ),
     );
   }
 
