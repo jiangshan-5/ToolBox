@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import '../model/novel_models.dart';
 import '../provider/novel_provider.dart';
 import 'novel_reader_screen.dart';
@@ -54,83 +56,70 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(novelProvider);
-    final themeColor = widget.inAbyss ? Colors.purpleAccent : Colors.pinkAccent;
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    final onSurface = theme.colorScheme.onSurface;
+    final themeColor = widget.inAbyss ? Colors.purpleAccent : primaryColor;
 
-    // Force a dark theme for the search screen to ensure high readability of all text
-    final darkTheme = ThemeData(
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: widget.inAbyss ? Colors.purpleAccent : Colors.pinkAccent,
-        brightness: Brightness.dark,
-        surface: const Color(0xFF0F0C29), // deep midnight purple-blue space background
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: onSurface.withOpacity(0.7)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          widget.inAbyss ? '👻 密室禁忌搜索' : '🔍 极净全网搜书',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
+        ),
       ),
-      useMaterial3: true,
-    );
-
-    return Theme(
-      data: darkTheme,
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            extendBodyBehindAppBar: true,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                widget.inAbyss ? '👻 密室禁忌搜索' : '🔍 极净全网搜书',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            body: Stack(
-              children: [
-                const DynamicBackground(child: SizedBox.expand()),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 10),
-                        // Search Bar Input
-                        _buildSearchBar(themeColor),
-                        const SizedBox(height: 18),
-                        
-                        // Results view
-                        Expanded(
-                          child: _buildResultsContent(state, themeColor),
-                        ),
-                      ],
-                    ),
+      body: Stack(
+        children: [
+          const DynamicBackground(child: SizedBox.expand()),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  // Search Bar Input
+                  _buildSearchBar(themeColor),
+                  const SizedBox(height: 18),
+                  
+                  // Results view
+                  Expanded(
+                    child: _buildResultsContent(state, themeColor),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSearchBar(Color themeColor) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: onSurface.withOpacity(0.04),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: onSurface.withOpacity(0.08)),
           ),
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: TextStyle(color: onSurface, fontSize: 14),
             decoration: InputDecoration(
               hintText: widget.inAbyss ? '输入深夜敏感书名或敏感词...' : '输入书名、作者名，一键智能穿梭...',
-              hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+              hintStyle: TextStyle(color: onSurface.withOpacity(0.3), fontSize: 13),
               prefixIcon: Icon(Icons.search_rounded, color: themeColor, size: 20),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.send_rounded, size: 18),
@@ -148,6 +137,9 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
   }
 
   Widget _buildResultsContent(NovelState state, Color themeColor) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     if (state.isSearchLoading && state.searchResults.isEmpty) {
       return Center(
         child: Column(
@@ -155,9 +147,9 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
           children: [
             CircularProgressIndicator(color: themeColor),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '正在并发穿梭各书源进行检索...',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 13),
             ),
           ],
         ),
@@ -180,9 +172,9 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
           children: [
             Icon(Icons.manage_search_rounded, size: 64, color: themeColor.withOpacity(0.4)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '搜索结果采用并发加速获取，去杂存真',
-              style: TextStyle(color: Colors.white38, fontSize: 13),
+              style: TextStyle(color: onSurface.withOpacity(0.4), fontSize: 13),
             ),
           ],
         ),
@@ -194,11 +186,11 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.sentiment_dissatisfied_rounded, size: 64, color: Colors.white24),
+            Icon(Icons.sentiment_dissatisfied_rounded, size: 64, color: onSurface.withOpacity(0.2)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '🕵️ 换个书名搜搜看，或检查网络连接',
-              style: TextStyle(color: Colors.white38, fontSize: 13),
+              style: TextStyle(color: onSurface.withOpacity(0.4), fontSize: 13),
             ),
           ],
         ),
@@ -258,46 +250,40 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
   }
 
   Widget _buildBookSearchItem(Book book, Color themeColor) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     // Check if book is already on shelf
     final state = ref.watch(novelProvider);
     final bookshelf = widget.inAbyss ? state.abyssBookshelf : state.bookshelf;
     final bool alreadyAdded = bookshelf.any((p) => p.book?.title == book.title && p.book?.author == book.author);
 
     return GestureDetector(
-      onTap: () async {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: Colors.pinkAccent),
+      onTap: () {
+        // Synchronously calculate target bookId using same MD5 algorithm
+        final bytes = utf8.encode('${book.title}|${book.author}');
+        final calculatedId = md5.convert(bytes).toString();
+        
+        // Trigger add and select in the background asynchronously
+        ref.read(novelProvider.notifier).addAndSelectBook(book, widget.inAbyss);
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NovelReaderScreen(
+              bookId: calculatedId,
+              inAbyss: widget.inAbyss,
+            ),
           ),
         );
-        
-        final progress = await ref.read(novelProvider.notifier).addAndSelectBook(book, widget.inAbyss);
-        
-        if (mounted) {
-          Navigator.pop(context); // Dismiss loading
-        }
-        
-        if (progress != null && mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => NovelReaderScreen(
-                bookId: progress.bookId,
-                inAbyss: widget.inAbyss,
-              ),
-            ),
-          );
-        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.02),
+          color: onSurface.withOpacity(0.02),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.04)),
+          border: Border.all(color: onSurface.withOpacity(0.04)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,13 +297,21 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
                 gradient: LinearGradient(
                   colors: widget.inAbyss
                       ? [Colors.deepPurple, Colors.purple]
-                      : [const Color(0xFF1E202C), const Color(0xFF323545)],
+                      : (theme.brightness == Brightness.dark
+                          ? [const Color(0xFF1E202C), const Color(0xFF323545)]
+                          : [theme.colorScheme.primaryContainer, theme.colorScheme.secondaryContainer]),
                 ),
               ),
               alignment: Alignment.center,
               child: Text(
                 book.title.isNotEmpty ? book.title.substring(0, 1) : '书',
-                style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16, 
+                  color: widget.inAbyss
+                      ? Colors.white
+                      : (theme.brightness == Brightness.dark ? Colors.white : theme.colorScheme.onPrimaryContainer), 
+                  fontWeight: FontWeight.bold
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -327,14 +321,14 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
                 children: [
                   Text(
                     book.title,
-                    style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: onSurface),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       Text(
                         '作者：${book.author}',
-                        style: const TextStyle(fontSize: 11.5, color: Colors.white54),
+                        style: TextStyle(fontSize: 11.5, color: onSurface.withOpacity(0.6)),
                       ),
                       if (book.sourceName != null && book.sourceName!.isNotEmpty) ...[
                         const SizedBox(width: 8),
@@ -358,7 +352,7 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
                     book.summary.isNotEmpty ? book.summary : '该书源暂未提供简介，点击直接加入书架开始阅读。',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: Colors.white30, height: 1.4),
+                    style: TextStyle(fontSize: 11, color: onSurface.withOpacity(0.4), height: 1.4),
                   ),
                 ],
               ),

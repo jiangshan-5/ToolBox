@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../model/novel_models.dart';
 import '../service/novel_api_client.dart';
+import '../service/local_parser/local_bookshelf_db.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -19,6 +20,10 @@ class NovelState {
   final bool isSearchLoading;
   final bool isContentLoading;
   final String? error;
+
+  // Explore Rankings State
+  final Map<String, List<Book>> exploreRankings;
+  final bool isRankingsLoading;
 
   // TTS playback state
   final bool isTtsPlaying;
@@ -42,6 +47,8 @@ class NovelState {
     this.isSearchLoading = false,
     this.isContentLoading = false,
     this.error,
+    this.exploreRankings = const {},
+    this.isRankingsLoading = false,
     this.isTtsPlaying = false,
     this.ttsSpeed = 1.0,
     this.ttsTimerMinutes,
@@ -62,6 +69,8 @@ class NovelState {
     bool? isSearchLoading,
     bool? isContentLoading,
     String? error,
+    Map<String, List<Book>>? exploreRankings,
+    bool? isRankingsLoading,
     bool? isTtsPlaying,
     double? ttsSpeed,
     int? ttsTimerMinutes,
@@ -69,18 +78,22 @@ class NovelState {
     int? ttsHighlightCharIndex,
     Map<String, double>? ambientVolumes,
     Map<String, bool>? ambientActive,
+    bool clearChapter = false,
+    bool clearBookProgress = false,
   }) {
     return NovelState(
       bookshelf: bookshelf ?? this.bookshelf,
       abyssBookshelf: abyssBookshelf ?? this.abyssBookshelf,
       searchResults: searchResults ?? this.searchResults,
-      currentBookProgress: currentBookProgress ?? this.currentBookProgress,
+      currentBookProgress: clearBookProgress ? null : (currentBookProgress ?? this.currentBookProgress),
       chapters: chapters ?? this.chapters,
-      currentChapter: currentChapter ?? this.currentChapter,
+      currentChapter: clearChapter ? null : (currentChapter ?? this.currentChapter),
       isBookshelfLoading: isBookshelfLoading ?? this.isBookshelfLoading,
       isSearchLoading: isSearchLoading ?? this.isSearchLoading,
       isContentLoading: isContentLoading ?? this.isContentLoading,
       error: error,
+      exploreRankings: exploreRankings ?? this.exploreRankings,
+      isRankingsLoading: isRankingsLoading ?? this.isRankingsLoading,
       isTtsPlaying: isTtsPlaying ?? this.isTtsPlaying,
       ttsSpeed: ttsSpeed ?? this.ttsSpeed,
       ttsTimerMinutes: ttsTimerMinutes ?? this.ttsTimerMinutes,
@@ -120,6 +133,26 @@ class NovelNotifier extends StateNotifier<NovelState> {
     for (final pattern in adPatterns) {
       cleaned = cleaned.replaceAll(pattern, '');
     }
+
+    // 1b. Proactive HTML tag stripping on frontend to clean up any cached or raw HTML tags
+    if (cleaned.contains('<') && cleaned.contains('>')) {
+      cleaned = cleaned
+          .replaceAll(RegExp(r'(?i)<br\s*/?>'), '\n')
+          .replaceAll(RegExp(r'(?i)</?p\b[^>]*>'), '\n')
+          .replaceAll(RegExp(r'(?i)</?div\b[^>]*>'), '\n')
+          .replaceAll(RegExp(r'(?i)</?li\b[^>]*>'), '\n')
+          .replaceAll(RegExp(r'(?i)</?tr\b[^>]*>'), '\n')
+          .replaceAll(RegExp(r'<[^>]+>'), '');
+    }
+
+    // Unescape common HTML entities
+    cleaned = cleaned
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&apos;', "'");
     
     // 2. Format paragraphs: trim spacing and prepend Chinese double full-width space indentation
     final List<String> lines = cleaned.split('\n');
@@ -131,23 +164,51 @@ class NovelNotifier extends StateNotifier<NovelState> {
       formattedLines.add('　　$trimmed');
     }
     
-    return formattedLines.join('\n\n');
+    return formattedLines.join('\n');
   }
 
-  void _prefetchNextChapters(String bookId, int chapterIndex) {
-    for (int i = 1; i <= 3; i++) {
-      final nextIdx = chapterIndex + i;
-      final hasNext = state.chapters.any((c) => c.chapterIndex == nextIdx);
-      if (hasNext) {
-        final nextCacheKey = '${bookId}_$nextIdx';
-        if (!_chapterCache.containsKey(nextCacheKey)) {
-          _apiClient.getChapterContent(bookId, nextIdx).then((rawChapter) {
-            final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
-            final chap = rawChapter.copyWith(content: formattedContent, bookId: bookId);
-            _chapterCache[nextCacheKey] = chap;
-          }).catchError((_) {});
-        }
+  void _prefetchChapters(String bookId, int chapterIndex) {
+    final List<int> targets = [
+      chapterIndex - 3,
+      chapterIndex - 2,
+      chapterIndex - 1,
+      chapterIndex + 1,
+      chapterIndex + 2,
+      chapterIndex + 3,
+    ];
+
+    for (final idx in targets) {
+      if (idx < 0) continue;
+      
+      // Ensure the chapter exists in the book's chapter list
+      final hasChapter = state.chapters.any((c) => c.chapterIndex == idx);
+      if (!hasChapter) continue;
+
+      final cacheKey = '${bookId}_$idx';
+      if (_chapterCache.containsKey(cacheKey)) continue;
+
+      // 1. Check if the chapter content is already cached in local database
+      final localChapters = LocalBookshelfDb.instance.getChapters(bookId);
+      if (localChapters != null) {
+        try {
+          final localCh = localChapters.firstWhere((c) => c.chapterIndex == idx);
+          if (localCh.content != null && localCh.content!.isNotEmpty) {
+            _chapterCache[cacheKey] = localCh;
+            continue;
+          }
+        } catch (_) {}
       }
+
+      // 2. Otherwise, fetch from API in the background (which will auto-save to DB)
+      _apiClient.getChapterContent(bookId, idx).then((rawChapter) {
+        final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
+        final chap = rawChapter.copyWith(
+          content: formattedContent,
+          bookId: bookId,
+          chapterIndex: idx,
+        );
+        _chapterCache[cacheKey] = chap;
+      }).catchError((_) {});
     }
   }
 
@@ -369,6 +430,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
         lastReadCharOffset: 0,
         updatedAt: '',
         book: newBook,
+        inBookshelf: false,
       );
       await selectBook(added);
       return added;
@@ -403,6 +465,12 @@ class NovelNotifier extends StateNotifier<NovelState> {
       }
       if (upgraded != null) {
         state = state.copyWith(currentBookProgress: upgraded);
+        // Sync upgrade to server immediately
+        _apiClient.updateReadingProgress(
+          bookId: newBook.id,
+          chapterIndex: upgraded.lastReadChapterIndex,
+          charOffset: upgraded.lastReadCharOffset,
+        ).ignore();
       }
     } catch (e) {
       state = state.copyWith(isBookshelfLoading: false, error: e.toString());
@@ -426,15 +494,94 @@ class NovelNotifier extends StateNotifier<NovelState> {
     state = state.copyWith(
       currentBookProgress: progress,
       chapters: [],
-      currentChapter: null,
       error: null,
+      clearChapter: true,
     );
     await loadChapters(progress.bookId);
   }
 
+  /// 4b. Switch source dynamically while preserving chapter index/offsets
+  Future<void> changeBookSource(String bookId, String newSourceId, String newBookUrl) async {
+    final book = LocalBookshelfDb.instance.getBookById(bookId);
+    if (book != null) {
+      final updatedBook = Book(
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.coverUrl,
+        summary: book.summary,
+        isAbyss: book.isAbyss,
+        currentSourceId: newSourceId,
+        sourceId: newSourceId,
+        bookUrl: newBookUrl,
+      );
+      await LocalBookshelfDb.instance.addToBookshelf(updatedBook);
+
+      // Refresh state reading progress reference
+      if (state.currentBookProgress != null && state.currentBookProgress!.bookId == bookId) {
+        final updatedProgress = state.currentBookProgress!.copyWith(
+          book: updatedBook,
+        );
+        state = state.copyWith(currentBookProgress: updatedProgress);
+      }
+
+      // Clear chapter cache entries for this book
+      _chapterCache.removeWhere((key, value) => key.startsWith('${bookId}_'));
+
+      // Clear cached chapters in local bookshelf DB (forces getBookChapters to load from new source)
+      await LocalBookshelfDb.instance.saveChapters(bookId, []);
+
+      // Force reload chapters list from new source
+      await loadChapters(bookId);
+
+      // Sync to server immediately
+      final updatedProgress = state.currentBookProgress;
+      if (updatedProgress != null) {
+        try {
+          await _apiClient.updateReadingProgress(
+            bookId: bookId,
+            chapterIndex: updatedProgress.lastReadChapterIndex,
+            charOffset: updatedProgress.lastReadCharOffset,
+          );
+        } catch (_) {}
+      }
+    }
+  }
+
   Future<void> loadChapters(String bookId) async {
-    state = state.copyWith(isContentLoading: true, error: null);
+    final bool isMismatched = state.currentBookProgress?.bookId != bookId ||
+        (state.currentChapter != null && state.currentChapter!.bookId != bookId);
+    state = state.copyWith(
+      isContentLoading: true,
+      error: null,
+      clearChapter: isMismatched,
+    );
     try {
+      // Recovery Guard: Initialize currentBookProgress if null or mismatched
+      if (state.currentBookProgress?.bookId != bookId) {
+        final book = LocalBookshelfDb.instance.getBookById(bookId);
+        if (book != null) {
+          final bookshelf = LocalBookshelfDb.instance.getBookshelf(book.isAbyss);
+          ReadingProgress? matchedProgress;
+          for (final p in bookshelf) {
+            if (p.bookId == bookId) {
+              matchedProgress = p;
+              break;
+            }
+          }
+          matchedProgress ??= ReadingProgress(
+            id: bookId,
+            userId: 'local_user',
+            bookId: bookId,
+            lastReadChapterIndex: 0,
+            lastReadCharOffset: 0,
+            updatedAt: DateTime.now().toIso8601String(),
+            book: book,
+          );
+          state = state.copyWith(currentBookProgress: matchedProgress);
+        }
+      }
+
       final chs = await _apiClient.getBookChapters(bookId);
       if (state.currentBookProgress != null && state.currentBookProgress!.bookId != bookId) {
         return;
@@ -448,6 +595,8 @@ class NovelNotifier extends StateNotifier<NovelState> {
           targetIdx = chs.first.chapterIndex;
         }
         await loadChapterContent(bookId, targetIdx);
+      } else {
+        state = state.copyWith(error: '书源未解析到章节列表');
       }
     } catch (e, stackTrace) {
       debugPrint("LOAD_CHAPTERS_ERROR: $e");
@@ -491,7 +640,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
         state = state.copyWith(currentChapter: cachedChapter, isContentLoading: false);
       }
       
-      _prefetchNextChapters(bookId, chapterIndex);
+      _prefetchChapters(bookId, chapterIndex);
       return true;
     }
     
@@ -502,7 +651,11 @@ class NovelNotifier extends StateNotifier<NovelState> {
         return false;
       }
       final formattedContent = _sanitizeAndFormatContent(rawChapter.content ?? '');
-      final chap = rawChapter.copyWith(content: formattedContent, bookId: bookId);
+      final chap = rawChapter.copyWith(
+        content: formattedContent,
+        bookId: bookId,
+        chapterIndex: chapterIndex,
+      );
       
       // Save to local cache
       _chapterCache[cacheKey] = chap;
@@ -529,13 +682,17 @@ class NovelNotifier extends StateNotifier<NovelState> {
         state = state.copyWith(currentChapter: chap, isContentLoading: false);
       }
       
-      _prefetchNextChapters(bookId, chapterIndex);
+      _prefetchChapters(bookId, chapterIndex);
       return true;
     } catch (e, stackTrace) {
       debugPrint("LOAD_CHAPTER_CONTENT_ERROR: $e");
       debugPrint("LOAD_CHAPTER_CONTENT_STACKTRACE: $stackTrace");
       if (state.currentBookProgress == null || state.currentBookProgress!.bookId == bookId) {
-        state = state.copyWith(isContentLoading: false, error: e.toString());
+        state = state.copyWith(
+          isContentLoading: false,
+          error: e.toString(),
+          clearChapter: true,
+        );
       }
       return false;
     }
@@ -771,6 +928,24 @@ class NovelNotifier extends StateNotifier<NovelState> {
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
+    }
+  }
+
+  /// 10. Fetch Explore dynamical Rankings from Server
+  Future<void> fetchExploreRankings() async {
+    if (state.isRankingsLoading) return;
+    state = state.copyWith(isRankingsLoading: true, error: null);
+    try {
+      final ranks = await _apiClient.getExploreRankings();
+      state = state.copyWith(
+        exploreRankings: ranks,
+        isRankingsLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isRankingsLoading: false,
+        error: e.toString(),
+      );
     }
   }
 }

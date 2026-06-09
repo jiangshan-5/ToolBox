@@ -22,64 +22,169 @@ class NovelShelfTab extends ConsumerStatefulWidget {
 class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
   bool _isMultiSelectMode = false;
   final Set<String> _selectedBookIds = {};
+  int _subTab = 0; // 0 for Bookshelf, 1 for History
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(novelProvider);
-    final list = widget.inAbyss ? state.abyssBookshelf : state.bookshelf;
-    final themeColor = widget.inAbyss ? Colors.purpleAccent : Colors.pinkAccent;
+    final theme = Theme.of(context);
+    final themeColor = widget.inAbyss ? Colors.purpleAccent : theme.colorScheme.primary;
 
+    // Filter books based on selected sub-tab
+    final list = (widget.inAbyss ? state.abyssBookshelf : state.bookshelf)
+        .where((p) => p.inBookshelf == (_subTab == 0))
+        .toList();
+
+    Widget body;
     if (state.isBookshelfLoading && list.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.pinkAccent),
+      body = Center(
+        child: CircularProgressIndicator(color: themeColor),
       );
+    } else if (list.isEmpty) {
+      body = _buildEmptyState(themeColor);
+    } else {
+      body = _buildBookshelfGrid(state, list, themeColor);
     }
 
-    if (list.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: widget.inAbyss 
-                    ? Colors.purple.withOpacity(0.08)
-                    : Colors.pinkAccent.withOpacity(0.08),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: widget.inAbyss
-                      ? Colors.purple.withOpacity(0.2)
-                      : Colors.pinkAccent.withOpacity(0.2),
-                ),
-              ),
-              child: Icon(
-                widget.inAbyss ? Icons.auto_stories_rounded : Icons.library_books_rounded,
-                size: 50,
-                color: themeColor,
+    return Column(
+      children: [
+        _buildSubTabSelector(themeColor),
+        Expanded(
+          child: body,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubTabSelector(Color themeColor) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: onSurface.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: onSurface.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSubTabButton(0, '我的书架', themeColor),
+          ),
+          Expanded(
+            child: _buildSubTabButton(1, '历史读过', themeColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubTabButton(int index, String label, Color themeColor) {
+    final isSelected = _subTab == index;
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _subTab = index;
+          _isMultiSelectMode = false;
+          _selectedBookIds.clear();
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [themeColor.withOpacity(0.8), themeColor],
+                )
+              : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                     color: themeColor.withOpacity(0.3),
+                     blurRadius: 8,
+                     offset: const Offset(0, 2),
+                   )
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : onSurface.withOpacity(0.6),
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(Color themeColor) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
+    final String emptyTitle = _subTab == 0
+        ? (widget.inAbyss ? '👻 深渊里空无一物...' : '📖 您的书架空空如也')
+        : '🕰️ 暂无历史阅读记录';
+    final String emptySubtitle = _subTab == 0
+        ? (widget.inAbyss ? '去寻找那些尘封 the midnight 书源吧' : '全网百万小说，一键抓取纯净净化阅读')
+        : '浏览盲盒或排行榜上的小说，会自动记录在历史中哦';
+    
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: widget.inAbyss 
+                  ? Colors.purple.withOpacity(0.08)
+                  : themeColor.withOpacity(0.08),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: widget.inAbyss
+                    ? Colors.purple.withOpacity(0.2)
+                    : themeColor.withOpacity(0.2),
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              widget.inAbyss ? '👻 深渊里空无一物...' : '📖 您的书架空空如也',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: widget.inAbyss ? Colors.purpleAccent : Colors.white,
-              ),
+            child: Icon(
+              _subTab == 0
+                  ? (widget.inAbyss ? Icons.auto_stories_rounded : Icons.library_books_rounded)
+                  : Icons.history_rounded,
+              size: 50,
+              color: themeColor,
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.inAbyss ? '去寻找那些尘封的午夜书源吧' : '全网百万小说，一键抓取纯净净化阅读',
-              style: const TextStyle(fontSize: 13, color: Colors.white54),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            emptyTitle,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: widget.inAbyss ? Colors.purpleAccent : onSurface,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            emptySubtitle,
+            style: TextStyle(fontSize: 13, color: onSurface.withOpacity(0.6)),
+          ),
+          if (_subTab == 0) ...[
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: widget.onOpenSearch,
               icon: const Icon(Icons.search_rounded, size: 18),
               label: Text(widget.inAbyss ? '搜罗深夜书源' : '去搜书架书籍'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: widget.inAbyss ? Colors.purple : Colors.pinkAccent,
+                backgroundColor: widget.inAbyss ? Colors.purple : themeColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -88,10 +193,17 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
               ),
             ),
           ],
-        ),
-      );
-    }
+        ],
+      ),
+    );
+  }
 
+  Widget _buildBookshelfGrid(
+    NovelState state,
+    List<ReadingProgress> list,
+    Color themeColor,
+  ) {
+    final theme = Theme.of(context);
     return PopScope(
       canPop: !_isMultiSelectMode,
       onPopInvoked: (didPop) {
@@ -108,12 +220,12 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
           RefreshIndicator(
             onRefresh: () => ref.read(novelProvider.notifier).fetchBookshelf(widget.inAbyss),
             color: themeColor,
-            backgroundColor: const Color(0xFF0F0C29),
+            backgroundColor: theme.colorScheme.surface,
             child: GridView.builder(
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
-                top: 20,
+                top: 10,
                 bottom: _isMultiSelectMode ? 100 : 20,
               ),
               physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
@@ -128,7 +240,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                 final progress = list[index];
                 final book = progress.book;
                 if (book == null) return const SizedBox.shrink();
-
+ 
                 return _buildBookShelfCard(context, ref, progress, book, themeColor);
               },
             ),
@@ -149,14 +261,14 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1B3A).withOpacity(0.75),
+                    color: theme.colorScheme.surfaceContainer.withOpacity(0.85),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: themeColor.withOpacity(0.25),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -164,7 +276,6 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                   ),
                   child: Row(
                     children: [
-                      // Select All / Deselect All Action
                       TextButton.icon(
                         onPressed: () {
                           setState(() {
@@ -190,14 +301,13 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                         ),
                         label: Text(
                           _selectedBookIds.length == list.length ? '全不选' : '全选',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontSize: 12),
                         ),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                         ),
                       ),
                       const Spacer(),
-                      // Count Indicator
                       Text(
                         '已选 ${_selectedBookIds.length} 本',
                         style: TextStyle(
@@ -207,7 +317,6 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                         ),
                       ),
                       const Spacer(),
-                      // Cancel Button
                       TextButton(
                         onPressed: () {
                           setState(() {
@@ -215,13 +324,12 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                             _selectedBookIds.clear();
                           });
                         },
-                        child: const Text(
+                        child: Text(
                           '取消',
-                          style: TextStyle(color: Colors.white38, fontSize: 13),
+                          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.5), fontSize: 13),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Batch Delete Action
                       ElevatedButton.icon(
                         onPressed: _selectedBookIds.isEmpty
                             ? null
@@ -260,6 +368,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
     Book book,
     Color themeColor,
   ) {
+    final theme = Theme.of(context);
     final double percent = progress.lastReadChapterIndex > 0
         ? (progress.lastReadChapterIndex / 100.0).clamp(0.01, 1.0)
         : 0.0;
@@ -280,23 +389,20 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
             }
           });
         } else {
-          await ref.read(novelProvider.notifier).selectBook(progress);
-          if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => NovelReaderScreen(
-                  bookId: book.id,
-                  inAbyss: widget.inAbyss,
-                ),
+          ref.read(novelProvider.notifier).selectBook(progress);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NovelReaderScreen(
+                bookId: book.id,
+                inAbyss: widget.inAbyss,
               ),
-            );
-          }
+            ),
+          );
         }
       },
       onLongPress: () {
         if (_isMultiSelectMode) {
-          // In multi-select, long press toggles selection
           setState(() {
             if (isSelected) {
               _selectedBookIds.remove(book.id);
@@ -348,14 +454,14 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1B3A),
+                    color: theme.colorScheme.surfaceContainer,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isSelected
                           ? themeColor
                           : (widget.inAbyss 
                               ? Colors.purpleAccent.withOpacity(0.2)
-                              : Colors.white.withOpacity(0.08)),
+                              : theme.colorScheme.onSurface.withOpacity(0.08)),
                       width: isSelected ? 2.0 : 1.0,
                     ),
                     boxShadow: [
@@ -381,7 +487,6 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                               )
                             : _buildFallbackCover(book),
                         
-                        // Dark overlay when selected or in multi-select mode
                         if (_isMultiSelectMode)
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -407,7 +512,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                             color: Colors.black.withOpacity(0.55),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
+                              color: theme.colorScheme.onSurface.withOpacity(0.1),
                             ),
                           ),
                           child: Text(
@@ -425,7 +530,6 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                     ),
                   ),
                 
-                // Checkbox indicator in multi-select mode
                 if (_isMultiSelectMode)
                   Positioned(
                     top: 6,
@@ -448,26 +552,24 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
             ),
           ),
           const SizedBox(height: 14),
-          // Book Title
           Text(
             book.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 2),
-          // Book Author
           Text(
             book.author,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
-              color: Colors.white38,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
         ],
@@ -476,6 +578,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
   }
 
   Widget _buildFallbackCover(Book book) {
+    final theme = Theme.of(context);
     final firstChar = book.title.isNotEmpty ? book.title.substring(0, 1) : '书';
     return Container(
       decoration: BoxDecoration(
@@ -484,7 +587,9 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
           end: Alignment.bottomRight,
           colors: widget.inAbyss
               ? [const Color(0xFF3A007C), const Color(0xFF1E004A)]
-              : [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)],
+              : (theme.brightness == Brightness.dark
+                  ? [const Color(0xFF0F2027), const Color(0xFF203A43), const Color(0xFF2C5364)]
+                  : [theme.colorScheme.primaryContainer, theme.colorScheme.secondaryContainer]),
         ),
       ),
       alignment: Alignment.center,
@@ -493,10 +598,12 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
         children: [
           Text(
             firstChar,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: widget.inAbyss 
+                  ? Colors.white 
+                  : (theme.brightness == Brightness.dark ? Colors.white : theme.colorScheme.onPrimaryContainer),
             ),
           ),
           const SizedBox(height: 8),
@@ -506,9 +613,11 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
               book.title,
               maxLines: 2,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 9,
-                color: Colors.white60,
+                color: widget.inAbyss 
+                    ? Colors.white60 
+                    : (theme.brightness == Brightness.dark ? Colors.white60 : theme.colorScheme.onPrimaryContainer.withOpacity(0.7)),
               ),
             ),
           ),
@@ -518,35 +627,38 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
   }
 
   void _confirmBatchDelete(BuildContext context, WidgetRef ref, List<ReadingProgress> list) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF140F2D),
+        backgroundColor: theme.colorScheme.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: (widget.inAbyss ? Colors.purpleAccent : Colors.pinkAccent).withOpacity(0.3),
+            color: (widget.inAbyss ? Colors.purpleAccent.withOpacity(0.3) : theme.colorScheme.primary.withOpacity(0.3)),
             width: 1.5,
           ),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
-            SizedBox(width: 8),
+            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 8),
             Text(
               '确认删除',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         content: Text(
-          '确定要从书架移除这 ${_selectedBookIds.length} 本书籍吗？该操作同时清理对应的阅读进度与章节缓存。',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          _subTab == 0
+              ? '确定要从书架移除这 ${_selectedBookIds.length} 本书籍吗？该操作同时清理对应的阅读进度与章节缓存。'
+              : '确定要从历史记录清除这 ${_selectedBookIds.length} 本书籍的记录吗？该操作同时清理对应的阅读进度与章节缓存。',
+          style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8), fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消', style: TextStyle(color: Colors.white38)),
+            child: Text('取消', style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -570,20 +682,20 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                 await ref.read(novelProvider.notifier).removeBooksFromShelf(idsToDelete, widget.inAbyss);
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text('🧹 成功移除 ${idsToDelete.length} 本书籍'),
+                    content: Text('🧹 成功清除 ${idsToDelete.length} 本书籍'),
                     backgroundColor: Colors.green,
                   ),
                 );
               } catch (e) {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text('❌ 移除失败: $e'),
+                    content: Text('❌ 清除失败: $e'),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
               }
             },
-            child: const Text('确定删除', style: TextStyle(color: Colors.white)),
+            child: const Text('确定清除', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -597,6 +709,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
     Book book,
     Color themeColor,
   ) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -611,8 +724,8 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F0C29).withOpacity(0.85),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                color: theme.colorScheme.surfaceContainer.withOpacity(0.95),
+                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.08)),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -625,7 +738,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                     width: 40,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: theme.colorScheme.onSurface.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -637,7 +750,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                         height: 60,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          color: Colors.white10,
+                          color: theme.colorScheme.onSurface.withOpacity(0.1),
                         ),
                         child: _buildFallbackCover(book),
                       ),
@@ -648,16 +761,16 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                           children: [
                             Text(
                               book.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '作者：${book.author}',
-                              style: const TextStyle(fontSize: 12, color: Colors.white54),
+                              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                             ),
                           ],
                         ),
@@ -665,10 +778,34 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Actions list
+                  if (_subTab == 1)
+                    ListTile(
+                      leading: const Icon(Icons.bookmark_add_rounded, color: Colors.greenAccent),
+                      title: Text('加入到书架', style: TextStyle(color: theme.colorScheme.onSurface)),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        try {
+                          await ref.read(novelProvider.notifier).upgradeTrialBook(book, widget.inAbyss);
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text('📚 已将《${book.title}》加入书架'),
+                              backgroundColor: widget.inAbyss ? Colors.purple : themeColor,
+                            ),
+                          );
+                        } catch (e) {
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text('❌ 添加失败: $e'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ListTile(
                     leading: const Icon(Icons.download_for_offline_rounded, color: Colors.cyanAccent),
-                    title: const Text('打包导出全本 EPUB', style: TextStyle(color: Colors.white)),
+                    title: Text('打包导出全本 EPUB', style: TextStyle(color: theme.colorScheme.onSurface)),
                     onTap: () async {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -699,7 +836,7 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                   ),
                   ListTile(
                     leading: Icon(Icons.checklist_rounded, color: themeColor),
-                    title: const Text('批量管理书籍', style: TextStyle(color: Colors.white)),
+                    title: Text('批量管理书籍', style: TextStyle(color: theme.colorScheme.onSurface)),
                     onTap: () {
                       Navigator.pop(context);
                       setState(() {
@@ -711,19 +848,19 @@ class _NovelShelfTabState extends ConsumerState<NovelShelfTab> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
-                    title: const Text('从书架彻底移除该书籍', style: TextStyle(color: Colors.white)),
+                    title: Text(_subTab == 0 ? '从书架彻底移除该书籍' : '清除该书籍的历史记录', style: TextStyle(color: theme.colorScheme.onSurface)),
                     onTap: () async {
                       Navigator.pop(context);
                       final scaffoldMessenger = ScaffoldMessenger.of(context);
                       try {
                         await ref.read(novelProvider.notifier).removeBooksFromShelf([book.id], widget.inAbyss);
                         scaffoldMessenger.showSnackBar(
-                          const SnackBar(content: Text('🧹 书籍已成功从书架移除')),
+                          SnackBar(content: Text(_subTab == 0 ? '🧹 书籍已成功从书架移除' : '🧹 历史记录已成功清除')),
                         );
                       } catch (e) {
                         scaffoldMessenger.showSnackBar(
                           SnackBar(
-                            content: Text('❌ 移除失败: $e'),
+                            content: Text('❌ 清除失败: $e'),
                             backgroundColor: Colors.redAccent,
                           ),
                         );

@@ -267,6 +267,10 @@ void main() {
     rootGesture.onTap!();
     await tester.pumpAndSettle();
 
+    // Tap "设置" on the bottom navigation bar to open settings panel
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+
     // Verify Control Overlay elements exist
     expect(find.byIcon(Icons.text_fields_rounded), findsOneWidget);
     expect(find.byIcon(Icons.format_line_spacing_rounded), findsOneWidget);
@@ -284,21 +288,31 @@ void main() {
     expect(prefs.getDouble('novel_reader_line_height'), isNot(1.6));
 
     // 5. Test Switch for Serif Font
-    final serifSwitch = find.byType(Switch).first;
+    final serifSwitch = find.descendant(
+      of: find.ancestor(
+        of: find.text('选用仿宋/Georgia'),
+        matching: find.byType(Row),
+      ),
+      matching: find.byType(Switch),
+    );
+    await tester.ensureVisible(serifSwitch);
     await tester.tap(serifSwitch);
     await tester.pumpAndSettle();
     expect(prefs.getBool('novel_reader_is_serif'), false);
 
     // 6. Test Theme Switching
+    await tester.ensureVisible(find.text('极夜'));
     await tester.tap(find.text('极夜'));
     await tester.pumpAndSettle();
     expect(prefs.getInt('novel_reader_theme_index'), 3);
 
+    await tester.ensureVisible(find.text('护眼'));
     await tester.tap(find.text('护眼'));
     await tester.pumpAndSettle();
     expect(prefs.getInt('novel_reader_theme_index'), 2);
 
     // 7. Test Page Flip Mode Toggle (to PageView)
+    await tester.ensureVisible(find.text('左右翻页'));
     await tester.tap(find.text('左右翻页'));
     await tester.pumpAndSettle();
     expect(prefs.getBool('novel_reader_is_page_view_mode'), true);
@@ -306,9 +320,14 @@ void main() {
     expect(find.textContaining('页'), findsWidgets);
 
     // Toggle Page Flip Mode back to vertical scrolling
+    await tester.ensureVisible(find.text('纵向滚动'));
     await tester.tap(find.text('纵向滚动'));
     await tester.pumpAndSettle();
     expect(prefs.getBool('novel_reader_is_page_view_mode'), false);
+
+    // Switch to Sound tab inside the settings panel
+    await tester.tap(find.text('听书声景'));
+    await tester.pumpAndSettle();
 
     // 8. Test TTS Audio Controls
     expect(find.byIcon(Icons.play_circle_filled_rounded), findsOneWidget);
@@ -570,6 +589,10 @@ void main() {
     rootGesture.onTap!();
     await tester.pumpAndSettle();
 
+    // Tap "设置" on the bottom navigation bar to open settings panel
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+
     // 3. Verify Auto Scroll option exists in vertical scroll mode controls
     expect(find.text('自动滚屏'), findsOneWidget);
     
@@ -582,10 +605,12 @@ void main() {
       matching: find.byType(Switch),
     );
     expect(autoScrollSwitch, findsOneWidget);
+    await tester.ensureVisible(autoScrollSwitch);
     await tester.tap(autoScrollSwitch);
     await tester.pumpAndSettle();
 
     // Verify speed adjustment works
+    await tester.ensureVisible(find.textContaining('滚屏速度'));
     await tester.tap(find.textContaining('滚屏速度'));
     await tester.pumpAndSettle();
     expect(find.text('4 级'), findsOneWidget);
@@ -593,6 +618,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 5. Change Theme to Abyss (theme index 4) to verify painter overlay behavior changes
+    await tester.ensureVisible(find.text('深渊'));
     await tester.tap(find.text('深渊'));
     await tester.pumpAndSettle();
     expect(prefs.getInt('novel_reader_theme_index'), 4);
@@ -721,7 +747,16 @@ void main() {
     expect(formattedContent, '　　这里是正文。');
 
     // 4. Test paragraph highlight and notes sheet
-    // Open quick access dock using the highlight notes button
+    // Toggle controls overlay to expose settings panel containing the highlights trigger
+    final rootGesture = tester.widget<GestureDetector>(
+      find.descendant(
+        of: find.byType(SafeArea),
+        matching: find.byType(GestureDetector),
+      ).first,
+    );
+    rootGesture.onTap!();
+    await tester.pumpAndSettle();
+
     final quickAccessBtn = find.byIcon(Icons.border_color_rounded).first;
     await tester.tap(quickAccessBtn);
     await tester.pumpAndSettle();

@@ -4,11 +4,13 @@ import 'dart:io' show Platform;
 class NovelReaderSkeleton extends StatefulWidget {
   final Color themeBg;
   final Color themeText;
+  final VoidCallback? onBack;
 
   const NovelReaderSkeleton({
     super.key,
     required this.themeBg,
     required this.themeText,
+    this.onBack,
   });
 
   @override
@@ -59,7 +61,14 @@ class _NovelReaderSkeletonState extends State<NovelReaderSkeleton> with SingleTi
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(width: 80, height: 12, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
+                          widget.onBack != null
+                              ? IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  icon: Icon(Icons.arrow_back_ios_new_rounded, color: widget.themeText.withOpacity(0.7), size: 18),
+                                  onPressed: widget.onBack,
+                                )
+                              : Container(width: 80, height: 12, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
                           Container(width: 40, height: 12, decoration: BoxDecoration(color: shimmerColor, borderRadius: BorderRadius.circular(4))),
                         ],
                       ),

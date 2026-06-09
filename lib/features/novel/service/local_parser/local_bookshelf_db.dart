@@ -108,14 +108,14 @@ class LocalBookshelfDb {
     }
   }
 
-  Future<Book> addToBookshelf(Book book) async {
+  Future<Book> addToBookshelf(Book book, {bool inBookshelf = true}) async {
     _books.removeWhere((b) => b.id == book.id);
     _books.add(book);
     await saveBooks();
 
-    // Create progress if not exists
-    final exists = _progress.any((p) => p.bookId == book.id);
-    if (!exists) {
+    // Create progress if not exists or upgrade if explicitly true
+    final index = _progress.indexWhere((p) => p.bookId == book.id);
+    if (index == -1) {
       final p = ReadingProgress(
         id: book.id, // use book id as progress id
         userId: 'local_user',
@@ -124,9 +124,18 @@ class LocalBookshelfDb {
         lastReadCharOffset: 0,
         updatedAt: DateTime.now().toIso8601String(),
         book: book,
+        inBookshelf: inBookshelf,
       );
       _progress.add(p);
       await saveProgress();
+    } else {
+      if (inBookshelf && !_progress[index].inBookshelf) {
+        _progress[index] = _progress[index].copyWith(
+          inBookshelf: true,
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+        await saveProgress();
+      }
     }
     return book;
   }
@@ -158,6 +167,7 @@ class LocalBookshelfDb {
           lastReadCharOffset: charOffset,
           updatedAt: DateTime.now().toIso8601String(),
           book: p.book,
+          inBookshelf: p.inBookshelf,
         );
         await saveProgress();
         return _progress[i];
@@ -172,6 +182,7 @@ class LocalBookshelfDb {
       lastReadCharOffset: charOffset,
       updatedAt: DateTime.now().toIso8601String(),
       book: getBookById(bookId),
+      inBookshelf: true,
     );
     _progress.add(p);
     await saveProgress();

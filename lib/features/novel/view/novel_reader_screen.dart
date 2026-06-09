@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'dart:async';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../provider/novel_provider.dart';
+import '../model/novel_models.dart';
 import '../service/novel_api_client.dart';
 import '../../../core/storage/local_storage.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +42,14 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   String? _failoverMessage;
   Timer? _failoverTimer;
 
+  // In-memory highlights cache to solve page swipe stuttering
+  Map<String, Map<String, dynamic>>? _cachedHighlights;
+  String? _cachedHighlightsBookId;
+
+  // Trial Reading progress tracking
+  final Set<int> _readChapters = {};
+  bool _hasPromptedAddToShelf = false;
+
   // Sensors & Panic Mode states
   StreamSubscription? _sensorsSubscription;
   bool _isPanicTriggered = false;
@@ -58,6 +67,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   late ScrollController _scrollController;
   late final NovelNotifier _novelNotifier;
   bool _showControlOverlay = false;
+  bool _showSettingsPanel = false;
 
   // Reading position memory & auto-scroll states
   DateTime _lastSaveTime = DateTime.now();
@@ -68,6 +78,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   double _dimmerOpacity = 0.0;
 
   bool _landingOnLastPage = false;
+
+  bool _isScrolling = false;
+  Timer? _scrollStopTimer;
 
   @override
   void initState() {
@@ -170,6 +183,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _autoScrollTimer?.cancel();
+    _scrollStopTimer?.cancel();
     _sensorsSubscription?.cancel();
     _failoverTimer?.cancel();
     // Stop all audio playbacks on exit to avoid background ghost running
@@ -194,6 +208,20 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   void _onScroll() {
     if (_isPageViewMode) return;
     if (!_scrollController.hasClients) return;
+
+    if (!_isScrolling) {
+      setState(() {
+        _isScrolling = true;
+      });
+    }
+    _scrollStopTimer?.cancel();
+    _scrollStopTimer = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() {
+          _isScrolling = false;
+        });
+      }
+    });
     
     final maxScroll = _scrollController.position.maxScrollExtent;
     if (maxScroll <= 0) return;
@@ -272,23 +300,23 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
 
   void _onPrevChapter(NovelState state) {
     if (state.currentBookProgress == null) return;
-    final curIdx = state.currentBookProgress!.lastReadChapterIndex;
-    if (curIdx > 1) {
+    final int listIdx = state.chapters.indexWhere((c) => c.chapterIndex == state.currentChapter?.chapterIndex);
+    if (listIdx > 0) {
       setState(() {
         _landingOnLastPage = true;
       });
-      ref.read(novelProvider.notifier).loadChapterContent(widget.bookId, curIdx - 1);
+      ref.read(novelProvider.notifier).loadChapterContent(widget.bookId, state.chapters[listIdx - 1].chapterIndex);
     }
   }
 
   void _onNextChapter(NovelState state) {
     if (state.currentBookProgress == null) return;
-    final curIdx = state.currentBookProgress!.lastReadChapterIndex;
-    if (curIdx < state.chapters.length) {
+    final int listIdx = state.chapters.indexWhere((c) => c.chapterIndex == state.currentChapter?.chapterIndex);
+    if (listIdx != -1 && listIdx < state.chapters.length - 1) {
       setState(() {
         _landingOnLastPage = false;
       });
-      ref.read(novelProvider.notifier).loadChapterContent(widget.bookId, curIdx + 1);
+      ref.read(novelProvider.notifier).loadChapterContent(widget.bookId, state.chapters[listIdx + 1].chapterIndex);
     }
   }
 
@@ -350,24 +378,24 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
 
   Widget _buildBottomPagingRow(NovelState state, Color themeText) {
     final total = state.chapters.length;
-    final rawIdx = state.currentBookProgress?.lastReadChapterIndex ?? 1;
-    final curIdx = rawIdx <= 0 ? 1 : (rawIdx > total && total > 0 ? total : rawIdx);
+    final int listIdx = state.chapters.indexWhere((c) => c.chapterIndex == state.currentChapter?.chapterIndex);
+    final displayIndex = listIdx != -1 ? listIdx + 1 : 1;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         TextButton.icon(
-          onPressed: curIdx > 1 ? () => _onPrevChapter(state) : null,
+          onPressed: listIdx > 0 ? () => _onPrevChapter(state) : null,
           icon: const Icon(Icons.arrow_back_rounded, size: 16),
           label: const Text('上一章'),
           style: TextButton.styleFrom(foregroundColor: themeText.withOpacity(0.8)),
         ),
         Text(
-          '章节 $curIdx / $total',
+          '章节 $displayIndex / $total',
           style: TextStyle(fontSize: 12, color: themeText.withOpacity(0.5)),
         ),
         TextButton.icon(
-          onPressed: curIdx < total ? () => _onNextChapter(state) : null,
+          onPressed: (listIdx != -1 && listIdx < total - 1) ? () => _onNextChapter(state) : null,
           icon: const Icon(Icons.arrow_forward_rounded, size: 16),
           label: const Text('下一章'),
           style: TextButton.styleFrom(foregroundColor: themeText.withOpacity(0.8)),
@@ -377,6 +405,10 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   }
 
   Widget _buildHeaderOverlay(Color themeText) {
+    final theme = Theme.of(context);
+    final surfaceColor = theme.colorScheme.surface;
+    final onSurfaceColor = theme.colorScheme.onSurface;
+
     return Positioned(
       top: 0,
       left: 0,
@@ -385,19 +417,25 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            color: const Color(0xFF0F0C29).withOpacity(0.8),
+            color: surfaceColor.withOpacity(0.85),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: SafeArea(
               bottom: false,
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded, color: onSurfaceColor.withOpacity(0.7)),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.format_list_bulleted_rounded, color: Colors.white70),
+                    icon: Icon(Icons.swap_horiz_rounded, color: onSurfaceColor.withOpacity(0.7)),
+                    tooltip: '换源',
+                    onPressed: _showSourceSwappingDialog,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(Icons.format_list_bulleted_rounded, color: onSurfaceColor.withOpacity(0.7)),
                     onPressed: _showTocDrawer,
                   ),
                 ],
@@ -406,6 +444,86 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
           ),
         ),
       ),
+    );
+  }
+
+  void _showSourceSwappingDialog() {
+    final book = ref.read(novelProvider).currentBookProgress?.book;
+    if (book == null) return;
+
+    final theme = Theme.of(context);
+    final surfaceColor = theme.colorScheme.surface;
+    final onSurfaceColor = theme.colorScheme.onSurface;
+    final primaryColor = theme.colorScheme.primary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: surfaceColor.withOpacity(0.85),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+                border: Border.all(color: onSurfaceColor.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: _SourceSwapperContent(
+                book: book,
+                inAbyss: widget.inAbyss,
+                onChangeSource: (newSourceId, newBookUrl) async {
+                  Navigator.pop(context); // Close bottom sheet
+                  // Show full screen loading dialog
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => Center(
+                      child: CircularProgressIndicator(color: primaryColor),
+                    ),
+                  );
+                  try {
+                    await ref.read(novelProvider.notifier).changeBookSource(
+                      book.id,
+                      newSourceId,
+                      newBookUrl,
+                    );
+                    if (mounted) {
+                      Navigator.pop(context); // Close loading dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('换源成功，正在重新加载内容...'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.pop(context); // Close loading dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('换源失败: $e'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -422,6 +540,11 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
             final rawIndex = state.currentBookProgress?.lastReadChapterIndex ?? 1;
             final curIndex = rawIndex <= 0 ? 1 : rawIndex;
 
+            final theme = Theme.of(context);
+            final surfaceColor = theme.colorScheme.surface;
+            final onSurfaceColor = theme.colorScheme.onSurface;
+            final primaryColor = theme.colorScheme.primary;
+
             return ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -432,12 +555,12 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.75,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F0C29).withOpacity(0.85),
+                    color: surfaceColor.withOpacity(0.85),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
                     ),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: onSurfaceColor.withOpacity(0.08)),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                   child: Column(
@@ -446,27 +569,27 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                         width: 40,
                         height: 5,
                         decoration: BoxDecoration(
-                          color: Colors.white24,
+                          color: onSurfaceColor.withOpacity(0.24),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          const Icon(Icons.format_list_bulleted_rounded, color: Colors.pinkAccent),
+                          Icon(Icons.format_list_bulleted_rounded, color: primaryColor),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             '书籍目录列表',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: onSurfaceColor),
                           ),
                           const Spacer(),
                           Text(
                             '共 ${chList.length} 章',
-                            style: const TextStyle(fontSize: 12, color: Colors.white38),
+                            style: TextStyle(fontSize: 12, color: onSurfaceColor.withOpacity(0.38)),
                           ),
                         ],
                       ),
-                      const Divider(height: 24, color: Colors.white10),
+                      Divider(height: 24, color: onSurfaceColor.withOpacity(0.1)),
                       Expanded(
                         child: ListView.builder(
                           physics: const BouncingScrollPhysics(),
@@ -481,12 +604,12 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                                 ch.title,
                                 style: TextStyle(
                                   fontSize: 13.5,
-                                  color: isCur ? Colors.pinkAccent : Colors.white70,
+                                  color: isCur ? primaryColor : onSurfaceColor.withOpacity(0.7),
                                   fontWeight: isCur ? FontWeight.bold : FontWeight.normal,
                                 ),
                               ),
                               trailing: isCur
-                                  ? const Icon(Icons.menu_book_rounded, color: Colors.pinkAccent, size: 16)
+                                  ? Icon(Icons.menu_book_rounded, color: primaryColor, size: 16)
                                   : null,
                               onTap: () {
                                 Navigator.pop(context);
@@ -528,6 +651,106 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
               size: 20,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar(Color themeText, NovelState state) {
+    final theme = Theme.of(context);
+    final surfaceColor = theme.colorScheme.surface;
+    final onSurfaceColor = theme.colorScheme.onSurface;
+
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: surfaceColor.withOpacity(0.85),
+              border: Border(top: BorderSide(color: onSurfaceColor.withOpacity(0.08))),
+            ),
+            padding: EdgeInsets.only(
+              top: 10,
+              bottom: MediaQuery.of(context).padding.bottom + 10,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  icon: Icons.format_list_bulleted_rounded,
+                  label: '目录',
+                  onTap: () {
+                    _showTocDrawer();
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.border_color_rounded,
+                  label: '划线想法',
+                  onTap: () {
+                    final content = state.currentChapter?.content ?? '';
+                    ReaderAnnotationsSheet.show(
+                      context: context,
+                      ref: ref,
+                      bookId: widget.bookId,
+                      chapterIndex: state.currentChapter?.chapterIndex ?? 1,
+                      content: content,
+                      onUpdate: () => setState(() {}),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.settings_rounded,
+                  label: '设置',
+                  isActive: _showSettingsPanel,
+                  onTap: () {
+                    setState(() {
+                      _showSettingsPanel = !_showSettingsPanel;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    final theme = Theme.of(context);
+    final activeColor = theme.colorScheme.primary;
+    final inactiveColor = theme.colorScheme.onSurface.withOpacity(0.6);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isActive ? activeColor : inactiveColor,
+              size: 22,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? activeColor : inactiveColor,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -590,7 +813,87 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
   }
 
   Map<String, Map<String, dynamic>> _loadHighlights(String bookId) {
-    return ReaderAnnotationsSheet.loadHighlights(ref, bookId);
+    if (_cachedHighlights != null && _cachedHighlightsBookId == bookId) {
+      return _cachedHighlights!;
+    }
+    _cachedHighlightsBookId = bookId;
+    _cachedHighlights = ReaderAnnotationsSheet.loadHighlights(ref, bookId);
+    return _cachedHighlights!;
+  }
+
+  void _showAddToBookshelfPrompt(BuildContext context, Book? book) {
+    if (book == null) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final surfaceColor = theme.colorScheme.surface;
+        final onSurfaceColor = theme.colorScheme.onSurface;
+        final primaryColor = theme.colorScheme.primary;
+
+        return AlertDialog(
+          backgroundColor: surfaceColor.withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: primaryColor.withOpacity(0.4),
+              width: 1.5,
+            ),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.bookmark_add_rounded, color: Colors.amberAccent, size: 24),
+              SizedBox(width: 8),
+              Text(
+                '加入书架',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Text(
+            '喜欢这本书吗？您已阅读 5 章，是否将《${book.title}》加入书架以保存您的阅读进度？',
+            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消', style: TextStyle(color: Colors.white38)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                try {
+                  await ref.read(novelProvider.notifier).upgradeTrialBook(book, widget.inAbyss);
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('📚 已将《${book.title}》加入书架'),
+                      backgroundColor: widget.inAbyss ? Colors.purple : Colors.pinkAccent,
+                    ),
+                  );
+                } catch (e) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('❌ 加入失败: $e'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              },
+              child: const Text('加入书架', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -601,6 +904,19 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _restoreScrollPosition(next);
         });
+
+        // Track trial reading chapters progress
+        final progress = next.currentBookProgress;
+        if (progress != null && progress.inBookshelf == false) {
+          final chapterIndex = next.currentChapter!.chapterIndex;
+          _readChapters.add(chapterIndex);
+          if (_readChapters.length >= 5 && !_hasPromptedAddToShelf) {
+            _hasPromptedAddToShelf = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showAddToBookshelfPrompt(context, next.currentBookProgress?.book);
+            });
+          }
+        }
       }
     });
 
@@ -621,25 +937,30 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     });
 
     if (isTrialLimitReached) {
+      final theme = Theme.of(context);
+      final surfaceColor = theme.colorScheme.surface;
+      final onSurfaceColor = theme.colorScheme.onSurface;
+      final primaryColor = theme.colorScheme.primary;
+
       return Scaffold(
         backgroundColor: themeBg,
         body: Stack(
           children: [
-            Container(color: Colors.black.withOpacity(0.85)),
+            Container(color: Colors.black.withOpacity(0.65)),
             Center(
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.85,
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF140D33).withOpacity(0.9),
+                  color: surfaceColor.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: Colors.pinkAccent.withOpacity(0.4),
+                    color: primaryColor.withOpacity(0.4),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.pinkAccent.withOpacity(0.2),
+                      color: primaryColor.withOpacity(0.2),
                       blurRadius: 30,
                       spreadRadius: 2,
                     ),
@@ -651,31 +972,31 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.pinkAccent.withOpacity(0.1),
+                        color: primaryColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.lock_outline_rounded,
-                        color: Colors.pinkAccent,
+                        color: primaryColor,
                         size: 40,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       '🌌 试读额度已满',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: onSurfaceColor,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       '您已免费试读前 3 章。加入书架后可解锁整本书籍并同步云端阅读进度。',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white70,
+                        color: onSurfaceColor.withOpacity(0.7),
                         height: 1.5,
                       ),
                     ),
@@ -684,7 +1005,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.pinkAccent,
+                          backgroundColor: primaryColor,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -708,9 +1029,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
+                      child: Text(
                         '返回书架',
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                        style: TextStyle(color: onSurfaceColor.withOpacity(0.38), fontSize: 13),
                       ),
                     ),
                   ],
@@ -725,13 +1046,25 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     final bool isBookMismatch = state.currentBookProgress?.bookId != widget.bookId ||
         (state.currentChapter != null && state.currentChapter!.bookId != widget.bookId);
     if (isBookMismatch || (state.isContentLoading && state.currentChapter == null)) {
-      return NovelReaderSkeleton(themeBg: themeBg, themeText: themeText);
+      return NovelReaderSkeleton(
+        themeBg: themeBg,
+        themeText: themeText,
+        onBack: () => Navigator.pop(context),
+      );
     }
 
     final chapter = state.currentChapter;
     if (chapter == null) {
       return Scaffold(
         backgroundColor: themeBg,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: themeText.withOpacity(0.7)),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -748,7 +1081,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
       );
     }
 
-    final String content = chapter.content ?? "暂无内容";
+    final String content = (chapter.content ?? "暂无内容").replaceAll(RegExp(r'\n+'), '\n');
 
     final textStyle = TextStyle(
       fontSize: _fontSize,
@@ -768,38 +1101,113 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
               ),
             ),
           ),
-          SafeArea(
-            child: GestureDetector(
-              onTap: () {
-                if (_isAutoScrollPausedByUser) {
-                  setState(() {
-                    _isAutoScrolling = true;
-                    _isAutoScrollPausedByUser = false;
-                  });
-                  _startAutoScroll();
-                } else {
-                  setState(() {
-                    _showControlOverlay = !_showControlOverlay;
-                  });
-                }
-              },
-              onDoubleTap: _triggerPanicMode,
-              onHorizontalDragEnd: (details) {
-                if (_isPageViewMode) return;
-                if (details.primaryVelocity == null) return;
-                if (details.primaryVelocity! > 300) {
-                  _onPrevChapter(state);
-                } else if (details.primaryVelocity! < -300) {
-                  _onNextChapter(state);
-                }
-              },
-              child: Container(
-                color: Colors.transparent,
-                padding: EdgeInsets.symmetric(horizontal: _isPageViewMode ? 0 : _marginHorizontal),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!_isPageViewMode) ...[
+          if (state.isContentLoading)
+            Positioned(
+              top: MediaQuery.of(context).padding.top,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                minHeight: 3,
+              ),
+            ),
+          if (_isPageViewMode)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  if (_isAutoScrollPausedByUser) {
+                    setState(() {
+                      _isAutoScrolling = true;
+                      _isAutoScrollPausedByUser = false;
+                    });
+                    _startAutoScroll();
+                  } else {
+                    setState(() {
+                      _showControlOverlay = !_showControlOverlay;
+                      if (!_showControlOverlay) {
+                        _showSettingsPanel = false;
+                      }
+                    });
+                  }
+                },
+                onDoubleTap: _triggerPanicMode,
+                child: ReaderPageView(
+                  bookId: widget.bookId,
+                  state: state,
+                  content: content,
+                  textStyle: textStyle,
+                  marginHorizontal: _marginHorizontal,
+                  activeThemeIndex: _activeThemeIndex,
+                  themes: _themes,
+                  landingOnLastPage: _landingOnLastPage,
+                  onLandingOnLastPageHandled: () {
+                    setState(() {
+                      _landingOnLastPage = false;
+                    });
+                  },
+                  onPrevChapter: () => _onPrevChapter(state),
+                  onNextChapter: () => _onNextChapter(state),
+                  onShowAnnotationsSheet: (state, text) {
+                    ReaderAnnotationsSheet.show(
+                      context: context,
+                      ref: ref,
+                      bookId: widget.bookId,
+                      chapterIndex: state.currentChapter?.chapterIndex ?? 1,
+                      content: state.currentChapter?.content ?? '',
+                      onUpdate: () {
+                        setState(() {
+                          _cachedHighlights = null;
+                        });
+                      },
+                    );
+                  },
+                  buildFormattedTextSpan: (pageText, textStyle, themeText) {
+                    return _buildFormattedTextSpan(
+                      pageText,
+                      widget.bookId,
+                      state.currentChapter?.chapterIndex ?? 1,
+                      textStyle,
+                      themeText,
+                    );
+                  },
+                ),
+              ),
+            )
+          else
+            SafeArea(
+              child: GestureDetector(
+                onTap: () {
+                  if (_isAutoScrollPausedByUser) {
+                    setState(() {
+                      _isAutoScrolling = true;
+                      _isAutoScrollPausedByUser = false;
+                    });
+                    _startAutoScroll();
+                  } else {
+                    setState(() {
+                      _showControlOverlay = !_showControlOverlay;
+                      if (!_showControlOverlay) {
+                        _showSettingsPanel = false;
+                      }
+                    });
+                  }
+                },
+                onDoubleTap: _triggerPanicMode,
+                onHorizontalDragEnd: (details) {
+                  if (details.primaryVelocity == null) return;
+                  if (details.primaryVelocity! > 300) {
+                    _onPrevChapter(state);
+                  } else if (details.primaryVelocity! < -300) {
+                    _onNextChapter(state);
+                  }
+                },
+                child: Container(
+                  color: Colors.transparent,
+                  padding: EdgeInsets.symmetric(horizontal: _marginHorizontal),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -826,240 +1234,137 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
                         ],
                       ),
                       const Divider(height: 16, color: Colors.black12),
-                    ],
-                    Expanded(
-                      child: _isPageViewMode
-                          ? ReaderPageView(
-                              bookId: widget.bookId,
-                              state: state,
-                              content: content,
-                              textStyle: textStyle,
-                              marginHorizontal: _marginHorizontal,
-                              activeThemeIndex: _activeThemeIndex,
-                              themes: _themes,
-                              landingOnLastPage: _landingOnLastPage,
-                              onLandingOnLastPageHandled: () {
+                      Expanded(
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification is ScrollStartNotification) {
+                              if (notification.dragDetails != null && _isAutoScrolling) {
                                 setState(() {
-                                  _landingOnLastPage = false;
+                                  _isAutoScrolling = false;
+                                  _isAutoScrollPausedByUser = true;
                                 });
-                              },
-                              onPrevChapter: () => _onPrevChapter(state),
-                              onNextChapter: () => _onNextChapter(state),
-                              onShowAnnotationsSheet: (state, text) {
-                                ReaderAnnotationsSheet.show(
-                                  context: context,
-                                  ref: ref,
-                                  bookId: widget.bookId,
-                                  chapterIndex: state.currentChapter?.chapterIndex ?? 1,
-                                  content: state.currentChapter?.content ?? '',
-                                  onUpdate: () => setState(() {}),
-                                );
-                              },
-                              buildFormattedTextSpan: (pageText, textStyle, themeText) {
-                                return _buildFormattedTextSpan(
-                                  pageText,
-                                  widget.bookId,
-                                  state.currentChapter?.chapterIndex ?? 1,
-                                  textStyle,
-                                  themeText,
-                                );
-                              },
-                            )
-                          : NotificationListener<ScrollNotification>(
-                              onNotification: (notification) {
-                                if (_isPageViewMode) return false;
-                                if (notification is ScrollStartNotification) {
-                                  if (notification.dragDetails != null && _isAutoScrolling) {
-                                    setState(() {
-                                      _isAutoScrolling = false;
-                                      _isAutoScrollPausedByUser = true;
-                                    });
-                                    _stopAutoScroll();
-                                  }
-                                }
-                                return false;
-                              },
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                physics: const BouncingScrollPhysics(),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      chapter.title,
-                                      style: TextStyle(
-                                        fontSize: _fontSize + 4,
-                                        fontWeight: FontWeight.bold,
-                                        color: themeText,
-                                        fontFamily: _isSerif ? 'Serif' : null,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    _buildReaderBodyText(state, content, themeText),
-                                    const SizedBox(height: 50),
-                                    _buildBottomPagingRow(state, themeText),
-                                    const SizedBox(height: 40),
-                                  ],
+                                _stopAutoScroll();
+                              }
+                            }
+                            return false;
+                          },
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 10),
+                                Text(
+                                  chapter.title,
+                                  style: TextStyle(
+                                    fontSize: _fontSize + 4,
+                                    fontWeight: FontWeight.bold,
+                                    color: themeText,
+                                    fontFamily: _isSerif ? 'Serif' : null,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 24),
+                                _buildReaderBodyText(state, content, themeText),
+                                const SizedBox(height: 50),
+                                _buildBottomPagingRow(state, themeText),
+                                const SizedBox(height: 40),
+                              ],
                             ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          if (_showControlOverlay) ...[
-            _buildHeaderOverlay(themeText),
-            ReaderSettingsPanel(
-              state: state,
-              fontSize: _fontSize,
-              lineHeight: _lineHeight,
-              isSerif: _isSerif,
-              dimmerOpacity: _dimmerOpacity,
-              isPageViewMode: _isPageViewMode,
-              autoScrollSpeed: _autoScrollSpeed,
-              isAutoScrolling: _isAutoScrolling,
-              activeThemeIndex: _activeThemeIndex,
-              themes: _themes,
-              themeBg: themeBg,
-              themeText: themeText,
-              onFontSizeChanged: (val) {
-                setState(() {
-                  _fontSize = val;
-                });
-                ref.read(sharedPreferencesProvider).setDouble('novel_reader_font_size', val);
-              },
-              onLineHeightChanged: (val) {
-                setState(() {
-                  _lineHeight = val;
-                });
-                ref.read(sharedPreferencesProvider).setDouble('novel_reader_line_height', val);
-              },
-              onSerifChanged: (val) {
-                setState(() {
-                  _isSerif = val;
-                });
-                ref.read(sharedPreferencesProvider).setBool('novel_reader_is_serif', val);
-              },
-              onDimmerOpacityChanged: (val) {
-                setState(() {
-                  _dimmerOpacity = val;
-                });
-                ref.read(sharedPreferencesProvider).setDouble('novel_reader_dimmer_opacity', val);
-              },
-              onPageViewModeChanged: (val) {
-                setState(() {
-                  _isPageViewMode = val;
-                });
-                ref.read(sharedPreferencesProvider).setBool('novel_reader_is_page_view_mode', val);
-              },
-              onAutoScrollSpeedChanged: (val) {
-                setState(() {
-                  _autoScrollSpeed = val;
-                });
-                if (_isAutoScrolling) {
-                  _startAutoScroll();
-                }
-              },
-              onAutoScrollingChanged: (val) {
-                setState(() {
-                  _isAutoScrolling = val;
-                  _isAutoScrollPausedByUser = false;
-                });
-                if (val) {
-                  _startAutoScroll();
-                } else {
-                  _stopAutoScroll();
-                }
-              },
-              onThemeIndexChanged: (val) {
-                setState(() {
-                  _activeThemeIndex = val;
-                });
-                ref.read(sharedPreferencesProvider).setInt('novel_reader_theme_index', val);
-              },
-              onShowTocDrawer: _showTocDrawer,
-              onShowAnnotationsSheet: () {
-                ReaderAnnotationsSheet.show(
-                  context: context,
-                  ref: ref,
-                  bookId: widget.bookId,
-                  chapterIndex: state.currentChapter?.chapterIndex ?? 1,
-                  content: content,
-                  onUpdate: () => setState(() {}),
-                );
-              },
-            ),
-          ] else ...[
-            Positioned(
-              bottom: 24,
-              right: 20,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: themeText.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: themeText.withOpacity(0.12), width: 0.8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildDockButton(
-                          icon: Icons.format_list_bulleted_rounded,
-                          tooltip: '章节目录',
-                          onTap: _showTocDrawer,
-                          themeText: themeText,
+                          ),
                         ),
-                        Container(
-                          width: 1,
-                          height: 14,
-                          color: themeText.withOpacity(0.12),
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                        ),
-                        _buildDockButton(
-                          icon: Icons.border_color_rounded,
-                          tooltip: '划线想法',
-                          onTap: () {
-                            ReaderAnnotationsSheet.show(
-                              context: context,
-                              ref: ref,
-                              bookId: widget.bookId,
-                              chapterIndex: state.currentChapter?.chapterIndex ?? 1,
-                              content: content,
-                              onUpdate: () => setState(() {}),
-                            );
-                          },
-                          themeText: themeText,
-                        ),
-                        Container(
-                          width: 1,
-                          height: 14,
-                          color: themeText.withOpacity(0.12),
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                        ),
-                        _buildDockButton(
-                          icon: Icons.settings_rounded,
-                          tooltip: '阅读设置',
-                          onTap: () {
-                            setState(() {
-                              _showControlOverlay = true;
-                            });
-                          },
-                          themeText: themeText,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
+
+          if (_showControlOverlay) ...[
+            _buildHeaderOverlay(themeText),
+            _buildBottomNavigationBar(themeText, state),
+            if (_showSettingsPanel)
+              ReaderSettingsPanel(
+                bottomOffset: 64.0 + MediaQuery.of(context).padding.bottom,
+                state: state,
+                fontSize: _fontSize,
+                lineHeight: _lineHeight,
+                isSerif: _isSerif,
+                dimmerOpacity: _dimmerOpacity,
+                isPageViewMode: _isPageViewMode,
+                autoScrollSpeed: _autoScrollSpeed,
+                isAutoScrolling: _isAutoScrolling,
+                activeThemeIndex: _activeThemeIndex,
+                themes: _themes,
+                themeBg: themeBg,
+                themeText: themeText,
+                onFontSizeChanged: (val) {
+                  setState(() {
+                    _fontSize = val;
+                  });
+                  ref.read(sharedPreferencesProvider).setDouble('novel_reader_font_size', val);
+                },
+                onLineHeightChanged: (val) {
+                  setState(() {
+                    _lineHeight = val;
+                  });
+                  ref.read(sharedPreferencesProvider).setDouble('novel_reader_line_height', val);
+                },
+                onSerifChanged: (val) {
+                  setState(() {
+                    _isSerif = val;
+                  });
+                  ref.read(sharedPreferencesProvider).setBool('novel_reader_is_serif', val);
+                },
+                onDimmerOpacityChanged: (val) {
+                  setState(() {
+                    _dimmerOpacity = val;
+                  });
+                  ref.read(sharedPreferencesProvider).setDouble('novel_reader_dimmer_opacity', val);
+                },
+                onPageViewModeChanged: (val) {
+                  setState(() {
+                    _isPageViewMode = val;
+                  });
+                  ref.read(sharedPreferencesProvider).setBool('novel_reader_is_page_view_mode', val);
+                },
+                onAutoScrollSpeedChanged: (val) {
+                  setState(() {
+                    _autoScrollSpeed = val;
+                  });
+                  if (_isAutoScrolling) {
+                    _startAutoScroll();
+                  }
+                },
+                onAutoScrollingChanged: (val) {
+                  setState(() {
+                    _isAutoScrolling = val;
+                    _isAutoScrollPausedByUser = false;
+                  });
+                  if (val) {
+                    _startAutoScroll();
+                  } else {
+                    _stopAutoScroll();
+                  }
+                },
+                onThemeIndexChanged: (val) {
+                  setState(() {
+                    _activeThemeIndex = val;
+                  });
+                  ref.read(sharedPreferencesProvider).setInt('novel_reader_theme_index', val);
+                },
+                onShowTocDrawer: _showTocDrawer,
+                onShowAnnotationsSheet: () {
+                  ReaderAnnotationsSheet.show(
+                    context: context,
+                    ref: ref,
+                    bookId: widget.bookId,
+                    chapterIndex: state.currentChapter?.chapterIndex ?? 1,
+                    content: content,
+                    onUpdate: () => setState(() {}),
+                  );
+                },
+              ),
           ],
 
           if (_failoverMessage != null)
@@ -1109,6 +1414,182 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
             ),
         ],
       ),
+    );
+  }
+}
+
+class _SourceSwapperContent extends ConsumerStatefulWidget {
+  final Book book;
+  final bool inAbyss;
+  final Function(String sourceId, String bookUrl) onChangeSource;
+
+  const _SourceSwapperContent({
+    required this.book,
+    required this.inAbyss,
+    required this.onChangeSource,
+  });
+
+  @override
+  ConsumerState<_SourceSwapperContent> createState() => _SourceSwapperContentState();
+}
+
+class _SourceSwapperContentState extends ConsumerState<_SourceSwapperContent> {
+  List<Book> _sources = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSources();
+  }
+
+  Future<void> _fetchSources() async {
+    try {
+      final results = await ref.read(novelApiClientProvider).searchNovels(
+        widget.book.title,
+        widget.inAbyss,
+      );
+      if (mounted) {
+        setState(() {
+          _sources = results.where((b) => b.title.trim() == widget.book.title.trim()).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final surfaceColor = theme.colorScheme.surface;
+    final onSurfaceColor = theme.colorScheme.onSurface;
+    final primaryColor = theme.colorScheme.primary;
+
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 5,
+          decoration: BoxDecoration(
+            color: onSurfaceColor.withOpacity(0.24),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(Icons.swap_horiz_rounded, color: primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              '为《${widget.book.title}》更换书源',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: onSurfaceColor),
+            ),
+          ],
+        ),
+        Divider(height: 24, color: onSurfaceColor.withOpacity(0.1)),
+        Expanded(
+          child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(color: primaryColor),
+                )
+              : _error != null
+                  ? Center(
+                      child: Text(
+                        '搜索失败: $_error',
+                        style: TextStyle(color: onSurfaceColor.withOpacity(0.38)),
+                      ),
+                    )
+                  : _sources.isEmpty
+                      ? Center(
+                          child: Text(
+                            '未找到其他可用书源',
+                            style: TextStyle(color: onSurfaceColor.withOpacity(0.38)),
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _sources.length,
+                          itemBuilder: (context, idx) {
+                            final candidate = _sources[idx];
+                            final sourceName = candidate.sourceName ?? '未知书源';
+                            final isCurrent = candidate.sourceId == widget.book.sourceId ||
+                                candidate.sourceId == widget.book.currentSourceId;
+
+                            return Card(
+                              color: onSurfaceColor.withOpacity(0.04),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: isCurrent ? primaryColor.withOpacity(0.5) : onSurfaceColor.withOpacity(0.1),
+                                  width: isCurrent ? 1.5 : 1,
+                                ),
+                              ),
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                title: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        sourceName,
+                                        style: TextStyle(
+                                          color: onSurfaceColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isCurrent)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: primaryColor.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '当前使用',
+                                          style: TextStyle(
+                                            color: primaryColor,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '作者: ${candidate.author}   |   来源: ${candidate.bookUrl ?? "未知"}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: onSurfaceColor.withOpacity(0.4), fontSize: 11),
+                                  ),
+                                ),
+                                trailing: isCurrent
+                                    ? Icon(Icons.check_circle_rounded, color: primaryColor)
+                                    : Icon(Icons.arrow_forward_ios_rounded, color: onSurfaceColor.withOpacity(0.24), size: 14),
+                                onTap: isCurrent
+                                    ? null
+                                    : () {
+                                        widget.onChangeSource(
+                                          candidate.sourceId ?? '',
+                                          candidate.bookUrl ?? '',
+                                        );
+                                      },
+                              ),
+                            );
+                          },
+                        ),
+        ),
+      ],
     );
   }
 }

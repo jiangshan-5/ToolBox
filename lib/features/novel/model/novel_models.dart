@@ -175,6 +175,7 @@ class ReadingProgress {
   final int lastReadCharOffset;
   final String updatedAt;
   final Book? book;
+  final bool inBookshelf;
 
   ReadingProgress({
     required this.id,
@@ -184,6 +185,7 @@ class ReadingProgress {
     required this.lastReadCharOffset,
     required this.updatedAt,
     this.book,
+    this.inBookshelf = true,
   });
 
   factory ReadingProgress.fromJson(Map<String, dynamic> json) {
@@ -195,6 +197,7 @@ class ReadingProgress {
       lastReadCharOffset: json['last_read_char_offset'] ?? 0,
       updatedAt: json['updated_at'] ?? '',
       book: json['book'] != null ? Book.fromJson(json['book']) : null,
+      inBookshelf: json['in_bookshelf'] ?? json['inBookshelf'] ?? true,
     );
   }
 
@@ -207,6 +210,7 @@ class ReadingProgress {
       'last_read_char_offset': lastReadCharOffset,
       'updated_at': updatedAt,
       'book': book?.toJson(),
+      'in_bookshelf': inBookshelf,
     };
   }
 
@@ -215,6 +219,7 @@ class ReadingProgress {
     int? lastReadCharOffset,
     String? updatedAt,
     Book? book,
+    bool? inBookshelf,
   }) {
     return ReadingProgress(
       id: id,
@@ -224,6 +229,7 @@ class ReadingProgress {
       lastReadCharOffset: lastReadCharOffset ?? this.lastReadCharOffset,
       updatedAt: updatedAt ?? this.updatedAt,
       book: book ?? this.book,
+      inBookshelf: inBookshelf ?? this.inBookshelf,
     );
   }
 }

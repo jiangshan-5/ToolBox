@@ -61,10 +61,10 @@ class DashboardNavBar extends StatelessWidget {
                   curve: Curves.easeOutBack,
                   alignment: Alignment(
                     currentIndex == 0
-                        ? -0.66
+                        ? -0.926
                         : currentIndex == 1
                             ? 0.0
-                            : 0.66,
+                            : 0.926,
                     0.0,
                   ),
                   child: FractionallySizedBox(

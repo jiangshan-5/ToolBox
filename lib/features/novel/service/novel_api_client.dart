@@ -143,7 +143,7 @@ class NovelApiClient {
       bookUrl: bookUrl,
       sourceId: sourceId,
     );
-    return await LocalBookshelfDb.instance.addToBookshelf(book);
+    return await LocalBookshelfDb.instance.addToBookshelf(book, inBookshelf: !isTrial);
   }
 
   /// 4. Get bookshelf items (Syncs from server and returns merged bookshelf list)
@@ -211,6 +211,7 @@ class NovelApiClient {
       }
     } catch (e) {
       debugPrint("getBookChapters error: $e");
+      rethrow;
     }
     return [];
   }
@@ -250,6 +251,7 @@ class NovelApiClient {
       }
     } catch (e) {
       debugPrint("getChapterContent error: $e");
+      rethrow;
     }
     return chapter;
   }
@@ -284,6 +286,7 @@ class NovelApiClient {
               'chapter_index': chapterIndex,
               'char_offset': charOffset,
               'is_abyss': book.isAbyss,
+              'in_bookshelf': localProgress.inBookshelf,
             },
           );
         } catch (e) {
@@ -305,6 +308,10 @@ class NovelApiClient {
   Future<void> removeFromBookshelf(List<String> bookIds) async {
     await _initLocalDbs();
     await LocalBookshelfDb.instance.removeFromBookshelf(bookIds);
+    await _apiClient.instance.post(
+      '/novel/bookshelf/delete',
+      data: {'book_ids': bookIds},
+    );
   }
 
   /// 10. Direct import book sources from URL or JSON data
@@ -413,6 +420,26 @@ class NovelApiClient {
       bookUrl: 'local://mock_file',
       sourceId: 'local',
     );
+  }
+
+  /// 13. Fetch Explore dynamic Rankings from Server
+  Future<Map<String, List<Book>>> getExploreRankings() async {
+    try {
+      final response = await _apiClient.instance.get('/novel/explore/rankings');
+      if (response.statusCode == 200 && response.data is Map) {
+        final Map<String, dynamic> data = response.data;
+        final Map<String, List<Book>> result = {};
+        data.forEach((key, value) {
+          if (value is List) {
+            result[key] = value.map((b) => Book.fromJson(b)).toList();
+          }
+        });
+        return result;
+      }
+    } catch (e) {
+      debugPrint("getExploreRankings API error: $e");
+    }
+    return {};
   }
 }
 
