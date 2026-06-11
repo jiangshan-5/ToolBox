@@ -10,10 +10,10 @@ import '../../features/dashboard/provider/analytics_provider.dart';
 import 'deferred_page.dart';
 import '../../features/randomizer/view/randomizer_screen.dart';
 import '../../features/ai/view/ai_text_processor_screen.dart';
-import '../../features/utilities/view/word_counter_screen.dart';
-import '../../features/utilities/view/markdown_editor_screen.dart';
-import '../../features/utilities/view/led_banner_screen.dart';
-import '../../features/utilities/view/dev_encoder_screen.dart';
+import '../../features/word_counter/view/word_counter_screen.dart';
+import '../../features/markdown_editor/view/markdown_editor_screen.dart';
+import '../../features/led_banner/view/led_banner_screen.dart';
+import '../../features/dev_encoder/view/dev_encoder_screen.dart';
 
 class PipelineAutomationPlayerScreen extends ConsumerStatefulWidget {
   final List<String> steps;

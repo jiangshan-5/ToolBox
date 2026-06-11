@@ -5,16 +5,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 
 import 'dart:math';
+import 'dart:convert';
 
 import 'package:just_audio/just_audio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../../features/dashboard/provider/tools_provider.dart';
+import '../../../../core/storage/local_storage.dart';
 
 import 'widgets/noise_breathing_bubble.dart';
 import 'widgets/noise_visualizer.dart';
 import 'widgets/noise_sound_card.dart';
+import 'widgets/noise_local_sound_card.dart';
+import 'widgets/noise_default_sounds.dart';
+import 'widgets/noise_breathing_configs.dart';
 
 class WhiteNoiseScreen extends ConsumerStatefulWidget {
   const WhiteNoiseScreen({super.key});
@@ -35,59 +42,20 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   // Screen Tabs: 'breathing' vs 'mixer'
   String _activeTab = 'breathing';
 
+  // Scroll controller and pagination for lazy loading
+  late final ScrollController _scrollController = ScrollController();
+  int _displayedCount = 15;
+  double _systemVolume = 0.5;
+  bool _isDraggingVolume = false;
+  Timer? _dragEndTimer;
+
   // ===========================================================================
   // 1. SOUNDSCAPE MIXER STATE
   // ===========================================================================
-  List<Map<String, dynamic>> _sounds = [
-    {
-      'id': 'rain',
-      'icon': Icons.umbrella_rounded,
-      'name': '深山秋雨',
-      'desc': '幽静山谷中的淅沥雨声，抚平内心焦虑。',
-      'color': Colors.blueAccent,
-      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/rain.mp3',
-    },
-    {
-      'id': 'waves',
-      'icon': Icons.waves_rounded,
-      'name': '极地海浪',
-      'desc': '远古冰川海滩上的潮汐起落，回归静止。',
-      'color': Colors.cyanAccent,
-      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/ocean.mp3',
-    },
-    {
-      'id': 'pines',
-      'icon': Icons.forest_rounded,
-      'name': '林间松涛',
-      'desc': '微风穿过广阔针叶林，带来原野芬芳。',
-      'color': Colors.greenAccent,
-      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/wind.mp3',
-    },
-    {
-      'id': 'fire',
-      'icon': Icons.local_fire_department_rounded,
-      'name': '壁炉篝火',
-      'desc': '深夜小木屋里温暖柴火的噼啪爆裂碎响。',
-      'color': Colors.orangeAccent,
-      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/fireplace.mp3',
-    },
-    {
-      'id': 'brook',
-      'icon': Icons.water_rounded,
-      'name': '山间溪流',
-      'desc': '高山融雪化作林间欢快奔腾的潺潺清泉。',
-      'color': Colors.tealAccent,
-      'url': 'https://cdn.jsdelivr.net/gh/karthiknvd/noctune@master/sounds/river.mp3',
-    },
-    {
-      'id': 'insects',
-      'icon': Icons.audiotrack_rounded,
-      'name': '夏夜虫鸣',
-      'desc': '繁星点点的仲夏夜里草丛间的自然协奏曲。',
-      'color': Colors.amberAccent,
-      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/night.mp3',
-    },
-  ];
+  // Separate list states
+  List<Map<String, dynamic>> _remoteSounds = [];
+  List<Map<String, dynamic>> _localSounds = [];
+  bool _isLazyLoading = false;
 
   // Track volumes (0.0 to 1.0) and whether channel is toggled ON
   final Map<String, double> _channelVolumes = {};
@@ -119,30 +87,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
 
   // Cumulative parameters
   int _completedCycles = 0;
-  final Map<String, Map<String, dynamic>> _breathingConfigs = {
-    '4-7-8': {
-      'name': '4-7-8 呼吸减压法',
-      'desc': '4秒吸气，7秒屏息，8秒呼气。专为排解焦虑、平心静气及深度助眠研发。',
-      'phases': ['inhale', 'hold', 'exhale'],
-      'durations': {'inhale': 4, 'hold': 7, 'exhale': 8},
-      'glow': Colors.purpleAccent,
-    },
-    'box': {
-      'name': '等时盒式呼吸法',
-      'desc': '吸气、屏息、呼气、呼后屏息均等时（各4秒）。特种部队压力重置极简训练。',
-      'phases': ['inhale', 'hold', 'exhale', 'hold2'],
-      'durations': {'inhale': 4, 'hold': 4, 'exhale': 4, 'hold2': 4},
-      'glow': Colors.tealAccent,
-    },
-    'equal': {
-      'name': '5-5 均衡平静法',
-      'desc': '5秒吸气，5秒呼气。帮助均匀调息，减缓心率，促使大脑迅速恢复清明。',
-      'phases': ['inhale', 'exhale'],
-      'durations': {'inhale': 5, 'exhale': 5},
-      'glow': Colors.cyanAccent,
-    },
-  };
-
   // ===========================================================================
   // 3. SLEEP TIMER STATE
   // ===========================================================================
@@ -229,7 +173,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           _channelVolumes[id] = 0.5;
           _channelActive[id] = false;
         } else {
-          final existingSound = _sounds.firstWhere((s) => s['id'] == id, orElse: () => {});
+          final existingSound = _remoteSounds.firstWhere((s) => s['id'] == id, orElse: () => {});
           if (existingSound.isNotEmpty && existingSound['url'] != fullUrl) {
             final player = _players[id];
             if (player != null) {
@@ -241,7 +185,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
 
       final List<String> toRemove = [];
       for (var id in _channelVolumes.keys.toList()) {
-        if (!activeIds.contains(id)) {
+        if (!activeIds.contains(id) && !_localSounds.any((s) => s['id'] == id)) {
           final player = _players.remove(id);
           if (player != null) {
             player.stop().catchError((_) => null);
@@ -257,8 +201,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
 
       if (mounted) {
         setState(() {
-          _sounds.clear();
-          _sounds.addAll(newSounds);
+          _remoteSounds = newSounds;
         });
       }
     } catch (e) {
@@ -269,27 +212,352 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   @override
   void initState() {
     super.initState();
+    final apiClient = ref.read(apiClientProvider);
+    final apiBaseUrl = apiClient.instance.options.baseUrl;
+
+    // Copy default sounds to remote sounds initially, resolving the backend URLs
+    _remoteSounds = defaultWhiteNoiseSounds.map((sound) {
+      final String originalUrl = sound['url'] as String;
+      final String fullUrl = _resolveAudioUrl(originalUrl, apiBaseUrl);
+      return {
+        ...sound,
+        'url': fullUrl,
+      };
+    }).toList();
+
+    _displayedCount = 10; // Set initial paging count to 10 for true lazy loading
+
     // Initialize mixer volume map
-    for (var sound in _sounds) {
+    for (var sound in _remoteSounds) {
       final id = sound['id'] as String;
       _channelVolumes[id] = 0.5; // default 50%
       _channelActive[id] = false;
     }
+    _loadLocalTracks();
     _loadRemoteTracks();
+    _scrollController.addListener(_scrollListener);
+    _initSystemVolume();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
     _visualizerTimer?.cancel();
     _breathingTimer?.cancel();
     _bubbleSmoothTimer?.cancel();
     _sleepTimer?.cancel();
+    _dragEndTimer?.cancel();
+    FlutterVolumeController.removeListener();
     // Teardown all active players to prevent audio leaks
     for (var player in _players.values) {
       player.stop().catchError((_) => null);
       player.dispose().catchError((_) => null);
     }
     super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_activeTab != 'mixer') return;
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLazyLoading && _displayedCount < _remoteSounds.length) {
+        setState(() {
+          _isLazyLoading = true;
+        });
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) {
+            setState(() {
+              _displayedCount = min(_displayedCount + 10, _remoteSounds.length);
+              _isLazyLoading = false;
+            });
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _initSystemVolume() async {
+    try {
+      await FlutterVolumeController.setAndroidAudioStream(stream: AudioStream.music);
+      final vol = await FlutterVolumeController.getVolume(stream: AudioStream.music);
+      if (vol != null && mounted) {
+        setState(() {
+          _systemVolume = vol;
+          for (var key in _channelVolumes.keys) {
+            _channelVolumes[key] = vol;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error initializing system volume: $e");
+    }
+
+    FlutterVolumeController.addListener((volume) {
+      if (mounted && !_isDraggingVolume) {
+        setState(() {
+          _systemVolume = volume;
+          for (var key in _channelVolumes.keys) {
+            _channelVolumes[key] = volume;
+          }
+        });
+      }
+    });
+  }
+
+  Future<void> _importLocalAudioSource() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+        allowMultiple: false,
+      );
+      if (result == null || result.files.single.path == null) {
+        return;
+      }
+      final filePath = result.files.single.path!;
+      final originalFileName = result.files.single.name;
+      
+      String defaultName = originalFileName;
+      final dotIndex = defaultName.lastIndexOf('.');
+      if (dotIndex != -1) {
+        defaultName = defaultName.substring(0, dotIndex);
+      }
+      
+      if (!mounted) return;
+      
+      final String? customName = await _showImportNameDialog(defaultName);
+      if (customName == null || customName.trim().isEmpty) {
+        return;
+      }
+      
+      final String finalName = customName.trim();
+      final String newId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+      
+      final newTrack = {
+        'id': newId,
+        'icon': Icons.audiotrack_rounded,
+        'name': finalName,
+        'desc': '本地导入: $originalFileName',
+        'color': Colors.purpleAccent,
+        'url': filePath,
+        'is_local': true,
+      };
+      
+      setState(() {
+        _localSounds.insert(0, newTrack);
+        _channelVolumes[newId] = 0.5;
+        _channelActive[newId] = false;
+      });
+      
+      await _saveLocalTracks();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎵 成功导入本地音源: $finalName'),
+            backgroundColor: Colors.purple.withOpacity(0.8),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error picking/importing file: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ 导入失败: $e'),
+            backgroundColor: Colors.redAccent.withOpacity(0.8),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _showImportNameDialog(String defaultName) async {
+    final TextEditingController textController = TextEditingController(text: defaultName);
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF0F0B24) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: isDark ? Colors.purpleAccent.withOpacity(0.2) : Colors.black12,
+              width: 1,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.drive_file_rename_outline_rounded, color: isDark ? Colors.purpleAccent : Colors.purple),
+              const SizedBox(width: 10),
+              Text(
+                '命名您的本地音源',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '请为导入的音频设置一个便于识别的名字：',
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: textController,
+                autofocus: true,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: '输入音源名称',
+                  hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black38),
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white.withOpacity(0.1) : Colors.black12,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.purpleAccent : Colors.purple,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: Text(
+                '取消',
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, textController.text);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? Colors.purpleAccent.withOpacity(0.2) : Colors.purple.withOpacity(0.1),
+                foregroundColor: isDark ? Colors.purpleAccent : Colors.purple,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteLocalTrack(String id) async {
+    final track = _localSounds.firstWhere((s) => s['id'] == id, orElse: () => {});
+    if (track.isEmpty) return;
+
+    final player = _players.remove(id);
+    if (player != null) {
+      await player.stop().catchError((_) => null);
+      await player.dispose().catchError((_) => null);
+    }
+
+    setState(() {
+      _localSounds.removeWhere((s) => s['id'] == id);
+      _channelActive.remove(id);
+      _channelVolumes.remove(id);
+      
+      final hasActive = _channelActive.values.any((isActive) => isActive);
+      if (!hasActive) {
+        _isMixerPlaying = false;
+        _visualizerTimer?.cancel();
+      }
+    });
+
+    await _saveLocalTracks();
+    _syncAudioPlayback();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🗑️ 已删除本地音源: ${track['name']}'),
+          backgroundColor: Colors.redAccent.withOpacity(0.8),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveLocalTracks() async {
+    try {
+      final List<String> listJson = _localSounds.map((t) {
+        return jsonEncode({
+          'id': t['id'],
+          'name': t['name'],
+          'desc': t['desc'],
+          'url': t['url'],
+          'is_local': true,
+        });
+      }).toList();
+      await ref.read(localStorageServiceProvider).setStringList('user_imported_white_noise_tracks', listJson);
+    } catch (e) {
+      debugPrint("Error saving local tracks: $e");
+    }
+  }
+
+  void _loadLocalTracks() {
+    try {
+      final listJson = ref.read(localStorageServiceProvider).getStringList('user_imported_white_noise_tracks');
+      if (listJson != null && listJson.isNotEmpty) {
+        final List<Map<String, dynamic>> loaded = [];
+        for (var str in listJson) {
+          try {
+            final map = jsonDecode(str) as Map<String, dynamic>;
+            loaded.add({
+              'id': map['id'],
+              'icon': Icons.audiotrack_rounded,
+              'name': map['name'],
+              'desc': map['desc'],
+              'color': Colors.purpleAccent,
+              'url': map['url'],
+              'is_local': true,
+            });
+          } catch (e) {
+            debugPrint("Error decoding local track: $e");
+          }
+        }
+        if (loaded.isNotEmpty) {
+          setState(() {
+            _localSounds = loaded;
+            
+            for (var track in loaded) {
+              final id = track['id'];
+              if (!_channelVolumes.containsKey(id)) {
+                _channelVolumes[id] = 0.5;
+                _channelActive[id] = false;
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading local tracks: $e");
+    }
   }
 
   // ===========================================================================
@@ -334,7 +602,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   }
 
   void _syncAudioPlayback() {
-    for (var sound in _sounds) {
+    final allSounds = [..._localSounds, ..._remoteSounds];
+    for (var sound in allSounds) {
       final id = sound['id'] as String;
       final url = sound['url'] as String;
       final isActive = _channelActive[id] == true;
@@ -345,14 +614,24 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           player = AudioPlayer();
           _players[id] = player;
           player.setLoopMode(LoopMode.one).catchError((_) => null);
-          player.setVolume(_channelVolumes[id] ?? 0.5).catchError((_) => null);
-          player.setUrl(url).then((_) {
+          player.setVolume(1.0).catchError((_) => null);
+          
+          Future<void> loadFuture;
+          if (sound['is_local'] == true) {
+            loadFuture = player.setFilePath(url);
+          } else {
+            loadFuture = player.setUrl(url);
+          }
+          
+          loadFuture.then((_) {
             if (_isMixerPlaying && (_channelActive[id] == true)) {
               _players[id]?.play().catchError((_) => null);
             }
-          }).catchError((_) => null);
+          }).catchError((e) {
+            debugPrint("Error loading audio $id: $e");
+          });
         } else {
-          player.setVolume(_channelVolumes[id] ?? 0.5).catchError((_) => null);
+          player.setVolume(1.0).catchError((_) => null);
           if (_isMixerPlaying) {
             if (!player.playing) {
               player.play().catchError((_) => null);
@@ -415,7 +694,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       if (_isMixerPlaying) {
         final hasActive = _channelActive.values.any((isActive) => isActive);
         if (!hasActive) {
-          _channelActive[_sounds[0]['id']] = true;
+          final firstId = _remoteSounds.isNotEmpty ? _remoteSounds[0]['id'] : defaultWhiteNoiseSounds[0]['id'];
+          _channelActive[firstId] = true;
         }
         _startVisualizerAnimation();
         _logMeditationTelemetry('mixer_start', {
@@ -461,7 +741,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       setState(() {
         double totalVolumeWeight = 0.0;
         int activeCount = 0;
-        for (var sound in _sounds) {
+        final allSounds = [..._localSounds, ..._remoteSounds];
+        for (var sound in allSounds) {
           if (_channelActive[sound['id']] == true) {
             totalVolumeWeight += _channelVolumes[sound['id']] ?? 0.5;
             activeCount++;
@@ -491,7 +772,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
 
   void _startBreathingCoach() {
     _stopBreathingCoach();
-    final config = _breathingConfigs[_activeBreathingMode]!;
+    final config = breathingConfigs[_activeBreathingMode]!;
     final List<String> phases = config['phases'];
     final Map<String, int> durations = config['durations'];
     setState(() {
@@ -606,11 +887,37 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         title: Text(
           '律动呼吸与多声道白噪音',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16.5,
             fontWeight: FontWeight.bold,
             color: isDark ? Colors.white : Colors.black87,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: GestureDetector(
+                onTap: _importLocalAudioSource,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.purpleAccent : Colors.purple).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: (isDark ? Colors.purpleAccent : Colors.purple).withOpacity(0.4),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.add_to_photos_rounded,
+                    size: 16,
+                    color: isDark ? Colors.purpleAccent : Colors.purple,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -635,6 +942,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           ),
           SafeArea(
             child: ListView(
+              controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               children: [
@@ -771,7 +1079,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   }
 
   Widget _buildBreathingTab() {
-    final activeConfig = _breathingConfigs[_activeBreathingMode]!;
+    final activeConfig = breathingConfigs[_activeBreathingMode]!;
     final glowColor = activeConfig['glow'] as Color;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -797,7 +1105,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         ),
         const SizedBox(height: 10),
         Column(
-          children: _breathingConfigs.entries.map((entry) {
+          children: breathingConfigs.entries.map((entry) {
             final key = entry.key;
             final config = entry.value;
             final isSelected = key == _activeBreathingMode;
@@ -896,17 +1204,121 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           onToggleMixerPlay: _toggleMixerPlay,
         ),
         const SizedBox(height: 20),
+        _buildLocalSoundsSection(),
+        const SizedBox(height: 24),
+        _buildSystemSoundsSection(),
+      ],
+    );
+  }
+
+  Widget _buildLocalSoundsSection() {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '📥 我的导入 (${_localSounds.length})',
+              style: TextStyle(
+                color: isDark ? Colors.purpleAccent : primaryColor,
+                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (_localSounds.isNotEmpty)
+              Text(
+                '点击开关，点击 × 删除',
+                style: TextStyle(
+                  color: faintTextColor,
+                  fontSize: 10,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (_localSounds.isEmpty)
+          GestureDetector(
+            onTap: _importLocalAudioSource,
+            child: Container(
+              height: 76,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withOpacity(0.015)
+                    : Colors.black.withOpacity(0.015),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.purpleAccent.withOpacity(0.15)
+                      : Colors.purple.withOpacity(0.15),
+                  width: 1.2,
+                ),
+              ),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.add_to_photos_rounded,
+                      color: isDark ? Colors.purpleAccent : primaryColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '暂无导入音源，可点击此处快速导入本地音频',
+                      style: TextStyle(
+                        color: faintTextColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 96,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _localSounds.length,
+              physics: const BouncingScrollPhysics(),
+              itemBuilder: (context, index) {
+                final sound = _localSounds[index];
+                final id = sound['id'];
+                return NoiseLocalSoundCard(
+                  name: sound['name'],
+                  isActive: _channelActive[id] ?? false,
+                  themeColor: sound['color'] ?? Colors.purpleAccent,
+                  onTap: () => _toggleChannelActive(id),
+                  onDelete: () => _deleteLocalTrack(id),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSystemSoundsSection() {
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
-          '🎧 混音多声道列表 (自定义音量百分比)',
+          '🎧 预设白噪音环境音 (滑动按需加载)',
           style: TextStyle(
-            color: isDark ? Colors.white : Theme.of(context).colorScheme.secondary,
+            color: isDark ? Colors.white : secondaryColor,
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 12),
         Column(
-          children: _sounds.map((sound) {
+          children: _remoteSounds.take(_displayedCount).map((sound) {
             final id = sound['id'];
             return NoiseSoundCard(
               icon: sound['icon'],
@@ -914,21 +1326,74 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
               desc: sound['desc'],
               themeColor: sound['color'],
               isActive: _channelActive[id] ?? false,
-              volume: _channelVolumes[id] ?? 0.5,
+              volume: _systemVolume,
+              isLocal: sound['is_local'] == true,
+              onDelete: () => _deleteLocalTrack(id),
               onToggleActive: (_) => _toggleChannelActive(id),
+              onVolumeChangeStart: () {
+                _dragEndTimer?.cancel();
+                _isDraggingVolume = true;
+              },
+              onVolumeChangeEnd: (newVol) {
+                _dragEndTimer?.cancel();
+                _dragEndTimer = Timer(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    setState(() {
+                      _isDraggingVolume = false;
+                    });
+                  }
+                });
+              },
               onVolumeChanged: (newVol) {
                 setState(() {
-                  _channelVolumes[id] = newVol;
+                  _systemVolume = newVol;
+                  for (var key in _channelVolumes.keys) {
+                    _channelVolumes[key] = newVol;
+                  }
                   _isMixerPlaying = true;
                   _startVisualizerAnimation();
-                  // Dynamically set volume on active player instance
-                  _players[id]?.setVolume(newVol).catchError((_) => null);
-                  _syncAudioPlayback();
                 });
+                FlutterVolumeController.setVolume(newVol, stream: AudioStream.music).catchError((_) => null);
               },
             );
           }).toList(),
         ),
+        if (_isLazyLoading) ...[
+          const SizedBox(height: 20),
+          const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ] else if (_remoteSounds.length > _displayedCount) ...[
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              '已加载 $_displayedCount / ${_remoteSounds.length} 个环境声景 (继续下滑加载更多)',
+              style: TextStyle(
+                color: faintTextColor,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              '已显示全部 ${_remoteSounds.length} 个环境声景',
+              style: TextStyle(
+                color: faintTextColor,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

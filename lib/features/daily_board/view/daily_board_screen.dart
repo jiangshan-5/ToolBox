@@ -14,6 +14,7 @@ import 'widgets/daily_board_quote_studio.dart';
 import 'widgets/daily_board_morning_news.dart';
 import 'widgets/daily_board_trends_board.dart';
 import 'widgets/daily_board_push_controller.dart';
+import '../../../core/widgets/dynamic_background.dart';
 
 class DailyBoardScreen extends ConsumerStatefulWidget {
   const DailyBoardScreen({super.key});
@@ -24,6 +25,11 @@ class DailyBoardScreen extends ConsumerStatefulWidget {
 
 class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
     with SingleTickerProviderStateMixin {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get textColor => isDark ? Colors.white : Colors.black87;
+  Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
+  Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+
   late TabController _tabController;
 
   bool _isLoadingQuote = false;
@@ -334,24 +340,20 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF160E35), Color(0xFF2C1045)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: isDark ? const Color(0xFF2C1045) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.cyanAccent.withValues(alpha: 0.2),
+                      color: (isDark ? Colors.cyanAccent : Colors.cyan.shade600).withValues(alpha: 0.2),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: Colors.black.withValues(alpha: isDark ? 0.6 : 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                       BoxShadow(
-                        color: Colors.cyanAccent.withValues(alpha: 0.15),
+                        color: (isDark ? Colors.cyanAccent : Colors.cyan.shade600).withValues(alpha: 0.15),
                         blurRadius: 30,
                         offset: const Offset(0, 0),
                       ),
@@ -363,25 +365,25 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.notifications_active_rounded,
-                            color: Colors.cyanAccent,
+                            color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: textColor,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.close_rounded,
-                            color: Colors.white38,
+                            color: subTextColor.withOpacity(0.5),
                             size: 14,
                           ),
                         ],
@@ -393,10 +395,10 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "• ",
                                 style: TextStyle(
-                                  color: Colors.cyanAccent,
+                                  color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -404,8 +406,8 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
                               Expanded(
                                 child: Text(
                                   item,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
+                                  style: TextStyle(
+                                    color: subTextColor,
                                     fontSize: 11.5,
                                     height: 1.4,
                                   ),
@@ -558,23 +560,23 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: subTextColor,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '今日时事与卡片工坊',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+            icon: Icon(Icons.refresh_rounded, color: subTextColor),
             onPressed: () {
               _fetchQuote();
               _fetchNews();
@@ -585,19 +587,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
       ),
       body: Stack(
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF090615),
-                  Color(0xFF120B24),
-                  Color(0xFF040308),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
+          const DynamicBackground(child: SizedBox.expand()),
           SafeArea(
             child: ListView(
               physics: const BouncingScrollPhysics(),
@@ -733,12 +723,12 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: Colors.cyanAccent, size: 18),
+        Icon(icon, color: isDark ? Colors.cyanAccent : Colors.cyan.shade800, size: 18),
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontSize: 15,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,

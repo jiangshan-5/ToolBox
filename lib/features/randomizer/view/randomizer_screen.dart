@@ -10,7 +10,7 @@ import '../../../core/widgets/dynamic_effects.dart';
 
 import '../../../core/widgets/dynamic_background.dart';
 
-import '../../utilities/view/led_banner_screen.dart';
+import '../../led_banner/view/led_banner_screen.dart';
 import '../provider/randomizer_provider.dart';
 import 'widgets/random_range_row.dart';
 import 'widgets/random_option_row.dart';
@@ -30,6 +30,9 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
   Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+  Color get cyanColor => isDark ? Colors.cyanAccent : Colors.cyan.shade700;
+  Color get pinkColor => isDark ? Colors.pinkAccent : Colors.pink.shade700;
+  Color get orangeColor => isDark ? Colors.orangeAccent : Colors.orange.shade800;
 
   final _addOptionController = TextEditingController();
   final _prefixController = TextEditingController(text: 'ID-');
@@ -172,19 +175,19 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
         'title': '区间随机',
         'mode': RandomizerMode.number,
         'icon': Icons.tune_rounded,
-        'color': Colors.cyanAccent,
+        'color': isDark ? Colors.cyanAccent : Colors.cyan.shade700,
       },
       {
         'title': '权重决策',
         'mode': RandomizerMode.list,
         'icon': Icons.analytics_outlined,
-        'color': Colors.pinkAccent,
+        'color': isDark ? Colors.pinkAccent : Colors.pink.shade700,
       },
       {
         'title': '命运面骰',
         'mode': RandomizerMode.dice,
         'icon': Icons.casino_rounded,
-        'color': Colors.orangeAccent,
+        'color': isDark ? Colors.orangeAccent : Colors.orange.shade800,
       },
     ];
 
@@ -231,14 +234,14 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                   children: [
                     Icon(
                       m['icon'] as IconData,
-                      color: isSel ? color : Colors.white38,
+                      color: isSel ? color : (isDark ? Colors.white38 : Colors.black38),
                       size: 16,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       m['title'] as String,
                       style: TextStyle(
-                        color: isSel ? color : Colors.white60,
+                        color: isSel ? color : (isDark ? Colors.white60 : Colors.black54),
                         fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                         fontSize: 11,
                       ),
@@ -277,7 +280,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
       children: [
         // RANGES CARD
         HoverGlowCard(
-          glowColor: Colors.cyanAccent,
+          glowColor: cyanColor,
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -296,9 +299,9 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.tune_rounded,
-                      color: Colors.cyanAccent,
+                      color: cyanColor,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -343,7 +346,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
         const SizedBox(height: 16),
         // FORMATTING CARD
         HoverGlowCard(
-          glowColor: Colors.cyanAccent,
+          glowColor: cyanColor,
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -362,9 +365,9 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.style_rounded,
-                      color: Colors.cyanAccent,
+                      color: cyanColor,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -418,8 +421,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                             ),
                             Text(
                               '$padLeft 位 (如: 007)',
-                              style: const TextStyle(
-                                color: Colors.cyanAccent,
+                              style: TextStyle(
+                                color: cyanColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
@@ -428,12 +431,12 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                         ),
                         SliderTheme(
                           data: SliderThemeData(
-                            activeTrackColor: Colors.cyanAccent,
+                            activeTrackColor: cyanColor,
                             inactiveTrackColor: isDark
                                 ? Colors.white.withOpacity(0.06)
                                 : Colors.black.withOpacity(0.06),
-                            thumbColor: Colors.cyanAccent,
-                            overlayColor: Colors.cyanAccent.withOpacity(0.15),
+                            thumbColor: cyanColor,
+                            overlayColor: cyanColor.withOpacity(0.15),
                             trackHeight: 3,
                             thumbShape: const RoundSliderThumbShape(
                               enabledThumbRadius: 6,
@@ -470,8 +473,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                             ),
                             Text(
                               '$generateCount 项',
-                              style: const TextStyle(
-                                color: Colors.cyanAccent,
+                              style: TextStyle(
+                                color: cyanColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
@@ -480,12 +483,12 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                         ),
                         SliderTheme(
                           data: SliderThemeData(
-                            activeTrackColor: Colors.cyanAccent,
+                            activeTrackColor: cyanColor,
                             inactiveTrackColor: isDark
                                 ? Colors.white.withOpacity(0.06)
                                 : Colors.black.withOpacity(0.06),
-                            thumbColor: Colors.cyanAccent,
-                            overlayColor: Colors.cyanAccent.withOpacity(0.15),
+                            thumbColor: cyanColor,
+                            overlayColor: cyanColor.withOpacity(0.15),
                             trackHeight: 3,
                             thumbShape: const RoundSliderThumbShape(
                               enabledThumbRadius: 6,
@@ -518,8 +521,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                         ),
                         Switch(
                           value: allowDuplicates,
-                          activeThumbColor: Colors.cyanAccent,
-                          activeTrackColor: Colors.cyanAccent.withOpacity(0.2),
+                          activeThumbColor: cyanColor,
+                          activeTrackColor: cyanColor.withOpacity(0.2),
                           onChanged: notifier.setAllowDuplicates,
                         ),
                       ],
@@ -543,15 +546,17 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                 width: double.infinity,
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.cyanAccent, Color(0xFF00B0FF)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [Colors.cyanAccent, const Color(0xFF00B0FF)]
+                        : [cyanColor, Colors.cyan.shade900],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.cyanAccent.withOpacity(0.3),
+                      color: cyanColor.withOpacity(0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -559,18 +564,18 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                 ),
                 child: Center(
                   child: isGenerating
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                            color: Colors.black87,
+                            color: isDark ? Colors.black87 : Colors.white,
                             strokeWidth: 2.5,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           '一 键 沙 盒 区 间 抽 选',
                           style: TextStyle(
-                            color: Colors.black87,
+                            color: isDark ? Colors.black87 : Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             letterSpacing: 2.0,
@@ -590,7 +595,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
             return Column(
               children: [
                 const SizedBox(height: 24),
-                _buildResultsDisplay(formattedResults, Colors.cyanAccent),
+                _buildResultsDisplay(formattedResults, cyanColor),
               ],
             );
           },
@@ -655,8 +660,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                   style: TextStyle(color: textColor, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: '输入想要抽选的决策选项 (如: 吃火锅, 敲代码)',
-                    hintStyle: const TextStyle(
-                      color: Colors.white24,
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white24 : Colors.black26,
                       fontSize: 12,
                     ),
                     filled: true,
@@ -687,19 +692,21 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.pinkAccent, Color(0xFFFF4081)],
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [Colors.pinkAccent, const Color(0xFFFF4081)]
+                        : [pinkColor, Colors.pink.shade900],
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.pinkAccent.withOpacity(0.25),
+                      color: pinkColor.withOpacity(0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Icon(Icons.add, color: textColor, size: 20),
+                child: const Icon(Icons.add, color: Colors.white, size: 20),
               ),
             ),
           ],
@@ -728,9 +735,9 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.edit_note_rounded,
-                      color: Colors.white24,
+                      color: isDark ? Colors.white24 : Colors.black26,
                       size: 38,
                     ),
                     const SizedBox(height: 8),
@@ -743,7 +750,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               );
             }
             return HoverGlowCard(
-              glowColor: Colors.pinkAccent,
+              glowColor: pinkColor,
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -773,8 +780,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                         ),
                         Text(
                           '共 ${weightedOptions.length} 个选择',
-                          style: const TextStyle(
-                            color: Colors.pinkAccent,
+                          style: TextStyle(
+                            color: pinkColor,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -826,8 +833,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                     ),
                     Text(
                       '$drawCount 项',
-                      style: const TextStyle(
-                        color: Colors.pinkAccent,
+                      style: TextStyle(
+                        color: pinkColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -836,12 +843,12 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                 ),
                 SliderTheme(
                   data: SliderThemeData(
-                    activeTrackColor: Colors.pinkAccent,
+                    activeTrackColor: pinkColor,
                     inactiveTrackColor: isDark
                         ? Colors.white.withOpacity(0.06)
                         : Colors.black.withOpacity(0.06),
-                    thumbColor: Colors.pinkAccent,
-                    overlayColor: Colors.pinkAccent.withOpacity(0.15),
+                    thumbColor: pinkColor,
+                    overlayColor: pinkColor.withOpacity(0.15),
                     trackHeight: 3,
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 6,
@@ -864,15 +871,17 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                     width: double.infinity,
                     height: 56,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Colors.pinkAccent, Color(0xFFFF5E62)],
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [Colors.pinkAccent, const Color(0xFFFF5E62)]
+                            : [pinkColor, Colors.pink.shade900],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.pinkAccent.withOpacity(0.3),
+                          color: pinkColor.withOpacity(0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 5),
                         ),
@@ -884,14 +893,14 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
-                                color: textColor,
+                                color: isDark ? Colors.black87 : Colors.white,
                                 strokeWidth: 2.5,
                               ),
                             )
                           : Text(
                               '注 入 权 重 并 抽 选',
                               style: TextStyle(
-                                color: textColor,
+                                color: isDark ? Colors.black87 : Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                                 letterSpacing: 2.0,
@@ -913,7 +922,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
             return Column(
               children: [
                 const SizedBox(height: 24),
-                _buildResultsDisplay(drawnOptions, Colors.pinkAccent),
+                _buildResultsDisplay(drawnOptions, pinkColor),
               ],
             );
           },
@@ -928,7 +937,7 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
       key: const ValueKey('dice_sandbox'),
       children: [
         HoverGlowCard(
-          glowColor: Colors.orangeAccent,
+          glowColor: orangeColor,
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -947,9 +956,9 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.dashboard_customize_outlined,
-                      color: Colors.orangeAccent,
+                      color: orangeColor,
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -969,8 +978,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                   style: TextStyle(color: textColor, fontSize: 13),
                   decoration: InputDecoration(
                     labelText: '输入逗号分割的项 (如: 是, 否, 弃权)',
-                    labelStyle: const TextStyle(
-                      color: Colors.white24,
+                    labelStyle: TextStyle(
+                      color: isDark ? Colors.white24 : Colors.black38,
                       fontSize: 11,
                     ),
                     filled: true,
@@ -994,13 +1003,13 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                       valueListenable: _diceLabelsController,
                       builder: (context, value, child) {
                         if (value.text.trim().isNotEmpty) {
-                          return const Center(
+                          return Center(
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
                               child: Text(
                                 '💡 已成功解锁“全息自由文本骰”！将从文字列表中均等概率抛出。',
                                 style: TextStyle(
-                                  color: Colors.orangeAccent,
+                                  color: orangeColor,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1022,8 +1031,8 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                                 ),
                                 Text(
                                   '$diceSides 面骰',
-                                  style: const TextStyle(
-                                    color: Colors.orangeAccent,
+                                  style: TextStyle(
+                                    color: orangeColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -1032,12 +1041,12 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                             ),
                             SliderTheme(
                               data: SliderThemeData(
-                                activeTrackColor: Colors.orangeAccent,
+                                activeTrackColor: orangeColor,
                                 inactiveTrackColor: isDark
                                     ? Colors.white.withOpacity(0.06)
                                     : Colors.black.withOpacity(0.06),
-                                thumbColor: Colors.orangeAccent,
-                                overlayColor: Colors.orangeAccent.withOpacity(
+                                thumbColor: orangeColor,
+                                overlayColor: orangeColor.withOpacity(
                                   0.15,
                                 ),
                                 trackHeight: 3,
@@ -1128,18 +1137,18 @@ class _RandomizerScreenState extends ConsumerState<RandomizerScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.cyanAccent.withOpacity(0.08),
+                        color: cyanColor.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.cyanAccent.withOpacity(0.35)),
+                        border: Border.all(color: cyanColor.withOpacity(0.35)),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.live_tv_rounded, color: Colors.cyanAccent, size: 14),
-                          SizedBox(width: 4),
+                          Icon(Icons.live_tv_rounded, color: cyanColor, size: 14),
+                          const SizedBox(width: 4),
                           Text(
                             '投屏弹幕',
                             style: TextStyle(
-                              color: Colors.cyanAccent,
+                              color: cyanColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),

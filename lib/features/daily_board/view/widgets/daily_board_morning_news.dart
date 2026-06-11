@@ -44,29 +44,31 @@ class DailyBoardMorningNews extends StatelessWidget {
     return Icons.fiber_manual_record_rounded;
   }
 
-  Color _getNewsIconColor(String text, int index, bool isHeader) {
+  Color _getNewsIconColor(BuildContext context, String text, int index, bool isHeader) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isHeader) {
-      return Colors.amberAccent;
+      return isDark ? Colors.amberAccent : Colors.amber.shade800;
     }
     if (index == newsList.length - 1) {
-      return Colors.amberAccent;
+      return isDark ? Colors.amberAccent : Colors.amber.shade800;
     }
     if (text.contains('航天') || text.contains('计算') || text.contains('天文')) {
-      return Colors.cyanAccent;
+      return isDark ? Colors.cyanAccent : Colors.cyan.shade800;
     }
     if (text.contains('人工智能')) {
-      return Colors.pinkAccent.shade100;
+      return isDark ? Colors.pinkAccent.shade100 : Colors.pink.shade700;
     }
     if (text.contains('车') || text.contains('经济')) {
-      return Colors.greenAccent;
+      return isDark ? Colors.greenAccent : Colors.green.shade800;
     }
     if (text.contains('医学')) {
-      return Colors.orangeAccent.shade100;
+      return isDark ? Colors.orangeAccent.shade100 : Colors.orange.shade800;
     }
-    return Colors.cyanAccent;
+    return isDark ? Colors.cyanAccent : Colors.cyan.shade800;
   }
 
-  Widget _buildParsedNewsText(String itemText, TextStyle baseStyle) {
+  Widget _buildParsedNewsText(BuildContext context, String itemText, TextStyle baseStyle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final spans = <TextSpan>[];
     final regExp = RegExp(r'\*\*(.*?)\*\*|`(.*?)`');
     int start = 0;
@@ -78,9 +80,9 @@ class DailyBoardMorningNews extends StatelessWidget {
       if (match.group(1) != null) {
         spans.add(TextSpan(
           text: match.group(1),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.amberAccent,
+            color: isDark ? Colors.amberAccent : Colors.amber.shade900,
           ),
         ));
       } else if (match.group(2) != null) {
@@ -88,8 +90,8 @@ class DailyBoardMorningNews extends StatelessWidget {
           text: match.group(2),
           style: TextStyle(
             fontFamily: 'monospace',
-            backgroundColor: Colors.white.withValues(alpha: 0.12),
-            color: Colors.cyanAccent,
+            backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12),
+            color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
             fontWeight: FontWeight.w600,
           ),
         ));
@@ -110,8 +112,13 @@ class DailyBoardMorningNews extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return GlassCard(
-      borderColor: Colors.white.withValues(alpha: 0.08),
+      borderColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -127,15 +134,15 @@ class DailyBoardMorningNews extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    color: Colors.cyanAccent.withValues(alpha: 0.1),
+                    color: (isDark ? Colors.cyanAccent : Colors.cyan.shade700).withValues(alpha: 0.1),
                     border: Border.all(
-                      color: Colors.cyanAccent.withValues(alpha: 0.2),
+                      color: (isDark ? Colors.cyanAccent : Colors.cyan.shade700).withValues(alpha: 0.2),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     "📅 DAILY REPORT",
                     style: TextStyle(
-                      color: Colors.cyanAccent,
+                      color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
@@ -145,7 +152,7 @@ class DailyBoardMorningNews extends StatelessWidget {
                 Text(
                   "新闻源: 后端极速安全网关",
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: faintTextColor,
                     fontSize: 10.5,
                   ),
                 ),
@@ -153,11 +160,11 @@ class DailyBoardMorningNews extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             isLoadingNews
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24.0),
+                      padding: const EdgeInsets.symmetric(vertical: 24.0),
                       child: CircularProgressIndicator(
-                        color: Colors.cyanAccent,
+                        color: isDark ? Colors.cyanAccent : Colors.cyan.shade700,
                         strokeWidth: 2,
                       ),
                     ),
@@ -167,21 +174,21 @@ class DailyBoardMorningNews extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: newsList.length,
                     separatorBuilder: (context, index) => Divider(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
                       height: 16,
                     ),
                     itemBuilder: (context, index) {
                       final item = newsList[index];
                       final isHeader = index == 0;
                       final iconData = _getNewsIcon(item, index, isHeader);
-                      final iconColor = _getNewsIconColor(item, index, isHeader);
+                      final iconColor = _getNewsIconColor(context, item, index, isHeader);
 
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
-                          hoverColor: Colors.white.withValues(alpha: 0.04),
-                          splashColor: Colors.cyanAccent.withValues(alpha: 0.08),
+                          hoverColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
+                          splashColor: (isDark ? Colors.cyanAccent : Colors.cyan.shade700).withValues(alpha: 0.08),
                           onTap: () => onNewsTap(item),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -199,13 +206,12 @@ class DailyBoardMorningNews extends StatelessWidget {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: _buildParsedNewsText(
+                                    context,
                                     item,
                                     TextStyle(
                                       color: isHeader
-                                          ? Colors.white
-                                          : Colors.white.withValues(
-                                              alpha: 0.85,
-                                            ),
+                                          ? textColor
+                                          : subTextColor,
                                       fontSize: isHeader ? 13.5 : 12.5,
                                       fontWeight: isHeader
                                           ? FontWeight.bold

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/dynamic_effects.dart';
 import '../../provider/bmi_provider.dart';
-import '../../../utilities/provider/markdown_editor_provider.dart';
-import '../../../utilities/view/markdown_editor_screen.dart';
+import '../../../markdown_editor/provider/markdown_editor_provider.dart';
+import '../../../markdown_editor/view/markdown_editor_screen.dart';
 
 class BmiResultDashboardPanel extends ConsumerWidget {
   const BmiResultDashboardPanel({super.key});

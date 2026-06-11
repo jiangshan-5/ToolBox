@@ -36,7 +36,7 @@ class _DiceBouncingCanvasState extends State<DiceBouncingCanvas> {
               }
             },
       child: HoverGlowCard(
-        glowColor: Colors.orangeAccent,
+        glowColor: isDark ? Colors.orangeAccent : Colors.orange.shade800,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           width: double.infinity,

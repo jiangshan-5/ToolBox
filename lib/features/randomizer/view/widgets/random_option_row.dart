@@ -26,6 +26,7 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+  Color get pinkColor => isDark ? Colors.pinkAccent : Colors.pink.shade700;
 
   late final TextEditingController _textController;
   late final FocusNode _textFocus;
@@ -91,14 +92,14 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.pinkAccent.withOpacity(0.12),
+                  color: pinkColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.pinkAccent.withOpacity(0.2)),
+                  border: Border.all(color: pinkColor.withOpacity(0.2)),
                 ),
                 child: Text(
                   '中签率 🎯 ${widget.probability.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    color: Colors.pinkAccent,
+                  style: TextStyle(
+                    color: pinkColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -133,9 +134,11 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
               alignment: Alignment.centerLeft,
               widthFactor: probPercent.clamp(0.0, 1.0),
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.pinkAccent, Color(0xFFFF4081)],
+                    colors: isDark
+                        ? [Colors.pinkAccent, const Color(0xFFFF4081)]
+                        : [pinkColor, Colors.pink.shade900],
                   ),
                 ),
               ),
@@ -144,12 +147,12 @@ class _RandomOptionRowState extends State<RandomOptionRow> {
           const SizedBox(height: 2),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: Colors.pinkAccent,
+              activeTrackColor: pinkColor,
               inactiveTrackColor: isDark
                   ? Colors.white.withOpacity(0.06)
                   : Colors.black.withOpacity(0.06),
-              thumbColor: Colors.pinkAccent,
-              overlayColor: Colors.pinkAccent.withOpacity(0.15),
+              thumbColor: pinkColor,
+              overlayColor: pinkColor.withOpacity(0.15),
               trackHeight: 2,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
             ),

@@ -6,10 +6,11 @@ import 'dart:ui';
 import '../provider/ai_provider.dart';
 import '../provider/ai_config_provider.dart';
 import '../../../core/providers/global_clipboard_provider.dart';
-import '../../utilities/provider/markdown_editor_provider.dart';
-import '../../utilities/view/markdown_editor_screen.dart';
+import '../../markdown_editor/provider/markdown_editor_provider.dart';
+import '../../markdown_editor/view/markdown_editor_screen.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/pipeline_wrapper.dart';
+import '../../../core/widgets/dynamic_background.dart';
 import 'ai_config_screen.dart';
 
 class TypewriterText extends StatefulWidget {
@@ -75,11 +76,13 @@ class _TypewriterTextState extends State<TypewriterText> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
     final showCursor = _currentIndex < widget.text.length;
     return RichText(
       text: TextSpan(
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: textColor,
           fontSize: 13.5,
           height: 1.5,
         ),
@@ -110,6 +113,11 @@ class AiTextProcessorScreen extends ConsumerStatefulWidget {
 }
 
 class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get textColor => isDark ? Colors.white : Colors.black87;
+  Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
+  Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _outputController = TextEditingController();
   bool _hasPromptedConfig = false;
@@ -211,22 +219,22 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     '配置您的 AI 智能助理',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     '目前尚未检测到云端 AI 模型配置。Toolbox AI 助手现已全面接入 FreeModel AI (极速 GPT-5.5)、SiliconFlow、DeepSeek 和 Gemini 等顶尖云端模型。\n\n'
                     '只需一分钟，填入您的 API Key，即可开启真实、极速、无限制的云端模型深度创作！',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: subTextColor,
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -246,16 +254,16 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(
-                              color: Colors.white.withOpacity(0.15),
+                              color: textColor.withOpacity(0.15),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             '暂不配置',
                             style: TextStyle(
-                              color: Colors.white60,
+                              color: subTextColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -357,25 +365,25 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: subTextColor,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'AI 高级写作引擎',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.settings_rounded,
-              color: Colors.white70,
+              color: subTextColor,
               size: 20,
             ),
             onPressed: () {
@@ -386,9 +394,9 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.refresh_rounded,
-              color: Colors.white70,
+              color: subTextColor,
               size: 20,
             ),
             onPressed: () {
@@ -405,30 +413,17 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
         inputController: _textController,
         child: Stack(
           children: [
-          // Theme Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0C091F),
-                  Color(0xFF140F2D),
-                  Color(0xFF06050C),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          SafeArea(
+            const DynamicBackground(child: SizedBox.expand()),
+            SafeArea(
             child: ListView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               children: [
                 // 1. Text input area
-                const Text(
+                Text(
                   '📝 待处理文本输入箱',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -437,9 +432,9 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.02),
+                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -447,8 +442,8 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                       TextField(
                         controller: _textController,
                         maxLines: 5,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 13.5,
                           height: 1.5,
                         ),
@@ -479,16 +474,16 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.03),
+                                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.03),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.white.withOpacity(0.08),
+                                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
                                     ),
                                   ),
                                   child: Text(
                                     temp['title']!,
-                                    style: const TextStyle(
-                                      color: Colors.white54,
+                                    style: TextStyle(
+                                      color: subTextColor,
                                       fontSize: 9.5,
                                     ),
                                   ),
@@ -498,8 +493,8 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                           ),
                           Text(
                             '$_charCount 个字符',
-                            style: const TextStyle(
-                              color: Colors.white30,
+                            style: TextStyle(
+                              color: faintTextColor,
                               fontSize: 10,
                             ),
                           ),
@@ -511,10 +506,10 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                 const SizedBox(height: 20),
 
                 // 2. Action Choice Buttons
-                const Text(
+                Text(
                   '✨ 智能选择运算指令',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -545,10 +540,10 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
 
                 // 3. Conditional Target Language Selection (Only when action is translate)
                 if (_selectedAction == 'translate') ...[
-                  const Text(
+                  Text(
                     '🌏 翻译目标语言',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: subTextColor,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -560,16 +555,16 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
+                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _targetLanguage,
-                        dropdownColor: const Color(0xFF0F0C29),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        dropdownColor: isDark ? const Color(0xFF0F0C29) : Colors.white,
+                        style: TextStyle(
+                          color: textColor,
                           fontSize: 13,
                         ),
                         icon: const Icon(
@@ -579,7 +574,10 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                         items: _languages.map((lang) {
                           return DropdownMenuItem<String>(
                             value: lang['code'],
-                            child: Text(lang['name']!),
+                            child: Text(
+                              lang['name']!,
+                              style: TextStyle(color: textColor),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
@@ -668,10 +666,10 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                 const SizedBox(height: 24),
 
                 // 5. Result Display Area
-                const Text(
+                Text(
                   '💡 AI 提纯润色视窗',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -699,9 +697,9 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.02),
+                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                      border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,16 +707,16 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                         // Progressive Rollout typewriter
                         TypewriterText(text: processorState.result!),
                         const SizedBox(height: 14),
-                        const Divider(color: Colors.white10),
+                        Divider(color: isDark ? Colors.white10 : Colors.black12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               '⚡ AI 写作节点驱动',
                               style: TextStyle(
-                                color: Colors.purpleAccent.withValues(
-                                  alpha: 0.5,
-                                ),
+                                color: isDark
+                                    ? Colors.purpleAccent.withValues(alpha: 0.5)
+                                    : Colors.purple.shade700.withValues(alpha: 0.6),
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -747,9 +745,7 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                                           content: const Text(
                                             '📝 已追加至 Markdown 笔记本',
                                           ),
-                                          backgroundColor: const Color(
-                                            0xFF1E1B3A,
-                                          ),
+                                          backgroundColor: isDark ? const Color(0xFF1E1B3A) : Colors.purple.shade700,
                                           action: SnackBarAction(
                                             label: '去看看',
                                             textColor: Colors.purpleAccent,
@@ -767,18 +763,18 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                                       );
                                     } catch (_) {}
                                   },
-                                  child: const Row(
+                                  child: Row(
                                     children: [
                                       Icon(
                                         Icons.edit_note_rounded,
-                                        color: Colors.cyanAccent,
+                                        color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                         size: 14,
                                       ),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
                                         '存入笔记',
                                         style: TextStyle(
-                                          color: Colors.cyanAccent,
+                                          color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                           fontSize: 11,
                                         ),
                                       ),
@@ -795,20 +791,21 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                                       ),
                                     );
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('已复制处理后的结果'),
-                                        backgroundColor: Color(0xFF0F0C29),
+                                      SnackBar(
+                                        content: const Text('已复制处理后的结果'),
+                                        backgroundColor: isDark ? const Color(0xFF0F0C29) : Colors.purple.shade700,
+                                        duration: const Duration(seconds: 1),
                                       ),
                                     );
                                   },
-                                  child: const Row(
+                                  child: Row(
                                     children: [
                                       Icon(
                                         Icons.copy_all_rounded,
                                         color: Colors.purpleAccent,
                                         size: 14,
                                       ),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
                                         '复制结果',
                                         style: TextStyle(
@@ -830,14 +827,14 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
                   Container(
                     height: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.01),
+                      color: (isDark ? Colors.white : Colors.black).withOpacity(0.01),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.04)),
+                      border: Border.all(color: (isDark ? Colors.white : Colors.black).withOpacity(0.04)),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         '等待运算输入...',
-                        style: TextStyle(color: Colors.white24, fontSize: 12),
+                        style: TextStyle(color: faintTextColor, fontSize: 12),
                       ),
                     ),
                   ),
@@ -852,7 +849,7 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
 
   Widget _buildActionChip(String action, IconData icon, String label) {
     final isSelected = _selectedAction == action;
-    final color = isSelected ? Colors.purpleAccent : Colors.white38;
+    final color = isSelected ? Colors.purpleAccent : (isDark ? Colors.white38 : Colors.black38);
 
     return Expanded(
       child: GestureDetector(
@@ -866,12 +863,12 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
           decoration: BoxDecoration(
             color: isSelected
                 ? Colors.purpleAccent.withOpacity(0.12)
-                : Colors.white.withOpacity(0.01),
+                : (isDark ? Colors.white : Colors.black).withOpacity(0.01),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? Colors.purpleAccent.withOpacity(0.4)
-                  : Colors.white.withOpacity(0.05),
+                  : (isDark ? Colors.white : Colors.black).withOpacity(0.05),
               width: 1.2,
             ),
           ),
@@ -883,7 +880,7 @@ class _AiTextProcessorScreenState extends ConsumerState<AiTextProcessorScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white54,
+                  color: isSelected ? textColor : subTextColor,
                   fontSize: 11.5,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),

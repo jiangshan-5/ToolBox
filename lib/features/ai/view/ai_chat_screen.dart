@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:ui';
+import '../../../core/widgets/dynamic_effects.dart';
+import '../../../core/widgets/dynamic_background.dart';
 import '../provider/ai_provider.dart';
 import '../provider/ai_config_provider.dart';
-import '../../utilities/provider/markdown_editor_provider.dart';
-import '../../utilities/view/markdown_editor_screen.dart';
+import '../../markdown_editor/provider/markdown_editor_provider.dart';
+import '../../markdown_editor/view/markdown_editor_screen.dart';
 import '../../../core/widgets/glass_card.dart';
 import 'ai_config_screen.dart';
 
@@ -73,11 +75,13 @@ class _TypewriterTextState extends State<TypewriterText> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
     final showCursor = _currentIndex < widget.text.length;
     return RichText(
       text: TextSpan(
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: textColor,
           fontSize: 13.5,
           height: 1.5,
         ),
@@ -105,6 +109,11 @@ class AiChatScreen extends ConsumerStatefulWidget {
 }
 
 class _AiChatScreenState extends ConsumerState<AiChatScreen> {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get textColor => isDark ? Colors.white : Colors.black87;
+  Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
+  Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late final FocusNode _chatFocusNode;
@@ -194,25 +203,25 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: subTextColor,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'AI 智能多轮对话助理',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.settings_rounded,
-              color: Colors.white70,
+              color: subTextColor,
               size: 20,
             ),
             onPressed: () {
@@ -223,18 +232,18 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.cleaning_services_rounded,
-              color: Colors.white70,
+              color: subTextColor,
               size: 20,
             ),
             onPressed: () {
               ref.read(aiChatProvider.notifier).clearHistory();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('对话上下文已安全清理'),
-                  backgroundColor: Color(0xFF0F0C29),
-                  duration: Duration(seconds: 1),
+                SnackBar(
+                  content: const Text('对话上下文已安全清理'),
+                  backgroundColor: isDark ? const Color(0xFF0F0C29) : Colors.purple.shade700,
+                  duration: const Duration(seconds: 1),
                 ),
               );
             },
@@ -244,20 +253,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       ),
       body: Stack(
         children: [
-          // Background Gradient matching Toolbox standard
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0C091F),
-                  Color(0xFF140F2D),
-                  Color(0xFF06050C),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
+          const DynamicBackground(child: SizedBox.expand()),
           SafeArea(
             child: Column(
               children: [
@@ -278,19 +274,19 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       color: Colors.purpleAccent.withOpacity(0.15),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.tips_and_updates_rounded,
                         color: Colors.purpleAccent,
                         size: 18,
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           '💡 AI 引擎已经与云端大语言模型完美通联，支持完整的上下文连续多轮对话！',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: subTextColor,
                             fontSize: 11.5,
                             height: 1.4,
                           ),
@@ -340,13 +336,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              SizedBox(
+                            children: [
+                              const SizedBox(
                                 width: 12,
                                 height: 12,
                                 child: CircularProgressIndicator(
@@ -354,11 +350,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                                   color: Colors.purpleAccent,
                                 ),
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 'AI 助手正在精准计算中...',
                                 style: TextStyle(
-                                  color: Colors.white38,
+                                  color: faintTextColor,
                                   fontSize: 11,
                                 ),
                               ),
@@ -412,8 +408,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   const SizedBox(width: 6),
                   Text(
                     preset['label']!,
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: subTextColor,
                       fontSize: 11.5,
                       fontWeight: FontWeight.bold,
                     ),
@@ -448,21 +444,21 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Toolbox AI 智能助手',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: textColor,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               '你可以问我任何问题，或者点选下方快捷场景，立即开启高频多轮对话！',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.white38,
+                color: faintTextColor,
                 height: 1.5,
               ),
             ),
@@ -477,11 +473,21 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         ? CrossAxisAlignment.end
         : CrossAxisAlignment.start;
     final color = isUser
-        ? Colors.purpleAccent.withOpacity(0.2)
-        : Colors.white.withOpacity(0.03);
+        ? (isDark
+            ? Colors.purpleAccent.withOpacity(0.2)
+            : Colors.purple.shade50)
+        : (isDark
+            ? Colors.white.withOpacity(0.03)
+            : Colors.black.withOpacity(0.03));
     final border = isUser
-        ? Border.all(color: Colors.purpleAccent.withOpacity(0.25))
-        : Border.all(color: Colors.white.withOpacity(0.06));
+        ? Border.all(
+            color: isDark
+                ? Colors.purpleAccent.withOpacity(0.25)
+                : Colors.purple.shade200)
+        : Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.06)
+                : Colors.black.withOpacity(0.06));
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -549,9 +555,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                             Text(
                               '⚡ ${msg.provider ?? '云端算力'} · ${msg.usageTokens ?? 0} Tokens',
                               style: TextStyle(
-                                color: Colors.purpleAccent.withValues(
-                                  alpha: 0.5,
-                                ),
+                                color: isDark
+                                    ? Colors.purpleAccent.withValues(alpha: 0.5)
+                                    : Colors.purple.shade700.withValues(alpha: 0.6),
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -600,18 +606,18 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                                       );
                                     } catch (_) {}
                                   },
-                                  child: const Row(
+                                  child: Row(
                                     children: [
                                       Icon(
                                         Icons.edit_note_rounded,
-                                        color: Colors.cyanAccent,
+                                        color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                         size: 11,
                                       ),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
                                         '存入笔记',
                                         style: TextStyle(
-                                          color: Colors.cyanAccent,
+                                          color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                           fontSize: 10,
                                         ),
                                       ),
@@ -701,8 +707,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           widgets.add(
             Text(
               plainText,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 13.5,
                 height: 1.5,
               ),
@@ -788,8 +794,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         widgets.add(
           Text(
             remainingText,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontSize: 13.5,
               height: 1.5,
             ),
@@ -802,8 +808,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       widgets.add(
         Text(
           content,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontSize: 13.5,
             height: 1.5,
           ),
@@ -818,17 +824,17 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20, top: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C091F).withOpacity(0.5),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.04))),
+        color: (isDark ? const Color(0xFF0C091F) : Colors.white).withOpacity(0.5),
+        border: Border(top: BorderSide(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04))),
       ),
       child: Row(
         children: [
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.02),
+                color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08)),
               ),
               child: Row(
                 children: [
@@ -839,14 +845,14 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       focusNode: _chatFocusNode,
                       enabled: !isLoading,
                       maxLines: null,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontSize: 13.5,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '请输入消息，与 AI 进行多轮对话...',
                         hintStyle: TextStyle(
-                          color: Colors.white24,
+                          color: isDark ? Colors.white24 : Colors.black38,
                           fontSize: 13.5,
                         ),
                         border: InputBorder.none,
@@ -918,22 +924,22 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     '配置您的 AI 智能助理',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     '目前尚未检测到云端 AI 模型配置。Toolbox AI 助手现已全面接入 FreeModel AI (极速 GPT-5.5)、SiliconFlow、DeepSeek 和 Gemini 等顶尖云端模型。\n\n'
                     '只需一分钟，填入您的 API Key，即可开启真实、极速、无限制的云端模型深度多轮对话！',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: subTextColor,
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -961,16 +967,16 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(
-                              color: Colors.white.withOpacity(0.15),
+                              color: textColor.withOpacity(0.15),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             '暂不配置',
                             style: TextStyle(
-                              color: Colors.white60,
+                              color: subTextColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

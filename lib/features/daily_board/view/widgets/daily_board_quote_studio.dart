@@ -42,8 +42,13 @@ class DailyBoardQuoteStudio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return GlassCard(
-      borderColor: Colors.white.withValues(alpha: 0.08),
+      borderColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -139,9 +144,9 @@ class DailyBoardQuoteStudio extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Background Selection Slider
-            const Text(
+            Text(
               "选择背景渐变：",
-              style: TextStyle(color: Colors.white54, fontSize: 11),
+              style: TextStyle(color: subTextColor, fontSize: 11),
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -163,8 +168,8 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.cyanAccent
-                              : Colors.white.withValues(alpha: 0.08),
+                              ? (isDark ? Colors.cyanAccent : Colors.cyan.shade600)
+                              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
                           width: isSelected ? 1.5 : 1,
                         ),
                         gradient: LinearGradient(
@@ -177,7 +182,7 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                       child: Text(
                         gradientNames[index],
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white70,
+                          color: Colors.white,
                           fontSize: 10,
                           fontWeight: isSelected
                               ? FontWeight.bold
@@ -191,23 +196,22 @@ class DailyBoardQuoteStudio extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Controls (Text Size & Alignment)
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "卡片字体大小：",
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: subTextColor, fontSize: 11),
                       ),
                       Slider(
                         value: textSize,
                         min: 12.0,
                         max: 20.0,
-                        activeColor: Colors.cyanAccent,
-                        inactiveColor: Colors.white.withValues(alpha: 0.05),
+                        activeColor: isDark ? Colors.cyanAccent : Colors.cyan.shade600,
+                        inactiveColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
                         onChanged: onTextSizeChanged,
                       ),
                     ],
@@ -218,16 +222,16 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "卡片透明度：",
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                        style: TextStyle(color: subTextColor, fontSize: 11),
                       ),
                       Slider(
                         value: cardOpacity,
                         min: 0.5,
                         max: 1.0,
-                        activeColor: Colors.cyanAccent,
-                        inactiveColor: Colors.white.withValues(alpha: 0.05),
+                        activeColor: isDark ? Colors.cyanAccent : Colors.cyan.shade600,
+                        inactiveColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
                         onChanged: onCardOpacityChanged,
                       ),
                     ],
@@ -242,16 +246,16 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                 // Alignment selector
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       "对齐方式：",
-                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                      style: TextStyle(color: subTextColor, fontSize: 11),
                     ),
                     IconButton(
                       icon: Icon(
                         Icons.align_horizontal_left_rounded,
                         color: textAlign == TextAlign.left
-                            ? Colors.cyanAccent
-                            : Colors.white38,
+                            ? (isDark ? Colors.cyanAccent : Colors.cyan.shade700)
+                            : faintTextColor,
                         size: 18,
                       ),
                       onPressed: () => onTextAlignChanged(TextAlign.left),
@@ -260,8 +264,8 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                       icon: Icon(
                         Icons.align_horizontal_center_rounded,
                         color: textAlign == TextAlign.center
-                            ? Colors.cyanAccent
-                            : Colors.white38,
+                            ? (isDark ? Colors.cyanAccent : Colors.cyan.shade700)
+                            : faintTextColor,
                         size: 18,
                       ),
                       onPressed: () => onTextAlignChanged(TextAlign.center),
@@ -270,8 +274,8 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                       icon: Icon(
                         Icons.align_horizontal_right_rounded,
                         color: textAlign == TextAlign.right
-                            ? Colors.cyanAccent
-                            : Colors.white38,
+                            ? (isDark ? Colors.cyanAccent : Colors.cyan.shade700)
+                            : faintTextColor,
                         size: 18,
                       ),
                       onPressed: () => onTextAlignChanged(TextAlign.right),
@@ -291,23 +295,23 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          color: Colors.white.withValues(alpha: 0.04),
+                          color: (isDark ? Colors.white : Colors.black).withOpacity(0.04),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
                           ),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.cached_rounded,
-                              color: Colors.cyanAccent.shade100,
+                              color: isDark ? Colors.cyanAccent.shade100 : Colors.cyan.shade800,
                               size: 13,
                             ),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               "随机换一句",
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: subTextColor,
                                 fontSize: 11,
                               ),
                             ),
@@ -325,29 +329,31 @@ class DailyBoardQuoteStudio extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          gradient: const LinearGradient(
-                            colors: [Colors.cyanAccent, Color(0xFF00E5FF)],
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [Colors.cyanAccent, const Color(0xFF00E5FF)]
+                                : [Colors.cyan.shade400, Colors.cyan.shade600],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.cyanAccent.withValues(alpha: 0.2),
+                              color: (isDark ? Colors.cyanAccent : Colors.cyan).withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.copy_rounded,
-                              color: Colors.black87,
+                              color: isDark ? Colors.black87 : Colors.white,
                               size: 13,
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
                               "复制卡片",
                               style: TextStyle(
-                                color: Colors.black87,
+                                color: isDark ? Colors.black87 : Colors.white,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),

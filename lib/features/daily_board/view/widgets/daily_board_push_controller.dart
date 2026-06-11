@@ -38,8 +38,13 @@ class DailyBoardPushController extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return GlassCard(
-      borderColor: Colors.white.withValues(alpha: 0.08),
+      borderColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -49,14 +54,14 @@ class DailyBoardPushController extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.settings_suggest_rounded, color: Colors.cyanAccent, size: 18),
-                    SizedBox(width: 8),
+                    Icon(Icons.settings_suggest_rounded, color: isDark ? Colors.cyanAccent : Colors.cyan.shade800, size: 18),
+                    const SizedBox(width: 8),
                     Text(
                       "推送参数配置",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: textColor,
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
                       ),
@@ -66,14 +71,14 @@ class DailyBoardPushController extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.cyanAccent.withValues(alpha: 0.1),
+                    color: (isDark ? Colors.cyanAccent : Colors.cyan.shade700).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.2)),
+                    border: Border.all(color: (isDark ? Colors.cyanAccent : Colors.cyan.shade700).withValues(alpha: 0.2)),
                   ),
-                  child: const Text(
+                  child: Text(
                     "SIMULATION MODE",
                     style: TextStyle(
-                      color: Colors.cyanAccent,
+                      color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                       fontSize: 8.5,
                       fontWeight: FontWeight.bold,
                     ),
@@ -85,23 +90,25 @@ class DailyBoardPushController extends StatelessWidget {
 
             // Startup Push Toggle
             _buildSettingRow(
+              context,
               icon: Icons.launch_rounded,
               title: "开屏立即推送",
               subtitle: "应用启动加载完毕后自动推送最新时事",
               value: pushOnStartup,
               onChanged: onPushOnStartupChanged,
             ),
-            const Divider(color: Colors.white10, height: 20),
+            Divider(color: isDark ? Colors.white10 : Colors.black12, height: 20),
 
             // Daily 10 AM scheduled push toggle
             _buildSettingRow(
+              context,
               icon: Icons.notifications_active_rounded,
               title: "每天早上10点定时推送",
               subtitle: "默认开启，支持后台推送最新的60秒时事早报",
               value: pushDaily10am,
               onChanged: onPushDaily10amChanged,
             ),
-            const Divider(color: Colors.white10, height: 20),
+            Divider(color: isDark ? Colors.white10 : Colors.black12, height: 20),
 
             // Content count slider
             Column(
@@ -112,18 +119,18 @@ class DailyBoardPushController extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.list_alt_rounded, color: Colors.cyanAccent, size: 16),
+                        Icon(Icons.list_alt_rounded, color: isDark ? Colors.cyanAccent : Colors.cyan.shade800, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           "单次推送条数",
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12.5),
+                          style: TextStyle(color: subTextColor, fontSize: 12.5),
                         ),
                       ],
                     ),
                     Text(
                       "$pushNewsCount 条",
-                      style: const TextStyle(
-                        color: Colors.cyanAccent,
+                      style: TextStyle(
+                        color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                         fontSize: 12.5,
                         fontWeight: FontWeight.bold,
                       ),
@@ -131,25 +138,26 @@ class DailyBoardPushController extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   "从今日 60 秒时事速递中甄选的新闻条数限制",
-                  style: TextStyle(color: Colors.white38, fontSize: 10),
+                  style: TextStyle(color: faintTextColor, fontSize: 10),
                 ),
                 Slider(
                   value: pushNewsCount.toDouble(),
                   min: 1,
                   max: 5,
                   divisions: 4,
-                  activeColor: Colors.cyanAccent,
-                  inactiveColor: Colors.white.withValues(alpha: 0.05),
+                  activeColor: isDark ? Colors.cyanAccent : Colors.cyan.shade600,
+                  inactiveColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
                   onChanged: (val) => onPushNewsCountChanged(val.toInt()),
                 ),
               ],
             ),
-            const Divider(color: Colors.white10, height: 20),
+            Divider(color: isDark ? Colors.white10 : Colors.black12, height: 20),
 
             // Periodic Poll Trigger
             _buildSettingRow(
+              context,
               icon: Icons.loop_rounded,
               title: "自动定时轮询广播",
               subtitle: "按固定时间间隔在后台循环轮播推送",
@@ -167,18 +175,18 @@ class DailyBoardPushController extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.timer_outlined, color: Colors.cyanAccent, size: 16),
+                        Icon(Icons.timer_outlined, color: isDark ? Colors.cyanAccent : Colors.cyan.shade800, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           "轮询时间间隔",
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 12.5),
+                          style: TextStyle(color: subTextColor, fontSize: 12.5),
                         ),
                       ],
                     ),
                     Text(
                       "$pushIntervalSeconds 秒",
                       style: TextStyle(
-                        color: isPeriodicPushRunning ? Colors.white30 : Colors.cyanAccent,
+                        color: isPeriodicPushRunning ? faintTextColor : (isDark ? Colors.cyanAccent : Colors.cyan.shade800),
                         fontSize: 12.5,
                         fontWeight: FontWeight.bold,
                       ),
@@ -190,8 +198,8 @@ class DailyBoardPushController extends StatelessWidget {
                   min: 5,
                   max: 60,
                   divisions: 11,
-                  activeColor: isPeriodicPushRunning ? Colors.white24 : Colors.cyanAccent,
-                  inactiveColor: Colors.white.withValues(alpha: 0.05),
+                  activeColor: isPeriodicPushRunning ? (isDark ? Colors.white24 : Colors.black12) : (isDark ? Colors.cyanAccent : Colors.cyan.shade600),
+                  inactiveColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
                   onChanged: isPeriodicPushRunning
                       ? null
                       : (val) => onPushIntervalSecondsChanged(val.toInt()),
@@ -210,26 +218,28 @@ class DailyBoardPushController extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        gradient: const LinearGradient(
-                          colors: [Colors.cyanAccent, Color(0xFF00E5FF)],
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [Colors.cyanAccent, const Color(0xFF00E5FF)]
+                              : [Colors.cyan.shade400, Colors.cyan.shade600],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.cyanAccent.withValues(alpha: 0.25),
+                            color: (isDark ? Colors.cyanAccent : Colors.cyan).withValues(alpha: 0.25),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.send_rounded, color: Colors.black87, size: 15),
-                          SizedBox(width: 6),
+                          Icon(Icons.send_rounded, color: isDark ? Colors.black87 : Colors.white, size: 15),
+                          const SizedBox(width: 6),
                           Text(
                             "立即发送推送",
                             style: TextStyle(
-                              color: Colors.black87,
+                              color: isDark ? Colors.black87 : Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -247,20 +257,20 @@ class DailyBoardPushController extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: (isDark ? Colors.white : Colors.black).withOpacity(0.04),
                         border: Border.all(
-                          color: Colors.cyanAccent.withValues(alpha: 0.2),
+                          color: (isDark ? Colors.cyanAccent : Colors.cyan.shade700).withValues(alpha: 0.2),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.hourglass_empty_rounded, color: Colors.cyanAccent, size: 15),
-                          SizedBox(width: 6),
+                          Icon(Icons.hourglass_empty_rounded, color: isDark ? Colors.cyanAccent : Colors.cyan.shade800, size: 15),
+                          const SizedBox(width: 6),
                           Text(
                             "5秒延时后台推送",
                             style: TextStyle(
-                              color: Colors.cyanAccent,
+                              color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -278,9 +288,9 @@ class DailyBoardPushController extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+                border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -293,22 +303,22 @@ class DailyBoardPushController extends StatelessWidget {
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.cyanAccent,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.cyanAccent,
+                                  color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                   blurRadius: 4,
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             "系统推送历史与日志",
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: subTextColor,
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,
                             ),
@@ -330,12 +340,12 @@ class DailyBoardPushController extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   pushHistory.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24.0),
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24.0),
                           child: Center(
                             child: Text(
                               "📡 暂无模拟推送记录，点击上方按钮触发",
-                              style: TextStyle(color: Colors.white24, fontSize: 11),
+                              style: TextStyle(color: faintTextColor, fontSize: 11),
                             ),
                           ),
                         )
@@ -343,8 +353,8 @@ class DailyBoardPushController extends StatelessWidget {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: pushHistory.length.clamp(0, 3), // limit visible to 3 items
-                          separatorBuilder: (context, index) => const Divider(
-                            color: Colors.white10,
+                          separatorBuilder: (context, index) => Divider(
+                            color: isDark ? Colors.white10 : Colors.black12,
                             height: 16,
                           ),
                           itemBuilder: (context, index) {
@@ -362,8 +372,8 @@ class DailyBoardPushController extends StatelessWidget {
                                     Expanded(
                                       child: Text(
                                         title,
-                                        style: const TextStyle(
-                                          color: Colors.cyanAccent,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -372,8 +382,8 @@ class DailyBoardPushController extends StatelessWidget {
                                     ),
                                     Text(
                                       time,
-                                      style: const TextStyle(
-                                        color: Colors.white38,
+                                      style: TextStyle(
+                                        color: faintTextColor,
                                         fontSize: 10,
                                       ),
                                     ),
@@ -384,8 +394,8 @@ class DailyBoardPushController extends StatelessWidget {
                                       padding: const EdgeInsets.only(left: 6.0, bottom: 3.0),
                                       child: Text(
                                         "• $newsItem",
-                                        style: const TextStyle(
-                                          color: Colors.white60,
+                                        style: TextStyle(
+                                          color: subTextColor,
                                           fontSize: 10.5,
                                           height: 1.3,
                                         ),
@@ -406,16 +416,21 @@ class DailyBoardPushController extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingRow({
+  Widget _buildSettingRow(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return Row(
       children: [
-        Icon(icon, color: Colors.cyanAccent, size: 18),
+        Icon(icon, color: isDark ? Colors.cyanAccent : Colors.cyan.shade800, size: 18),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -423,8 +438,8 @@ class DailyBoardPushController extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -432,8 +447,8 @@ class DailyBoardPushController extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: Colors.white38,
+                style: TextStyle(
+                  color: faintTextColor,
                   fontSize: 10.5,
                 ),
               ),
@@ -443,10 +458,10 @@ class DailyBoardPushController extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: Colors.cyanAccent,
-          activeTrackColor: Colors.cyanAccent.withValues(alpha: 0.2),
-          inactiveThumbColor: Colors.white54,
-          inactiveTrackColor: Colors.white10,
+          activeTrackColor: (isDark ? Colors.cyanAccent : Colors.cyan).withValues(alpha: 0.2),
+          activeColor: isDark ? Colors.cyanAccent : Colors.cyan.shade700,
+          inactiveThumbColor: isDark ? Colors.white54 : Colors.grey.shade400,
+          inactiveTrackColor: isDark ? Colors.white10 : Colors.grey.shade200,
         ),
       ],
     );

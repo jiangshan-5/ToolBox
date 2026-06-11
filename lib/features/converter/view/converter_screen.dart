@@ -128,13 +128,25 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     );
   }
 
-  Color _getCategoryColor(ConverterCategory cat) => switch (cat) {
+  Color _getCategoryColor(ConverterCategory cat) {
+    if (isDark) {
+      return switch (cat) {
         ConverterCategory.length => Colors.cyanAccent,
         ConverterCategory.mass => Colors.pinkAccent,
         ConverterCategory.temperature => Colors.orangeAccent,
         ConverterCategory.area => Colors.greenAccent,
         ConverterCategory.sandbox => Colors.purpleAccent,
       };
+    } else {
+      return switch (cat) {
+        ConverterCategory.length => Colors.cyan.shade800,
+        ConverterCategory.mass => Colors.pink.shade800,
+        ConverterCategory.temperature => Colors.orange.shade900,
+        ConverterCategory.area => Colors.green.shade800,
+        ConverterCategory.sandbox => Colors.purple.shade700,
+      };
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +363,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
 
           final isSel = activeCat == cat;
 
-          final color = item['color'] as Color;
+          final color = _getCategoryColor(cat);
 
           return ScaleOnTap(
             onTap: () {
@@ -393,7 +405,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                 children: [
                   Icon(
                     item['icon'] as IconData,
-                    color: isSel ? color : Colors.white38,
+                    color: isSel ? color : (isDark ? Colors.white38 : Colors.black38),
                     size: 20,
                   ),
 
@@ -403,7 +415,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                     item['title'] as String,
 
                     style: TextStyle(
-                      color: isSel ? color : Colors.white60,
+                      color: isSel ? color : (isDark ? Colors.white60 : Colors.black54),
 
                       fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
 
@@ -424,11 +436,12 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
     List<CustomConverter> customConverters,
     ConverterNotifier notifier,
   ) {
+    final sandboxColor = isDark ? Colors.purpleAccent : Colors.purple.shade700;
     return Column(
       children: [
         if (_isCreatingCustom)
           HoverGlowCard(
-            glowColor: Colors.purpleAccent,
+            glowColor: sandboxColor,
 
             child: Container(
               padding: const EdgeInsets.all(20),
@@ -436,11 +449,11 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
               margin: const EdgeInsets.only(bottom: 16),
 
               decoration: BoxDecoration(
-                color: Colors.purpleAccent.withOpacity(0.04),
+                color: sandboxColor.withOpacity(0.04),
 
                 borderRadius: BorderRadius.circular(24),
 
-                border: Border.all(color: Colors.purpleAccent.withOpacity(0.2)),
+                border: Border.all(color: sandboxColor.withOpacity(0.2)),
               ),
 
               child: Column(
@@ -547,18 +560,18 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
 
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.purpleAccent.withOpacity(0.3),
+                            color: sandboxColor.withOpacity(0.3),
                             blurRadius: 10,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
 
-                      child: Center(
+                      child: const Center(
                         child: Text(
                           '一 键 注 入 并 启 用',
                           style: TextStyle(
-                            color: textColor,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -603,14 +616,14 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                       child: DropdownButton<String>(
                         value: activeCustomId,
 
-                        iconEnabledColor: Colors.purpleAccent,
+                        iconEnabledColor: sandboxColor,
 
                         dropdownColor: Theme.of(
                           context,
                         ).colorScheme.surfaceContainer,
 
-                        style: const TextStyle(
-                          color: Colors.purpleAccent,
+                        style: TextStyle(
+                          color: sandboxColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -648,25 +661,25 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                   ),
 
                   decoration: BoxDecoration(
-                    color: Colors.purpleAccent.withOpacity(0.1),
+                    color: sandboxColor.withOpacity(0.1),
 
                     borderRadius: BorderRadius.circular(16),
 
                     border: Border.all(
-                      color: Colors.purpleAccent.withOpacity(0.3),
+                      color: sandboxColor.withOpacity(0.3),
                     ),
                   ),
 
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.add, color: Colors.purpleAccent, size: 16),
+                      Icon(Icons.add, color: sandboxColor, size: 16),
 
-                      SizedBox(width: 6),
+                      const SizedBox(width: 6),
 
                       Text(
                         '添加新公式',
                         style: TextStyle(
-                          color: Colors.purpleAccent,
+                          color: sandboxColor,
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -705,7 +718,7 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
 
           hintText: hint.isEmpty ? null : hint,
 
-          hintStyle: const TextStyle(color: Colors.white10),
+          hintStyle: TextStyle(color: isDark ? Colors.white10 : Colors.black26),
 
           filled: true,
 
@@ -1040,10 +1053,10 @@ class _ConverterScreenState extends ConsumerState<ConverterScreen> {
                           letterSpacing: -0.5,
                         ),
 
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: '0',
 
-                          hintStyle: TextStyle(color: Colors.white12),
+                          hintStyle: TextStyle(color: isDark ? Colors.white12 : Colors.black26),
 
                           border: InputBorder.none,
 

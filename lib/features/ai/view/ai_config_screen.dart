@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/dynamic_background.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../provider/ai_config_provider.dart';
 
@@ -13,6 +14,11 @@ class AiConfigScreen extends ConsumerStatefulWidget {
 }
 
 class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get textColor => isDark ? Colors.white : Colors.black87;
+  Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
+  Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+
   final _formKey = GlobalKey<FormState>();
   late String _selectedProvider;
   late TextEditingController _keyController;
@@ -130,36 +136,36 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E2F),
+            backgroundColor: isDark ? const Color(0xFF1E1E2F) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
-                SizedBox(width: 10),
-                Text('测试成功', style: TextStyle(color: Colors.white)),
+                const Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
+                const SizedBox(width: 10),
+                Text('测试成功', style: TextStyle(color: textColor)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'AI 接口已成功联通！返回响应：',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: subTextColor),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     reply,
-                    style: const TextStyle(
-                      color: Colors.greenAccent,
+                    style: TextStyle(
+                      color: isDark ? Colors.greenAccent : Colors.green.shade800,
                       fontSize: 13,
                       fontFamily: 'monospace',
                     ),
@@ -191,37 +197,37 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E1E2F),
+            backgroundColor: isDark ? const Color(0xFF1E1E2F) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.error_outline_rounded, color: Colors.redAccent),
-                SizedBox(width: 10),
-                Text('联通失败', style: TextStyle(color: Colors.white)),
+                const Icon(Icons.error_outline_rounded, color: Colors.redAccent),
+                const SizedBox(width: 10),
+                Text('联通失败', style: TextStyle(color: textColor)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '连接大模型时遇到错误，请检查配置或余额：',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: subTextColor),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   width: double.maxFinite,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     errMsg,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
+                    style: TextStyle(
+                      color: isDark ? Colors.redAccent : Colors.red.shade800,
                       fontSize: 13,
                       fontFamily: 'monospace',
                     ),
@@ -279,41 +285,36 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'AI 助手云端配置',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
+            color: subTextColor,
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0F0C1B), Color(0xFF140D26), Color(0xFF0A0714)],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
+      body: Stack(
+        children: [
+          const DynamicBackground(child: SizedBox.expand()),
+          SafeArea(
+            child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     '选择您的 AI 驱动引擎',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -322,10 +323,10 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                   _buildProviderSelectors(),
                   const SizedBox(height: 24),
                   if (_selectedProvider != 'mock') ...[
-                    const Text(
+                    Text(
                       '接口配置详情',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: textColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -340,27 +341,27 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                             // Base URL field
                             TextFormField(
                               controller: _urlController,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: textColor),
                               decoration: InputDecoration(
                                 labelText: 'API Base URL',
-                                labelStyle: const TextStyle(
-                                  color: Colors.white60,
+                                labelStyle: TextStyle(
+                                  color: subTextColor,
                                 ),
                                 hintText:
                                     '请输入 API 基址 (例如: https://api.openai.com/v1)',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white30,
+                                hintStyle: TextStyle(
+                                  color: faintTextColor,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: textColor.withOpacity(0.2),
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: textColor.withOpacity(0.1),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
@@ -370,31 +371,31 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                                   ),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.02),
+                                fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
                               ),
                             ),
                             const SizedBox(height: 20),
                             // API Key field
                             TextFormField(
                               controller: _keyController,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: textColor),
                               obscureText: _obscureApiKey,
                               autofillHints: null,
                               decoration: InputDecoration(
                                 labelText: 'API Key',
-                                labelStyle: const TextStyle(
-                                  color: Colors.white60,
+                                labelStyle: TextStyle(
+                                  color: subTextColor,
                                 ),
                                 hintText: '请输入您的私人 API 密钥',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white30,
+                                hintStyle: TextStyle(
+                                  color: faintTextColor,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscureApiKey
                                         ? Icons.visibility_off_rounded
                                         : Icons.visibility_rounded,
-                                    color: Colors.white60,
+                                    color: subTextColor,
                                     size: 20,
                                   ),
                                   onPressed: () {
@@ -406,13 +407,13 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: textColor.withOpacity(0.2),
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: textColor.withOpacity(0.1),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
@@ -422,7 +423,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                                   ),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.02),
+                                fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
@@ -435,26 +436,26 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                             // Model Identifier field
                             TextFormField(
                               controller: _modelController,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(color: textColor),
                               decoration: InputDecoration(
                                 labelText: '模型标识符 (Model ID)',
-                                labelStyle: const TextStyle(
-                                  color: Colors.white60,
+                                labelStyle: TextStyle(
+                                  color: subTextColor,
                                 ),
                                 hintText: '请输入大语言模型具体 ID',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white30,
+                                hintStyle: TextStyle(
+                                  color: faintTextColor,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: textColor.withOpacity(0.2),
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: textColor.withOpacity(0.1),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
@@ -464,7 +465,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                                   ),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white.withOpacity(0.02),
+                                fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.02),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
@@ -475,10 +476,10 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                             ),
                             if (suggestions.isNotEmpty) ...[
                               const SizedBox(height: 14),
-                              const Text(
+                              Text(
                                 '推荐模型选择 (可点击一键填入)：',
                                 style: TextStyle(
-                                  color: Colors.white54,
+                                  color: subTextColor.withOpacity(0.6),
                                   fontSize: 12,
                                 ),
                               ),
@@ -496,8 +497,8 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                                           : model,
                                       style: TextStyle(
                                         color: isSelected
-                                            ? Colors.black
-                                            : Colors.white,
+                                            ? (isDark ? Colors.black : Colors.cyan.shade900)
+                                            : textColor,
                                         fontSize: 12,
                                         fontWeight: isSelected
                                             ? FontWeight.bold
@@ -505,8 +506,8 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                                       ),
                                     ),
                                     selected: isSelected,
-                                    selectedColor: Colors.cyanAccent,
-                                    backgroundColor: Colors.white.withOpacity(
+                                    selectedColor: isDark ? Colors.cyanAccent : Colors.cyan.shade100,
+                                    backgroundColor: (isDark ? Colors.white : Colors.black).withOpacity(
                                       0.05,
                                     ),
                                     onSelected: (selected) {
@@ -545,21 +546,21 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               '本地模拟模式 (Mock Mode)',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: textColor,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            const Text(
+                            Text(
                               '当前应用处于离线离网调试模式。所有 AI 对话和文本处理操作均使用本地固定的预设模版回复。\n\n'
                               '您可以随时在上方选择 SiliconFlow (极力推荐！国内超低延迟、永久免费 DeepSeek 额度)、官方 DeepSeek 或 Gemini API，输入您的专属 API Key，即可直接在此体验真正的云端模型！',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.white60,
+                                color: subTextColor,
                                 fontSize: 13,
                                 height: 1.5,
                               ),
@@ -631,6 +632,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }
@@ -693,7 +695,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
               border: Border.all(
                 color: isSelected
                     ? (prov['color'] as Color)
-                    : Colors.white.withOpacity(0.08),
+                    : (isDark ? Colors.white : Colors.black).withOpacity(0.08),
                 width: isSelected ? 2.0 : 1.0,
               ),
               boxShadow: isSelected
@@ -720,7 +722,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                       prov['icon'] as IconData,
                       color: isSelected
                           ? (prov['color'] as Color)
-                          : Colors.white60,
+                          : subTextColor,
                       size: 26,
                     ),
                     const SizedBox(width: 16),
@@ -731,7 +733,7 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                           Text(
                             prov['name'] as String,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
+                              color: textColor,
                               fontSize: 15,
                               fontWeight: isSelected
                                   ? FontWeight.bold
@@ -741,8 +743,8 @@ class _AiConfigScreenState extends ConsumerState<AiConfigScreen> {
                           const SizedBox(height: 2),
                           Text(
                             prov['sub'] as String,
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: faintTextColor,
                               fontSize: 11,
                             ),
                           ),

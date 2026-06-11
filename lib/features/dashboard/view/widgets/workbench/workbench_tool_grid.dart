@@ -236,7 +236,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
               ),
             )
           : Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -263,7 +263,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,7 +281,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
                             letterSpacing: 0.15,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 2),
                         Text(
                           description,
                           maxLines: 1,

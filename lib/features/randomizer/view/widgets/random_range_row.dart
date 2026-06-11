@@ -70,8 +70,8 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
               widget.notifier.toggleRangeActive(widget.index, !widget.active),
           child: Checkbox(
             value: widget.active,
-            activeColor: Colors.cyanAccent,
-            checkColor: Colors.black87,
+            activeColor: isDark ? Colors.cyanAccent : Colors.cyan.shade700,
+            checkColor: isDark ? Colors.black87 : Colors.white,
             onChanged: (v) =>
                 widget.notifier.toggleRangeActive(widget.index, v!),
           ),
@@ -98,7 +98,7 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
               ),
               decoration: InputDecoration(
                 hintText: 'Min',
-                hintStyle: const TextStyle(color: Colors.white12),
+                hintStyle: TextStyle(color: isDark ? Colors.white12 : Colors.black26),
                 filled: true,
                 fillColor: isDark
                     ? Colors.white.withOpacity(0.015)
@@ -119,9 +119,9 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
             ),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text('~', style: TextStyle(color: Colors.white24)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Text('~', style: TextStyle(color: isDark ? Colors.white24 : Colors.black38)),
         ),
         Expanded(
           child: Container(
@@ -140,7 +140,7 @@ class _RandomRangeRowState extends State<RandomRangeRow> {
               ),
               decoration: InputDecoration(
                 hintText: 'Max',
-                hintStyle: const TextStyle(color: Colors.white12),
+                hintStyle: TextStyle(color: isDark ? Colors.white12 : Colors.black26),
                 filled: true,
                 fillColor: isDark
                     ? Colors.white.withOpacity(0.015)

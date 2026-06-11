@@ -21,18 +21,23 @@ class DailyBoardTrendsBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     return GlassCard(
-      borderColor: Colors.white.withValues(alpha: 0.08),
+      borderColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
             TabBar(
               controller: tabController,
-              indicatorColor: Colors.cyanAccent,
+              indicatorColor: isDark ? Colors.cyanAccent : Colors.cyan.shade600,
               dividerColor: Colors.transparent,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white38,
+              labelColor: textColor,
+              unselectedLabelColor: faintTextColor,
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 12.5,
@@ -47,9 +52,9 @@ class DailyBoardTrendsBoard extends StatelessWidget {
             SizedBox(
               height: 290,
               child: isLoadingHot
-                  ? const Center(
+                  ? Center(
                       child: CircularProgressIndicator(
-                        color: Colors.cyanAccent,
+                        color: isDark ? Colors.cyanAccent : Colors.cyan.shade700,
                         strokeWidth: 2,
                       ),
                     )
@@ -57,18 +62,21 @@ class DailyBoardTrendsBoard extends StatelessWidget {
                       controller: tabController,
                       children: [
                         _buildTrendingTabList(
+                          context,
                           weiboTrends,
-                          Colors.orangeAccent,
+                          isDark ? Colors.orangeAccent : Colors.orange.shade800,
                           'weibo',
                         ),
                         _buildTrendingTabList(
+                          context,
                           baiduTrends,
-                          Colors.cyanAccent,
+                          isDark ? Colors.cyanAccent : Colors.cyan.shade800,
                           'baidu',
                         ),
                         _buildTrendingTabList(
+                          context,
                           bilibiliTrends,
-                          Colors.pinkAccent,
+                          isDark ? Colors.pinkAccent : Colors.pink.shade700,
                           'bilibili',
                         ),
                       ],
@@ -81,15 +89,21 @@ class DailyBoardTrendsBoard extends StatelessWidget {
   }
 
   Widget _buildTrendingTabList(
+    BuildContext context,
     List<Map<String, dynamic>> list,
     Color themeColor,
     String platform,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final faintTextColor = isDark ? Colors.white38 : Colors.black38;
+
     if (list.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           "暂无数据，请尝试刷新",
-          style: TextStyle(color: Colors.white38, fontSize: 12),
+          style: TextStyle(color: faintTextColor, fontSize: 12),
         ),
       );
     }
@@ -147,7 +161,7 @@ class DailyBoardTrendsBoard extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            hoverColor: Colors.white.withValues(alpha: 0.04),
+            hoverColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
             splashColor: themeColor.withValues(alpha: 0.1),
             onTap: () => onTrendTap(title, platform),
             child: Container(
@@ -155,7 +169,7 @@ class DailyBoardTrendsBoard extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.02),
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.02),
                     width: 1,
                   ),
                 ),
@@ -169,7 +183,7 @@ class DailyBoardTrendsBoard extends StatelessWidget {
                     child: Text(
                       "${index + 1}",
                       style: TextStyle(
-                        color: index < 3 ? themeColor : Colors.white24,
+                        color: index < 3 ? themeColor : faintTextColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -185,8 +199,8 @@ class DailyBoardTrendsBoard extends StatelessWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: subTextColor,
                               fontSize: 12.5,
                             ),
                           ),
@@ -201,8 +215,8 @@ class DailyBoardTrendsBoard extends StatelessWidget {
                   if (hot.isNotEmpty)
                     Text(
                       hot,
-                      style: const TextStyle(
-                        color: Colors.white38,
+                      style: TextStyle(
+                        color: faintTextColor,
                         fontSize: 10.5,
                       ),
                     ),

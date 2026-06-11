@@ -70,17 +70,17 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
 
     return Listener(
       onPointerDown: (_) {
-        if (widget.onTap != null) {
+        if (widget.onTap != null && mounted) {
           setState(() => _scale = 0.96);
         }
       },
       onPointerUp: (_) {
-        if (widget.onTap != null) {
+        if (widget.onTap != null && mounted) {
           setState(() => _scale = 1.0);
         }
       },
       onPointerCancel: (_) {
-        if (widget.onTap != null) {
+        if (widget.onTap != null && mounted) {
           setState(() => _scale = 1.0);
         }
       },
