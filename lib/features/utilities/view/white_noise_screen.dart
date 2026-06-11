@@ -8,6 +8,8 @@ import 'dart:math';
 
 import 'package:just_audio/just_audio.dart';
 
+import '../../../../core/network/api_client.dart';
+import '../../auth/provider/auth_provider.dart';
 import '../../../features/dashboard/provider/tools_provider.dart';
 
 import 'widgets/noise_breathing_bubble.dart';
@@ -36,14 +38,14 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   // ===========================================================================
   // 1. SOUNDSCAPE MIXER STATE
   // ===========================================================================
-  final List<Map<String, dynamic>> _sounds = [
+  List<Map<String, dynamic>> _sounds = [
     {
       'id': 'rain',
       'icon': Icons.umbrella_rounded,
       'name': '深山秋雨',
       'desc': '幽静山谷中的淅沥雨声，抚平内心焦虑。',
       'color': Colors.blueAccent,
-      'url': 'https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav',
+      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/rain.mp3',
     },
     {
       'id': 'waves',
@@ -51,7 +53,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       'name': '极地海浪',
       'desc': '远古冰川海滩上的潮汐起落，回归静止。',
       'color': Colors.cyanAccent,
-      'url': 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav',
+      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/ocean.mp3',
     },
     {
       'id': 'pines',
@@ -59,7 +61,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       'name': '林间松涛',
       'desc': '微风穿过广阔针叶林，带来原野芬芳。',
       'color': Colors.greenAccent,
-      'url': 'https://assets.mixkit.co/active_storage/sfx/2464/2464-84.wav',
+      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/wind.mp3',
     },
     {
       'id': 'fire',
@@ -67,7 +69,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       'name': '壁炉篝火',
       'desc': '深夜小木屋里温暖柴火的噼啪爆裂碎响。',
       'color': Colors.orangeAccent,
-      'url': 'https://assets.mixkit.co/active_storage/sfx/2432/2432-84.wav',
+      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/fireplace.mp3',
     },
     {
       'id': 'brook',
@@ -75,7 +77,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       'name': '山间溪流',
       'desc': '高山融雪化作林间欢快奔腾的潺潺清泉。',
       'color': Colors.tealAccent,
-      'url': 'https://assets.mixkit.co/active_storage/sfx/1113/1113-84.wav',
+      'url': 'https://cdn.jsdelivr.net/gh/karthiknvd/noctune@master/sounds/river.mp3',
     },
     {
       'id': 'insects',
@@ -83,7 +85,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       'name': '夏夜虫鸣',
       'desc': '繁星点点的仲夏夜里草丛间的自然协奏曲。',
       'color': Colors.amberAccent,
-      'url': 'https://assets.mixkit.co/active_storage/sfx/2438/2438-84.wav',
+      'url': 'https://cdn.jsdelivr.net/gh/bradtraversy/ambient-sound-mixer@main/audio/night.mp3',
     },
   ];
 
@@ -147,6 +149,124 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   Timer? _sleepTimer;
   int _secondsRemaining = 0; // Timer to automatically stop playback
 
+  IconData _mapIconName(String? name) {
+    switch (name) {
+      case 'umbrella':
+        return Icons.umbrella_rounded;
+      case 'waves':
+        return Icons.waves_rounded;
+      case 'forest':
+        return Icons.forest_rounded;
+      case 'fire':
+        return Icons.local_fire_department_rounded;
+      case 'water':
+        return Icons.water_rounded;
+      case 'music':
+      case 'insects':
+        return Icons.audiotrack_rounded;
+      default:
+        return Icons.music_note_rounded;
+    }
+  }
+
+  Color _parseColor(String? hexString) {
+    if (hexString == null || hexString.isEmpty) {
+      return Colors.blueAccent;
+    }
+    try {
+      String hex = hexString.replaceAll('#', '');
+      if (hex.length == 6) {
+        hex = 'FF$hex';
+      }
+      return Color(int.parse(hex, radix: 16));
+    } catch (_) {
+      return Colors.blueAccent;
+    }
+  }
+
+  String _resolveAudioUrl(String relativeUrl, String apiBaseUrl) {
+    if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
+      return relativeUrl;
+    }
+    String hostUrl = apiBaseUrl.replaceAll('/api/v1', '');
+    if (hostUrl.endsWith('/')) {
+      hostUrl = hostUrl.substring(0, hostUrl.length - 1);
+    }
+    String path = relativeUrl;
+    if (!path.startsWith('/')) {
+      path = '/$path';
+    }
+    return '$hostUrl$path';
+  }
+
+  Future<void> _loadRemoteTracks() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.instance.get('/tools/white_noise');
+      final List<dynamic> remoteData = response.data;
+      if (remoteData.isEmpty) return;
+
+      final List<Map<String, dynamic>> newSounds = [];
+      final Set<String> activeIds = {};
+
+      for (var item in remoteData) {
+        final id = item['id'] as String;
+        activeIds.add(id);
+
+        final String relativeUrl = item['url'] as String;
+        final String fullUrl = _resolveAudioUrl(relativeUrl, apiClient.instance.options.baseUrl);
+
+        newSounds.add({
+          'id': id,
+          'icon': _mapIconName(item['icon_name'] as String?),
+          'name': item['name'] as String,
+          'desc': item['description'] as String? ?? '',
+          'color': _parseColor(item['color_hex'] as String?),
+          'url': fullUrl,
+        });
+
+        if (!_players.containsKey(id)) {
+          _channelVolumes[id] = 0.5;
+          _channelActive[id] = false;
+
+          final player = AudioPlayer();
+          player.setLoopMode(LoopMode.one);
+          player.setVolume(0.5);
+          player.setUrl(fullUrl).catchError((_) => null);
+          _players[id] = player;
+        } else {
+          final existingSound = _sounds.firstWhere((s) => s['id'] == id, orElse: () => {});
+          if (existingSound.isNotEmpty && existingSound['url'] != fullUrl) {
+            _players[id]?.setUrl(fullUrl).catchError((_) => null);
+          }
+        }
+      }
+
+      final List<String> toRemove = [];
+      for (var id in _players.keys) {
+        if (!activeIds.contains(id)) {
+          _players[id]?.stop().catchError((_) => null);
+          _players[id]?.dispose().catchError((_) => null);
+          toRemove.add(id);
+        }
+      }
+      for (var id in toRemove) {
+        _players.remove(id);
+        _channelVolumes.remove(id);
+        _channelActive.remove(id);
+      }
+
+      if (mounted) {
+        setState(() {
+          _sounds.clear();
+          _sounds.addAll(newSounds);
+        });
+      }
+    } catch (e) {
+      debugPrint("Failed to load remote white noise tracks: $e");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -165,6 +285,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       });
       _players[id] = player;
     }
+    _loadRemoteTracks();
   }
 
   @override

@@ -8,6 +8,7 @@ import '../service/novel_api_client.dart';
 import '../service/local_parser/local_bookshelf_db.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../../auth/provider/auth_provider.dart';
 
 class NovelState {
   final List<ReadingProgress> bookshelf;
@@ -214,8 +215,9 @@ class NovelNotifier extends StateNotifier<NovelState> {
 
   // Ambient soundscapes players
   final Map<String, AudioPlayer> _ambientPlayers = {};
+  final String _apiBaseUrl;
 
-  NovelNotifier(this._apiClient) : super(NovelState()) {
+  NovelNotifier(this._apiClient, this._apiBaseUrl) : super(NovelState()) {
     if (!kIsWeb && !Platform.environment.containsKey('FLUTTER_TEST')) {
       _initAmbientPlayers();
     }
@@ -242,17 +244,24 @@ class NovelNotifier extends StateNotifier<NovelState> {
   }
 
   void _initAmbientPlayers() {
-    final urls = {
-      'rain': 'https://assets.mixkit.co/active_storage/sfx/2433/2433-84.wav',
-      'waves': 'https://assets.mixkit.co/active_storage/sfx/2566/2566-84.wav',
-      'fire': 'https://assets.mixkit.co/active_storage/sfx/2432/2432-84.wav',
+    final relativePaths = {
+      'rain': '/static/audios/rain.mp3',
+      'waves': '/static/audios/waves.mp3',
+      'fire': '/static/audios/fire.mp3',
     };
-    urls.forEach((id, url) {
+    relativePaths.forEach((id, relativePath) {
       try {
         final player = AudioPlayer();
         player.setLoopMode(LoopMode.one);
         player.setVolume(0.5);
-        player.setUrl(url).catchError((_) => null);
+        
+        String host = _apiBaseUrl;
+        if (host.endsWith('/')) {
+          host = host.substring(0, host.length - 1);
+        }
+        final fullUrl = '$host$relativePath';
+        
+        player.setUrl(fullUrl).catchError((_) => null);
         _ambientPlayers[id] = player;
       } catch (_) {}
     });
@@ -952,6 +961,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
 
 /// Riverpod provider for NovelNotifier
 final novelProvider = StateNotifierProvider<NovelNotifier, NovelState>((ref) {
-  final apiClient = ref.watch(novelApiClientProvider);
-  return NovelNotifier(apiClient);
+  final novelApiClient = ref.watch(novelApiClientProvider);
+  final apiClient = ref.watch(apiClientProvider);
+  return NovelNotifier(novelApiClient, apiClient.instance.options.baseUrl);
 });

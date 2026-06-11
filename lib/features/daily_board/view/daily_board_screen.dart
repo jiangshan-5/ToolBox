@@ -494,7 +494,7 @@ class _DailyBoardScreenState extends ConsumerState<DailyBoardScreen>
     try {
       final player = AudioPlayer();
       await player.setUrl(
-        'https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav',
+        'https://cdn.jsdelivr.net/gh/wesbos/JavaScript30@master/01%20-%20JavaScript%20Drum%20Kit/sounds/tink.wav',
       );
       await player.setVolume(0.85);
       await player.play();
