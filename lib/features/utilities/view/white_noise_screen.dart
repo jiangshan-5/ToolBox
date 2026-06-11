@@ -837,7 +837,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                       ),
                       child: Icon(
                         Icons.insights_rounded,
-                        color: isSelected ? modeColor : (isDark ? Colors.white30 : Colors.black30),
+                        color: isSelected ? modeColor : (isDark ? Colors.white30 : Colors.black38),
                         size: 20,
                       ),
                     ),
