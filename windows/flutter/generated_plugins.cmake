@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_js
   flutter_secure_storage_windows
   flutter_tts
+  flutter_volume_controller
   permission_handler_windows
   share_plus
   url_launcher_windows
