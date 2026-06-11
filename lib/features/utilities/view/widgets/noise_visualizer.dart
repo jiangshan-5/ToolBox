@@ -17,7 +17,7 @@ class NoiseVisualizer extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
-    final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
+    final Color faintTextColor = isDark ? Colors.white38 : Colors.black54;
 
     return GlassCard(
       glowColor: isMixerPlaying
@@ -42,7 +42,7 @@ class NoiseVisualizer extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isMixerPlaying
                           ? Colors.cyanAccent.withOpacity(0.8)
-                          : Colors.white12,
+                          : (isDark ? Colors.white12 : Colors.black12),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         if (isMixerPlaying)

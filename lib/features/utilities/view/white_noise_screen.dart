@@ -28,7 +28,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
   Color get textColor => isDark ? Colors.white : Colors.black87;
   Color get subTextColor => isDark ? Colors.white70 : Colors.black54;
-  Color get faintTextColor => isDark ? Colors.white38 : Colors.black38;
+  Color get faintTextColor => isDark ? Colors.white38 : Colors.black54;
   Color get borderDividerColor =>
       isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08);
 
@@ -582,37 +582,44 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   // ===========================================================================
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '律动呼吸与多声道白噪音',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ),
       body: Stack(
         children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF070514),
-                  Color(0xFF0F0B24),
-                  Color(0xFF030206),
-                ],
+                colors: isDark
+                    ? [
+                        const Color(0xFF070514),
+                        const Color(0xFF0F0B24),
+                        const Color(0xFF030206),
+                      ]
+                    : [
+                        primaryColor.withOpacity(0.06),
+                        const Color(0xFFFAF9FF),
+                        Colors.white,
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -642,6 +649,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   }
 
   Widget _buildSegmentTabs() {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
     return Container(
       height: 48,
       padding: const EdgeInsets.all(4),
@@ -664,12 +673,12 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
               child: Container(
                 decoration: BoxDecoration(
                   color: _activeTab == 'breathing'
-                      ? Colors.purpleAccent.withOpacity(0.12)
+                      ? primaryColor.withOpacity(0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _activeTab == 'breathing'
-                        ? Colors.purpleAccent
+                        ? primaryColor
                         : Colors.transparent,
                     width: 1.2,
                   ),
@@ -682,16 +691,16 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                       Icons.spa_rounded,
                       size: 16,
                       color: _activeTab == 'breathing'
-                          ? Colors.purpleAccent
-                          : Colors.white54,
+                          ? primaryColor
+                          : (isDark ? Colors.white54 : Colors.black45),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '呼吸律动冥想',
                       style: TextStyle(
                         color: _activeTab == 'breathing'
-                            ? Colors.white
-                            : Colors.white54,
+                            ? (isDark ? Colors.white : Colors.black87)
+                            : (isDark ? Colors.white54 : Colors.black54),
                         fontSize: 12.5,
                         fontWeight: _activeTab == 'breathing'
                             ? FontWeight.bold
@@ -709,12 +718,12 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
               child: Container(
                 decoration: BoxDecoration(
                   color: _activeTab == 'mixer'
-                      ? Colors.cyanAccent.withOpacity(0.12)
+                      ? secondaryColor.withOpacity(0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _activeTab == 'mixer'
-                        ? Colors.cyanAccent
+                        ? secondaryColor
                         : Colors.transparent,
                     width: 1.2,
                   ),
@@ -727,16 +736,16 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                       Icons.hearing_rounded,
                       size: 16,
                       color: _activeTab == 'mixer'
-                          ? Colors.cyanAccent
-                          : Colors.white54,
+                          ? secondaryColor
+                          : (isDark ? Colors.white54 : Colors.black45),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '声景多路混音',
                       style: TextStyle(
                         color: _activeTab == 'mixer'
-                            ? Colors.white
-                            : Colors.white54,
+                            ? (isDark ? Colors.white : Colors.black87)
+                            : (isDark ? Colors.white54 : Colors.black54),
                         fontSize: 12.5,
                         fontWeight: _activeTab == 'mixer'
                             ? FontWeight.bold
@@ -773,7 +782,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         Text(
           '🧘 调息减压模式配置',
           style: TextStyle(
-            color: textColor,
+            color: isDark ? Colors.white : Theme.of(context).colorScheme.primary,
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
           ),
@@ -828,7 +837,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                       ),
                       child: Icon(
                         Icons.insights_rounded,
-                        color: isSelected ? modeColor : Colors.white30,
+                        color: isSelected ? modeColor : (isDark ? Colors.white30 : Colors.black30),
                         size: 20,
                       ),
                     ),
@@ -840,7 +849,9 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                           Text(
                             config['name'],
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white70,
+                              color: isSelected 
+                                  ? (isDark ? Colors.white : modeColor)
+                                  : textColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -880,7 +891,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         Text(
           '🎧 混音多声道列表 (自定义音量百分比)',
           style: TextStyle(
-            color: textColor,
+            color: isDark ? Colors.white : Theme.of(context).colorScheme.secondary,
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
           ),
@@ -915,13 +926,14 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   }
 
   Widget _buildSleepTimerPanel() {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '💤 专注休眠倒计时停止器',
           style: TextStyle(
-            color: textColor,
+            color: isDark ? Colors.white : primaryColor,
             fontSize: 13.5,
             fontWeight: FontWeight.bold,
           ),
@@ -951,8 +963,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                   ),
                   Text(
                     _formatSleepTimer(),
-                    style: const TextStyle(
-                      color: Colors.purpleAccent,
+                    style: TextStyle(
+                      color: primaryColor,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -978,7 +990,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
 
   Widget _buildTimeChip(int mins, String label, {bool isCancel = false}) {
     final bool isSelected = (_secondsRemaining ~/ 60 == mins) && !isCancel;
-    final color = isCancel ? Colors.redAccent : Colors.purpleAccent;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final color = isCancel ? Colors.redAccent : primaryColor;
     return GestureDetector(
       onTap: () => _setSleepTimer(mins),
       child: Container(
@@ -1001,7 +1014,9 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white54,
+            color: isSelected
+                ? (isDark ? Colors.white : color)
+                : (isDark ? Colors.white54 : Colors.black54),
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),

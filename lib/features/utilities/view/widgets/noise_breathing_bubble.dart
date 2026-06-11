@@ -58,7 +58,7 @@ class NoiseBreathingBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
-    final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
+    final Color faintTextColor = isDark ? Colors.white38 : Colors.black54;
 
     return GlassCard(
       glowColor: isBreathingActive
@@ -120,7 +120,7 @@ class NoiseBreathingBubble extends StatelessWidget {
                           border: Border.all(
                             color: isBreathingActive
                                 ? glowColor
-                                : Colors.white30,
+                                : (isDark ? Colors.white30 : Colors.black26),
                             width: isBreathingActive ? 2.5 : 1.5,
                           ),
                           boxShadow: [
@@ -205,14 +205,14 @@ class NoiseBreathingBubble extends StatelessWidget {
                       isBreathingActive
                           ? Icons.pause_circle_filled_rounded
                           : Icons.play_arrow_rounded,
-                      color: textColor,
+                      color: Colors.white,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       isBreathingActive ? '停止呼吸向导' : '开始放松调息',
-                      style: TextStyle(
-                        color: textColor,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
                       ),

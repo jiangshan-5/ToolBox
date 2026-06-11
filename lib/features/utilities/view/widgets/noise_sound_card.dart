@@ -26,7 +26,7 @@ class NoiseSoundCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
-    final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
+    final Color faintTextColor = isDark ? Colors.white38 : Colors.black54;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -66,7 +66,7 @@ class NoiseSoundCard extends StatelessWidget {
                     ),
                     child: Icon(
                       icon,
-                      color: isActive ? themeColor : Colors.white60,
+                      color: isActive ? themeColor : (isDark ? Colors.white60 : Colors.black45),
                       size: 22,
                     ),
                   ),
@@ -94,8 +94,8 @@ class NoiseSoundCard extends StatelessWidget {
               Switch(
                 activeThumbColor: themeColor,
                 activeTrackColor: themeColor.withOpacity(0.2),
-                inactiveThumbColor: Colors.white30,
-                inactiveTrackColor: Colors.white10,
+                inactiveThumbColor: isDark ? Colors.white30 : Colors.grey.shade400,
+                inactiveTrackColor: isDark ? Colors.white10 : Colors.black12,
                 value: isActive,
                 onChanged: onToggleActive,
               ),
@@ -114,8 +114,8 @@ class NoiseSoundCard extends StatelessWidget {
                   child: SliderTheme(
                     data: SliderThemeData(
                       activeTrackColor: themeColor,
-                      inactiveTrackColor: Colors.white10,
-                      thumbColor: Colors.white,
+                      inactiveTrackColor: isDark ? Colors.white10 : Colors.black12,
+                      thumbColor: isDark ? Colors.white : themeColor,
                       overlayColor: themeColor.withOpacity(0.1),
                       trackHeight: 2.5,
                       thumbShape: const RoundSliderThumbShape(
