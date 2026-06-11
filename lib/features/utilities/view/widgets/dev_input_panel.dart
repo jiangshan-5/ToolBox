@@ -58,9 +58,12 @@ class DevInputPanel extends StatelessWidget {
                   fontFamily: 'monospace',
                   height: 1.4,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '请贴入待处理的字符串或JSON数据...',
-                  hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white24 : Colors.black38,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
                 ),
               ),

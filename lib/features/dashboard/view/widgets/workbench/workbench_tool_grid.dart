@@ -130,117 +130,178 @@ class WorkbenchToolGrid extends ConsumerWidget {
       tiltSensitivity: isEditingTools ? 0.0 : 0.02,
       onTap: isEditingTools ? null : () => onToolClicked(toolKey, title),
       borderColor: color.withOpacity(isDark ? 0.25 : 0.15),
-      glowColor: isLarge ? color : null,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 14.0,
-          vertical: 10.0,
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(isDark ? 0.12 : 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: color.withOpacity(isDark ? 0.2 : 0.1),
-                  width: 1,
-                ),
+      glowColor: color,
+      child: isLarge
+          ? Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14.0,
+                vertical: 10.0,
               ),
-              child: Icon(icon, size: 22, color: color),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          title,
-                          maxLines: 1,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(isDark ? 0.12 : 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: color.withOpacity(isDark ? 0.2 : 0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(icon, size: 22, color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ),
+                            if (toolKey.startsWith('ai_')) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Colors.purpleAccent, color],
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'AI',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ] else if (toolKey == 'novel_reader') ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+                                ),
+                                child: Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          description,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: textColor,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      if (isLarge && (toolKey.startsWith('ai_'))) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.purpleAccent, color],
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'AI',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ] else if (isLarge && toolKey == 'novel_reader') ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: color.withOpacity(0.3), width: 0.5),
-                          ),
-                          child: Text(
-                            'PRO',
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            fontSize: 10.5,
+                            color: subTextColor,
+                            height: 1.25,
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 10,
+                    color: textColor.withOpacity(0.3),
+                  ),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(isDark ? 0.12 : 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: color.withOpacity(isDark ? 0.2 : 0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(icon, size: 18, color: color),
+                      ),
+                      Icon(
+                        Icons.open_in_new_rounded,
+                        size: 11,
+                        color: textColor.withOpacity(0.25),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    maxLines: isLarge ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: subTextColor,
-                      height: 1.25,
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                            height: 1.2,
+                            letterSpacing: 0.15,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: subTextColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            if (isLarge) ...[
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 10,
-                color: textColor.withOpacity(0.3),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
 
     return SizedBox(
       width: width,
-      height: 76,
+      height: isLarge ? 76 : 110,
       child: _buildReorderableToolCard(
         toolKey: toolKey,
         child: _buildWiggleWrapper(
@@ -622,7 +683,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
 
     return SizedBox(
       width: width,
-      height: 76,
+      height: 110,
       child: ParallaxGlassCard(
         tiltSensitivity: 0.01,
         onTap: () {
@@ -650,9 +711,10 @@ class WorkbenchToolGrid extends ConsumerWidget {
               borderRadius: BorderRadius.circular(24),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
-              child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -666,11 +728,11 @@ class WorkbenchToolGrid extends ConsumerWidget {
                     ),
                     child: const Icon(Icons.add_rounded, size: 22, color: Colors.pinkAccent),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 10),
                   Text(
                     '添加工具',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.bold,
                       color: textColor,
                     ),

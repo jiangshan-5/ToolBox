@@ -110,6 +110,15 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
+    final Color borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     final double readingTime = _charWithSpaces > 0
         ? (_charWithSpaces / 350).ceilToDouble()
         : 0;
@@ -120,18 +129,18 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '字数与字符统计器',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
       ),
@@ -142,13 +151,19 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
           children: [
             // Theme Background
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0C091F),
-                    Color(0xFF140F2D),
-                    Color(0xFF06050C),
-                  ],
+                  colors: isDark
+                      ? [
+                          const Color(0xFF0C091F),
+                          const Color(0xFF140F2D),
+                          const Color(0xFF06050C),
+                        ]
+                      : [
+                          primaryColor.withOpacity(0.06),
+                          const Color(0xFFFAF9FF),
+                          Colors.white,
+                        ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -160,10 +175,10 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 children: [
                   // Text Input Area
-                  const Text(
+                  Text(
                     '📝 输入分析文本',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -172,10 +187,12 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.02),
+                      color: isDark
+                          ? Colors.white.withOpacity(0.02)
+                          : Colors.black.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: borderDividerColor,
                       ),
                     ),
                     child: Column(
@@ -184,14 +201,14 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                         TextField(
                           controller: _controller,
                           maxLines: 8,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 13.5,
                           ),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: '在此粘贴或输入需要分析的赛博文本...',
                             hintStyle: TextStyle(
-                              color: Colors.white30,
+                              color: isDark ? Colors.white30 : Colors.black38,
                               fontSize: 13.5,
                             ),
                             border: InputBorder.none,
@@ -200,8 +217,8 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                         const SizedBox(height: 8),
                         Text(
                           '当前字数: $_charWithSpaces 字符',
-                          style: const TextStyle(
-                            color: Colors.white38,
+                          style: TextStyle(
+                            color: faintTextColor,
                             fontSize: 10.5,
                           ),
                         ),
@@ -210,10 +227,10 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Word Count Grid
-                  const Text(
+                  Text(
                     '📊 深度字数统计沙盒',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -237,10 +254,10 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                   ),
                   const SizedBox(height: 20),
                   // Action Tools
-                  const Text(
+                  Text(
                     '⚡ 算子联动链路推荐',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: textColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -253,10 +270,12 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.015),
+                          color: isDark
+                              ? Colors.white.withOpacity(0.015)
+                              : Colors.black.withOpacity(0.02),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: borderDividerColor,
                           ),
                         ),
                         child: Row(
@@ -274,32 +293,32 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'AI 高级写作引擎联动',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: textColor,
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   Text(
                                     '将分析的数据一键流转至 AI 大模型进行专业级论文润色与精简。',
                                     style: TextStyle(
-                                      color: Colors.white38,
+                                      color: subTextColor.withOpacity(0.6),
                                       fontSize: 10,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.arrow_forward_ios_rounded,
-                              color: Colors.white38,
+                              color: faintTextColor,
                               size: 14,
                             ),
                           ],
@@ -314,10 +333,12 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.015),
+                        color: isDark
+                            ? Colors.white.withOpacity(0.015)
+                            : Colors.black.withOpacity(0.02),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.04),
+                          color: borderDividerColor,
                         ),
                       ),
                       child: Row(
@@ -339,10 +360,10 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   '阅读时间预估',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: textColor,
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -352,8 +373,8 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
                                   _charWithSpaces > 0
                                       ? '按照标准语速 350 字/分钟，预计约需 $readingTime 分钟读完。'
                                       : '输入文本后自动计算预计阅读时间。',
-                                  style: const TextStyle(
-                                    color: Colors.white54,
+                                  style: TextStyle(
+                                    color: subTextColor,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -375,12 +396,19 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
   }
 
   Widget _buildStatCard(String label, String value, Color color) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.015),
+        color: isDark
+            ? Colors.white.withOpacity(0.015)
+            : Colors.black.withOpacity(0.02),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+        border: Border.all(color: borderDividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,13 +416,16 @@ class _WordCounterScreenState extends ConsumerState<WordCounterScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+            style: TextStyle(
+              color: isDark ? Colors.white38 : Colors.black45,
+              fontSize: 10.5,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
-              color: color,
+              color: isDark ? color : HSLColor.fromColor(color).withLightness(0.35).toColor(),
               fontSize: 22,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,

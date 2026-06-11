@@ -141,6 +141,7 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     if (_isFullscreen) {
       return Scaffold(
         backgroundColor: Colors.black,
@@ -198,25 +199,25 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'LED 手持弹幕',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.fullscreen_rounded,
-              color: Colors.cyanAccent,
+              color: isDark ? Colors.cyanAccent : primaryColor,
               size: 28,
             ),
             tooltip: "进入全屏模式",
@@ -231,13 +232,19 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
         child: Stack(
           children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF090714),
-                  Color(0xFF0F0B22),
-                  Color(0xFF040308),
-                ],
+                colors: isDark
+                    ? [
+                        const Color(0xFF090714),
+                        const Color(0xFF0F0B22),
+                        const Color(0xFF040308),
+                      ]
+                    : [
+                        primaryColor.withOpacity(0.06),
+                        const Color(0xFFFAF9FF),
+                        Colors.white,
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -318,32 +325,35 @@ class _LedBannerScreenState extends ConsumerState<LedBannerScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00F2FE), Color(0xFF4FACFE)],
+                      gradient: LinearGradient(
+                        colors: [
+                          isDark ? const Color(0xFF00F2FE) : primaryColor,
+                          isDark ? const Color(0xFF4FACFE) : primaryColor.withBlue(220),
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.cyanAccent.withOpacity(0.25),
+                          color: (isDark ? Colors.cyanAccent : primaryColor).withOpacity(0.25),
                           blurRadius: 15,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.fullscreen_rounded,
-                          color: Colors.black,
+                          color: isDark ? Colors.black : Colors.white,
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           "💫 开启全屏沉浸播放 (横屏模式)",
                           style: TextStyle(
-                            color: Colors.black,
+                            color: isDark ? Colors.black : Colors.white,
                             fontSize: 13.5,
                             fontWeight: FontWeight.w900,
                           ),

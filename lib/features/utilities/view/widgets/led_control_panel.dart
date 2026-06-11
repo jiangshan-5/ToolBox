@@ -49,6 +49,7 @@ class LedControlPanel extends StatelessWidget {
     final Color borderDividerColor = isDark
         ? Colors.white.withOpacity(0.08)
         : Colors.black.withOpacity(0.08);
+    final Color accentColor = isDark ? Colors.cyanAccent : Theme.of(context).colorScheme.primary;
 
     return GlassCard(
       borderColor: isDark
@@ -85,9 +86,12 @@ class LedControlPanel extends StatelessWidget {
               child: TextField(
                 controller: textController,
                 style: TextStyle(color: textColor, fontSize: 13.5),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '输入要滚动的文字...',
-                  hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white24 : Colors.black38,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
                 ),
               ),
@@ -180,7 +184,7 @@ class LedControlPanel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.cyanAccent.withOpacity(0.5)
+                              ? accentColor.withOpacity(0.5)
                               : (isDark
                                     ? Colors.white.withOpacity(0.04)
                                     : Colors.black.withOpacity(0.04)),
@@ -191,8 +195,8 @@ class LedControlPanel extends StatelessWidget {
                         bgNames[idx],
                         style: TextStyle(
                           color: isSelected
-                              ? Colors.cyanAccent
-                              : Colors.white60,
+                              ? accentColor
+                              : subTextColor,
                           fontSize: 11.5,
                           fontWeight: isSelected
                               ? FontWeight.bold
@@ -205,7 +209,7 @@ class LedControlPanel extends StatelessWidget {
               }),
             ),
             const SizedBox(height: 16),
-            const Divider(color: Colors.white10),
+            Divider(color: borderDividerColor),
             const SizedBox(height: 8),
 
             // Font size control slider
@@ -218,8 +222,8 @@ class LedControlPanel extends StatelessWidget {
                 ),
                 Text(
                   "${fontSize.round()} PX",
-                  style: const TextStyle(
-                    color: Colors.cyanAccent,
+                  style: TextStyle(
+                    color: accentColor,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -230,8 +234,8 @@ class LedControlPanel extends StatelessWidget {
               value: fontSize,
               min: 32,
               max: 120,
-              activeColor: Colors.cyanAccent,
-              inactiveColor: Colors.white10,
+              activeColor: accentColor,
+              inactiveColor: isDark ? Colors.white10 : Colors.black12,
               onChanged: onFontSizeChanged,
             ),
 
@@ -245,8 +249,8 @@ class LedControlPanel extends StatelessWidget {
                 ),
                 Text(
                   "速度 ${scrollSpeed.toStringAsFixed(1)}",
-                  style: const TextStyle(
-                    color: Colors.cyanAccent,
+                  style: TextStyle(
+                    color: accentColor,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -257,8 +261,8 @@ class LedControlPanel extends StatelessWidget {
               value: scrollSpeed,
               min: 0.5,
               max: 10.0,
-              activeColor: Colors.cyanAccent,
-              inactiveColor: Colors.white10,
+              activeColor: accentColor,
+              inactiveColor: isDark ? Colors.white10 : Colors.black12,
               onChanged: onScrollSpeedChanged,
             ),
 
@@ -272,8 +276,8 @@ class LedControlPanel extends StatelessWidget {
                 ),
                 Text(
                   "${glowRadius.round()} Lm",
-                  style: const TextStyle(
-                    color: Colors.cyanAccent,
+                  style: TextStyle(
+                    color: accentColor,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -284,8 +288,8 @@ class LedControlPanel extends StatelessWidget {
               value: glowRadius,
               min: 0,
               max: 30,
-              activeColor: Colors.cyanAccent,
-              inactiveColor: Colors.white10,
+              activeColor: accentColor,
+              inactiveColor: isDark ? Colors.white10 : Colors.black12,
               onChanged: onGlowRadiusChanged,
             ),
 
@@ -303,8 +307,8 @@ class LedControlPanel extends StatelessWidget {
                       : "${blinkFrequency.toStringAsFixed(1)} Hz",
                   style: TextStyle(
                     color: blinkFrequency <= 0
-                        ? Colors.white30
-                        : Colors.cyanAccent,
+                        ? (isDark ? Colors.white30 : Colors.black26)
+                        : accentColor,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -315,8 +319,8 @@ class LedControlPanel extends StatelessWidget {
               value: blinkFrequency,
               min: 0.0,
               max: 5.0,
-              activeColor: Colors.cyanAccent,
-              inactiveColor: Colors.white10,
+              activeColor: accentColor,
+              inactiveColor: isDark ? Colors.white10 : Colors.black12,
               onChanged: (val) {
                 onBlinkFrequencyChanged(val);
                 onBlinkFrequencySliderFinished();

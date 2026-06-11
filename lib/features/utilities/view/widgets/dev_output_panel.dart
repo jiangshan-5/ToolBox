@@ -67,9 +67,12 @@ class DevOutputPanel extends StatelessWidget {
                   fontFamily: 'monospace',
                   height: 1.4,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '格式化或编码后的结果将在这里自动展示...',
-                  hintStyle: TextStyle(color: Colors.white12, fontSize: 13),
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white24 : Colors.black38,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
                 ),
               ),

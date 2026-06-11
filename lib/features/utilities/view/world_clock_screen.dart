@@ -132,31 +132,35 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '时区对照与极智番茄钟',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.purpleAccent,
-          labelColor: Colors.purpleAccent,
-          unselectedLabelColor: Colors.white38,
+          indicatorColor: primaryColor,
+          labelColor: primaryColor,
+          unselectedLabelColor: isDark ? Colors.white38 : Colors.black38,
           tabs: const [
             Tab(text: '🌐 世界时区对照'),
             Tab(text: '⏱️ 极智专注番茄钟'),
@@ -167,13 +171,19 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
         children: [
           // Background
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0C091F),
-                  Color(0xFF140F2D),
-                  Color(0xFF06050C),
-                ],
+                colors: isDark
+                    ? [
+                        const Color(0xFF0C091F),
+                        const Color(0xFF140F2D),
+                        const Color(0xFF06050C),
+                      ]
+                    : [
+                        primaryColor.withOpacity(0.06),
+                        const Color(0xFFFAF9FF),
+                        Colors.white,
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -205,6 +215,14 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
   }
 
   Widget _buildClockItem(String location, DateTime baseTime, int offsetHours) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color faintTextColor = isDark ? Colors.white38 : Colors.black38;
+    final Color borderDividerColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     final DateTime targetTime = baseTime.toUtc().add(
       Duration(hours: offsetHours),
     );
@@ -223,9 +241,11 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: isDark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: borderDividerColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -235,8 +255,8 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
             children: [
               Text(
                 location,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -244,14 +264,14 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
               const SizedBox(height: 4),
               Text(
                 dateStr,
-                style: const TextStyle(color: Colors.white30, fontSize: 11),
+                style: TextStyle(color: faintTextColor, fontSize: 11),
               ),
             ],
           ),
           Text(
             timeStr,
-            style: const TextStyle(
-              color: Colors.purpleAccent,
+            style: TextStyle(
+              color: primaryColor,
               fontSize: 24,
               fontWeight: FontWeight.bold,
               fontFamily: 'monospace',
@@ -263,6 +283,11 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
   }
 
   Widget _buildPomodoroTab() {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     final double progress = _secondsRemaining / (_isBreakTime ? 300 : 1500);
 
     return Padding(
@@ -280,9 +305,9 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
                 child: CircularProgressIndicator(
                   value: progress,
                   strokeWidth: 8,
-                  backgroundColor: Colors.white10,
+                  backgroundColor: isDark ? Colors.white10 : Colors.black12,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    _isBreakTime ? Colors.greenAccent : Colors.purpleAccent,
+                    _isBreakTime ? Colors.green : primaryColor,
                   ),
                 ),
               ),
@@ -293,8 +318,8 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
                     _isBreakTime ? '休息中...' : '专注中...',
                     style: TextStyle(
                       color: _isBreakTime
-                          ? Colors.greenAccent
-                          : Colors.purpleAccent,
+                          ? Colors.green
+                          : primaryColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -302,8 +327,8 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
                   const SizedBox(height: 10),
                   Text(
                     _formatPomodoroTime(),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textColor,
                       fontSize: 42,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2.0,
@@ -318,7 +343,7 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
           // Total Stats
           Text(
             '今日已成功专注周期: $_totalCompletedCycles 轮',
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: TextStyle(color: subTextColor, fontSize: 12),
           ),
           const SizedBox(height: 30),
 
@@ -329,7 +354,7 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
               _buildRoundButton(
                 Icons.refresh_rounded,
                 _resetTimer,
-                Colors.white38,
+                isDark ? Colors.white38 : Colors.black45,
               ),
               const SizedBox(width: 24),
               _buildRoundButton(
@@ -337,14 +362,14 @@ class _WorldClockScreenState extends ConsumerState<WorldClockScreen>
                     ? Icons.pause_rounded
                     : Icons.play_arrow_rounded,
                 _isTimerRunning ? _pauseTimer : _startTimer,
-                _isBreakTime ? Colors.greenAccent : Colors.purpleAccent,
+                _isBreakTime ? Colors.green : primaryColor,
                 isLarge: true,
               ),
               const SizedBox(width: 24),
               _buildRoundButton(
                 Icons.skip_next_rounded,
                 _handleTimerCompletion,
-                Colors.white38,
+                isDark ? Colors.white38 : Colors.black45,
               ),
             ],
           ),

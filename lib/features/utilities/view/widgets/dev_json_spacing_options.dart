@@ -15,9 +15,10 @@ class DevJsonSpacingOptions extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return GlassCard(
-      borderColor: Colors.purpleAccent.withOpacity(0.1),
+      borderColor: primaryColor.withOpacity(0.1),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
@@ -25,9 +26,9 @@ class DevJsonSpacingOptions extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.space_bar_rounded,
-                  color: Colors.purpleAccent,
+                  color: primaryColor,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -50,17 +51,21 @@ class DevJsonSpacingOptions extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: active
-                          ? Colors.purpleAccent.withOpacity(0.15)
+                          ? primaryColor.withOpacity(0.15)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: active ? Colors.purpleAccent : Colors.white10,
+                        color: active
+                            ? primaryColor
+                            : (isDark ? Colors.white10 : Colors.black12),
                       ),
                     ),
                     child: Text(
                       "$spaces 个空格",
                       style: TextStyle(
-                        color: active ? Colors.purpleAccent : Colors.white30,
+                        color: active
+                            ? primaryColor
+                            : (isDark ? Colors.white30 : Colors.black54),
                         fontSize: 11,
                         fontWeight: active
                             ? FontWeight.bold

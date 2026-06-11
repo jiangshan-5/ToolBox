@@ -15,6 +15,11 @@ class DevSelectorChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color unselectedTextColor = isDark ? Colors.white60 : Colors.black54;
+
+    Color getActiveColor(Color baseColor) {
+      return isDark ? baseColor : HSLColor.fromColor(baseColor).withLightness(0.35).toColor();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +42,7 @@ class DevSelectorChips extends StatelessWidget {
             itemBuilder: (context, idx) {
               final op = devOperations[idx];
               final isSelected = op.key == activeOperation;
-              final opColor = op.color;
+              final opColor = getActiveColor(op.color);
 
               return GestureDetector(
                 onTap: () => onOperationChanged(op.key),
@@ -62,7 +67,7 @@ class DevSelectorChips extends StatelessWidget {
                     boxShadow: [
                       if (isSelected)
                         BoxShadow(
-                          color: opColor.withOpacity(0.2),
+                          color: opColor.withOpacity(0.15),
                           blurRadius: 8,
                         ),
                     ],
@@ -73,14 +78,14 @@ class DevSelectorChips extends StatelessWidget {
                     children: [
                       Icon(
                         op.icon,
-                        color: isSelected ? opColor : Colors.white60,
+                        color: isSelected ? opColor : unselectedTextColor,
                         size: 16,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         op.label,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white60,
+                          color: isSelected ? opColor : unselectedTextColor,
                           fontSize: 12,
                           fontWeight: isSelected
                               ? FontWeight.bold

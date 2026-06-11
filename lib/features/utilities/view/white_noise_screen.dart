@@ -225,33 +225,32 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           'url': fullUrl,
         });
 
-        if (!_players.containsKey(id)) {
+        if (!_channelVolumes.containsKey(id)) {
           _channelVolumes[id] = 0.5;
           _channelActive[id] = false;
-
-          final player = AudioPlayer();
-          player.setLoopMode(LoopMode.one);
-          player.setVolume(0.5);
-          player.setUrl(fullUrl).catchError((_) => null);
-          _players[id] = player;
         } else {
           final existingSound = _sounds.firstWhere((s) => s['id'] == id, orElse: () => {});
           if (existingSound.isNotEmpty && existingSound['url'] != fullUrl) {
-            _players[id]?.setUrl(fullUrl).catchError((_) => null);
+            final player = _players[id];
+            if (player != null) {
+              player.setUrl(fullUrl).catchError((_) => null);
+            }
           }
         }
       }
 
       final List<String> toRemove = [];
-      for (var id in _players.keys) {
+      for (var id in _channelVolumes.keys.toList()) {
         if (!activeIds.contains(id)) {
-          _players[id]?.stop().catchError((_) => null);
-          _players[id]?.dispose().catchError((_) => null);
+          final player = _players.remove(id);
+          if (player != null) {
+            player.stop().catchError((_) => null);
+            player.dispose().catchError((_) => null);
+          }
           toRemove.add(id);
         }
       }
       for (var id in toRemove) {
-        _players.remove(id);
         _channelVolumes.remove(id);
         _channelActive.remove(id);
       }
@@ -270,20 +269,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize mixer volume map and audio player instances
+    // Initialize mixer volume map
     for (var sound in _sounds) {
       final id = sound['id'] as String;
       _channelVolumes[id] = 0.5; // default 50%
       _channelActive[id] = false;
-
-      final player = AudioPlayer();
-      player.setLoopMode(LoopMode.one);
-      player.setVolume(0.5);
-      // Preload network URL dynamically
-      player.setUrl(sound['url'] as String).catchError((_) {
-        return null;
-      });
-      _players[id] = player;
     }
     _loadRemoteTracks();
   }
@@ -346,17 +336,38 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   void _syncAudioPlayback() {
     for (var sound in _sounds) {
       final id = sound['id'] as String;
-      final player = _players[id];
-      if (player != null) {
-        if (_isMixerPlaying && (_channelActive[id] == true)) {
+      final url = sound['url'] as String;
+      final isActive = _channelActive[id] == true;
+
+      if (isActive) {
+        var player = _players[id];
+        if (player == null) {
+          player = AudioPlayer();
+          _players[id] = player;
+          player.setLoopMode(LoopMode.one).catchError((_) => null);
           player.setVolume(_channelVolumes[id] ?? 0.5).catchError((_) => null);
-          if (!player.playing) {
-            player.play().catchError((_) => null);
-          }
+          player.setUrl(url).then((_) {
+            if (_isMixerPlaying && (_channelActive[id] == true)) {
+              _players[id]?.play().catchError((_) => null);
+            }
+          }).catchError((_) => null);
         } else {
-          if (player.playing) {
-            player.stop().catchError((_) => null);
+          player.setVolume(_channelVolumes[id] ?? 0.5).catchError((_) => null);
+          if (_isMixerPlaying) {
+            if (!player.playing) {
+              player.play().catchError((_) => null);
+            }
+          } else {
+            if (player.playing) {
+              player.pause().catchError((_) => null);
+            }
           }
+        }
+      } else {
+        final player = _players.remove(id);
+        if (player != null) {
+          player.stop().catchError((_) => null);
+          player.dispose().catchError((_) => null);
         }
       }
     }
@@ -365,11 +376,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   void _triggerSleepFading() {
     _sleepTimer?.cancel();
     _stopBreathingCoach();
-
-    // Silently stop all playing channels immediately
-    for (var player in _players.values) {
-      player.stop().catchError((_) => null);
-    }
 
     if (!mounted) return;
 
@@ -382,6 +388,8 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       _visualizerTimer?.cancel();
       _secondsRemaining = 0;
     });
+    _syncAudioPlayback();
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('💤 专注休眠倒计时已到，音景及冥想向导已优雅淡出静音'),

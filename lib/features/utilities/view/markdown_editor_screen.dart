@@ -187,6 +187,7 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     ref.listen<String>(markdownEditorCacheProvider, (previous, next) {
       if (_editorController.text != next) {
         _editorController.text = next;
@@ -215,9 +216,9 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
           elevation: 0,
 
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: Colors.white70,
+              color: isDark ? Colors.white70 : Colors.black87,
             ),
 
             onPressed: () async {
@@ -229,21 +230,21 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
             },
           ),
 
-          title: const Text(
+          title: Text(
             '极简 Markdown 工作站',
 
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: textColor,
             ),
           ),
 
           actions: [
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.auto_awesome_rounded,
-                color: Colors.purpleAccent,
+                color: primaryColor,
               ),
               tooltip: '发送至 AI 写作引擎',
               onPressed: () {
@@ -271,11 +272,11 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
           bottom: TabBar(
             controller: _tabController,
 
-            indicatorColor: Colors.purpleAccent,
+            indicatorColor: primaryColor,
 
-            labelColor: Colors.purpleAccent,
+            labelColor: primaryColor,
 
-            unselectedLabelColor: Colors.white38,
+            unselectedLabelColor: isDark ? Colors.white38 : Colors.black38,
 
             tabs: const [
               Tab(text: '✏️ 源码编辑模式'),
@@ -292,13 +293,19 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
             children: [
               // Background
               Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF0C091F),
-                      Color(0xFF140F2D),
-                      Color(0xFF06050C),
-                    ],
+                    colors: isDark
+                        ? [
+                            const Color(0xFF0C091F),
+                            const Color(0xFF140F2D),
+                            const Color(0xFF06050C),
+                          ]
+                        : [
+                            primaryColor.withOpacity(0.06),
+                            const Color(0xFFFAF9FF),
+                            Colors.white,
+                          ],
 
                     begin: Alignment.topLeft,
 
@@ -333,11 +340,7 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
 
             border: Border(
               bottom: BorderSide(
-                color: isDark
-                    ? isDark
-                          ? Colors.white.withOpacity(0.04)
-                          : Colors.black.withOpacity(0.04)
-                    : Colors.black.withOpacity(0.04),
+                color: borderDividerColor,
               ),
             ),
           ),
@@ -375,9 +378,7 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
 
             decoration: BoxDecoration(
               color: isDark
-                  ? isDark
-                        ? Colors.white.withOpacity(0.02)
-                        : Colors.black.withOpacity(0.03)
+                  ? Colors.white.withOpacity(0.02)
                   : Colors.black.withOpacity(0.03),
 
               borderRadius: BorderRadius.circular(20),
@@ -402,12 +403,15 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
                 fontFamily: 'monospace',
               ),
 
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
 
                 hintText: '在此键入您的 Markdown 格式内容...',
 
-                hintStyle: TextStyle(color: Colors.white24, fontSize: 13.5),
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.white24 : Colors.black38,
+                  fontSize: 13.5,
+                ),
               ),
             ),
           ),
@@ -418,8 +422,9 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
 
   Widget _buildPreviewTab() {
     final text = _editorController.text;
-
     final lines = text.split('\n');
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
 
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
@@ -460,8 +465,8 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
             child: Text(
               line.substring(3),
 
-              style: const TextStyle(
-                color: Colors.purpleAccent,
+              style: TextStyle(
+                color: primaryColor,
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
@@ -476,8 +481,8 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
             child: Text(
               line.substring(4),
 
-              style: const TextStyle(
-                color: Colors.cyanAccent,
+              style: TextStyle(
+                color: secondaryColor,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
@@ -494,10 +499,10 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
 
             decoration: BoxDecoration(
-              color: Colors.purpleAccent.withOpacity(0.04),
+              color: primaryColor.withOpacity(0.04),
 
-              border: const Border(
-                left: BorderSide(color: Colors.purpleAccent, width: 3),
+              border: Border(
+                left: BorderSide(color: primaryColor, width: 3),
               ),
 
               borderRadius: const BorderRadius.only(
@@ -534,9 +539,9 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-                const Text(
+                Text(
                   '• ',
-                  style: TextStyle(color: Colors.purpleAccent, fontSize: 16),
+                  style: TextStyle(color: primaryColor, fontSize: 16),
                 ),
 
                 Expanded(
@@ -558,10 +563,10 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
         // 4. Horizontal Rule
 
         if (line == '---' || line == '***') {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14.0),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14.0),
 
-            child: Divider(color: Colors.white10, height: 1),
+            child: Divider(color: borderDividerColor, height: 1),
           );
         }
 
@@ -587,6 +592,7 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
   }
 
   Widget _buildToolbarButton(String label, VoidCallback onTap) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
 
@@ -595,27 +601,21 @@ class _MarkdownEditorScreenState extends ConsumerState<MarkdownEditorScreen>
 
         decoration: BoxDecoration(
           color: isDark
-              ? isDark
-                    ? Colors.white.withOpacity(0.02)
-                    : Colors.black.withOpacity(0.03)
+              ? Colors.white.withOpacity(0.02)
               : Colors.black.withOpacity(0.03),
 
           borderRadius: BorderRadius.circular(8),
 
           border: Border.all(
-            color: isDark
-                ? isDark
-                      ? Colors.white.withOpacity(0.06)
-                      : Colors.black.withOpacity(0.06)
-                : Colors.black.withOpacity(0.06),
+            color: borderDividerColor,
           ),
         ),
 
         child: Text(
           label,
 
-          style: const TextStyle(
-            color: Colors.purpleAccent,
+          style: TextStyle(
+            color: primaryColor,
             fontSize: 11.5,
             fontWeight: FontWeight.bold,
           ),

@@ -40,10 +40,10 @@ class DevStatsPanel extends StatelessWidget {
                 "字节数增幅",
                 "${deltaRatio >= 0 ? '+' : ''}${deltaRatio.toStringAsFixed(1)}%",
                 deltaRatio == 0
-                    ? Colors.white54
+                    ? (isDark ? Colors.white54 : Colors.black54)
                     : (deltaRatio < 0
-                          ? Colors.greenAccent
-                          : Colors.amberAccent),
+                          ? (isDark ? Colors.greenAccent : Colors.green)
+                          : (isDark ? Colors.amberAccent : Colors.amber.shade900)),
               ),
             ),
             const SizedBox(width: 12),
@@ -54,7 +54,9 @@ class DevStatsPanel extends StatelessWidget {
                 faintTextColor,
                 "数据压缩率",
                 _calculateRatio(inputBytes, outputBytes),
-                deltaRatio < 0 ? Colors.greenAccent : Colors.white70,
+                deltaRatio < 0
+                    ? (isDark ? Colors.greenAccent : Colors.green)
+                    : (isDark ? Colors.white70 : Colors.black87),
               ),
             ),
           ],

@@ -229,6 +229,10 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
     final activeOpColor = activeOp.color;
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isWide = screenWidth > 800;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -236,18 +240,18 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           '开发者沙盒编码盒',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
       ),
@@ -258,13 +262,19 @@ class _DevEncoderScreenState extends ConsumerState<DevEncoderScreen> {
         child: Stack(
           children: [
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF070B19),
-                  Color(0xFF0F1532),
-                  Color(0xFF04060C),
-                ],
+                colors: isDark
+                    ? [
+                        const Color(0xFF070B19),
+                        const Color(0xFF0F1532),
+                        const Color(0xFF04060C),
+                      ]
+                    : [
+                        primaryColor.withOpacity(0.06),
+                        const Color(0xFFFAF9FF),
+                        Colors.white,
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

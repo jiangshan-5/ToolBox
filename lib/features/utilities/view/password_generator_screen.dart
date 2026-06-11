@@ -196,6 +196,7 @@ class _PasswordGeneratorScreenState
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Scaffold(
       extendBodyBehindAppBar: true,
 
@@ -205,21 +206,20 @@ class _PasswordGeneratorScreenState
         elevation: 0,
 
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
 
           onPressed: () => Navigator.pop(context),
         ),
 
-        title: const Text(
+        title: Text(
           '密码生成与强度分析',
-
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
       ),
@@ -228,13 +228,19 @@ class _PasswordGeneratorScreenState
         children: [
           // Theme Background
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0C091F),
-                  Color(0xFF140F2D),
-                  Color(0xFF06050C),
-                ],
+                colors: isDark
+                    ? [
+                        const Color(0xFF0C091F),
+                        const Color(0xFF140F2D),
+                        const Color(0xFF06050C),
+                      ]
+                    : [
+                        primaryColor.withOpacity(0.06),
+                        const Color(0xFFFAF9FF),
+                        Colors.white,
+                      ],
 
                 begin: Alignment.topLeft,
 
@@ -271,9 +277,7 @@ class _PasswordGeneratorScreenState
 
                   decoration: BoxDecoration(
                     color: isDark
-                        ? isDark
-                              ? Colors.white.withOpacity(0.02)
-                              : Colors.black.withOpacity(0.03)
+                        ? Colors.white.withOpacity(0.02)
                         : Colors.black.withOpacity(0.03),
 
                     borderRadius: BorderRadius.circular(20),
@@ -302,9 +306,9 @@ class _PasswordGeneratorScreenState
                       ),
 
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.copy_rounded,
-                          color: Colors.purpleAccent,
+                          color: primaryColor,
                           size: 20,
                         ),
 
@@ -317,15 +321,11 @@ class _PasswordGeneratorScreenState
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('安全密码已成功复制'),
+                                    content: const Text('安全密码已成功复制'),
 
-                                    backgroundColor:
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Color(0xFF0F0C29)
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainer,
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF0F0C29)
+                                        : Theme.of(context).colorScheme.surfaceContainer,
                                   ),
                                 );
                               },
@@ -352,20 +352,12 @@ class _PasswordGeneratorScreenState
 
                   decoration: BoxDecoration(
                     color: isDark
-                        ? isDark
-                              ? Colors.white.withOpacity(0.015)
-                              : Colors.black.withOpacity(0.02)
+                        ? Colors.white.withOpacity(0.015)
                         : Colors.black.withOpacity(0.02),
 
                     borderRadius: BorderRadius.circular(16),
 
-                    border: Border.all(
-                      color: isDark
-                          ? isDark
-                                ? Colors.white.withOpacity(0.04)
-                                : Colors.black.withOpacity(0.04)
-                          : Colors.black.withOpacity(0.04),
-                    ),
+                    border: Border.all(color: borderDividerColor),
                   ),
 
                   child: Column(
@@ -402,7 +394,7 @@ class _PasswordGeneratorScreenState
                         child: LinearProgressIndicator(
                           value: _strengthProgress,
 
-                          backgroundColor: Colors.white10,
+                          backgroundColor: isDark ? Colors.white10 : Colors.black12,
 
                           valueColor: AlwaysStoppedAnimation<Color>(
                             _strengthColor,
@@ -435,9 +427,7 @@ class _PasswordGeneratorScreenState
 
                   decoration: BoxDecoration(
                     color: isDark
-                        ? isDark
-                              ? Colors.white.withOpacity(0.02)
-                              : Colors.black.withOpacity(0.03)
+                        ? Colors.white.withOpacity(0.02)
                         : Colors.black.withOpacity(0.03),
 
                     borderRadius: BorderRadius.circular(20),
@@ -466,8 +456,8 @@ class _PasswordGeneratorScreenState
                           Text(
                             '${_passwordLength.toInt()} 位',
 
-                            style: const TextStyle(
-                              color: Colors.purpleAccent,
+                            style: TextStyle(
+                              color: primaryColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -482,9 +472,9 @@ class _PasswordGeneratorScreenState
 
                         max: 32,
 
-                        activeColor: Colors.purpleAccent,
+                        activeColor: primaryColor,
 
-                        inactiveColor: Colors.white10,
+                        inactiveColor: isDark ? Colors.white10 : Colors.black12,
 
                         onChanged: (val) {
                           setState(() {
@@ -495,7 +485,7 @@ class _PasswordGeneratorScreenState
                         },
                       ),
 
-                      const Divider(color: Colors.white10),
+                      Divider(color: borderDividerColor),
 
                       _buildConfigToggle('包含大写字母 (A-Z)', _includeUppercase, (
                         val,
@@ -542,18 +532,19 @@ class _PasswordGeneratorScreenState
     bool value,
     ValueChanged<bool> onChanged,
   ) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return SwitchListTile(
       title: Text(label, style: TextStyle(color: subTextColor, fontSize: 12.5)),
 
       value: value,
 
-      activeThumbColor: Colors.purpleAccent,
+      activeThumbColor: primaryColor,
 
-      activeTrackColor: Colors.purpleAccent.withOpacity(0.2),
+      activeTrackColor: primaryColor.withOpacity(0.2),
 
-      inactiveThumbColor: Colors.white30,
+      inactiveThumbColor: isDark ? Colors.white30 : Colors.black26,
 
-      inactiveTrackColor: Colors.white10,
+      inactiveTrackColor: isDark ? Colors.white10 : Colors.black12,
 
       contentPadding: EdgeInsets.zero,
 

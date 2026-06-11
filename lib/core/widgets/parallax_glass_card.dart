@@ -27,6 +27,7 @@ class ParallaxGlassCard extends StatefulWidget {
 class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
   double _pitch = 0.0;
   double _roll = 0.0;
+  double _scale = 1.0;
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
 
   @override
@@ -60,31 +61,49 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
 
   @override
   Widget build(BuildContext context) {
-    // 3D Perspective Matrix
+    // 3D Perspective Matrix combined with scale down for tap feedback
     final matrix = Matrix4.identity()
       ..setEntry(3, 2, 0.001) // perspective
       ..rotateX(-_pitch) // tilt up/down
-      ..rotateY(-_roll); // tilt left/right
+      ..rotateY(-_roll) // tilt left/right
+      ..scale(_scale); // dynamic scale feedback
 
-    return TweenAnimationBuilder(
-      tween: Matrix4Tween(begin: Matrix4.identity(), end: matrix),
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOutQuart,
-      builder: (context, Matrix4 value, child) {
-        return Transform(
-          transform: value,
-          alignment: FractionalOffset.center,
-          child: child,
-        );
+    return Listener(
+      onPointerDown: (_) {
+        if (widget.onTap != null) {
+          setState(() => _scale = 0.96);
+        }
       },
-      child: GlassCard(
-        onTap: () {
-          HapticFeedback.lightImpact(); // Micro-interaction vibration
-          if (widget.onTap != null) widget.onTap!();
+      onPointerUp: (_) {
+        if (widget.onTap != null) {
+          setState(() => _scale = 1.0);
+        }
+      },
+      onPointerCancel: (_) {
+        if (widget.onTap != null) {
+          setState(() => _scale = 1.0);
+        }
+      },
+      child: TweenAnimationBuilder(
+        tween: Matrix4Tween(begin: Matrix4.identity(), end: matrix),
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutQuart,
+        builder: (context, Matrix4 value, child) {
+          return Transform(
+            transform: value,
+            alignment: FractionalOffset.center,
+            child: child,
+          );
         },
-        borderColor: widget.borderColor,
-        glowColor: widget.glowColor,
-        child: widget.child,
+        child: GlassCard(
+          onTap: () {
+            HapticFeedback.lightImpact(); // Micro-interaction vibration
+            if (widget.onTap != null) widget.onTap!();
+          },
+          borderColor: widget.borderColor,
+          glowColor: widget.glowColor,
+          child: widget.child,
+        ),
       ),
     );
   }
