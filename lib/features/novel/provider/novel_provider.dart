@@ -158,11 +158,15 @@ class NovelNotifier extends StateNotifier<NovelState> {
     // 2. Format paragraphs: trim spacing and prepend Chinese double full-width space indentation
     final List<String> lines = cleaned.split('\n');
     final List<String> formattedLines = [];
+    final splitRegExp = RegExp(r'[ 　\t]{2,}|(?<=[。！？；”）…])[ 　\t]+|[ 　\t]+(?=[“（])|　');
     
     for (var line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      formattedLines.add('　　$trimmed');
+      final parts = line.split(splitRegExp);
+      for (var part in parts) {
+        final trimmed = part.trim();
+        if (trimmed.isEmpty) continue;
+        formattedLines.add('　　$trimmed');
+      }
     }
     
     return formattedLines.join('\n');
