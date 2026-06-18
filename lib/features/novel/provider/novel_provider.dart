@@ -21,6 +21,7 @@ class NovelState {
   final bool isSearchLoading;
   final bool isContentLoading;
   final String? error;
+  final String? searchError;
 
   // Explore Rankings State
   final Map<String, List<Book>> exploreRankings;
@@ -48,6 +49,7 @@ class NovelState {
     this.isSearchLoading = false,
     this.isContentLoading = false,
     this.error,
+    this.searchError,
     this.exploreRankings = const {},
     this.isRankingsLoading = false,
     this.isTtsPlaying = false,
@@ -70,6 +72,7 @@ class NovelState {
     bool? isSearchLoading,
     bool? isContentLoading,
     String? error,
+    String? searchError,
     Map<String, List<Book>>? exploreRankings,
     bool? isRankingsLoading,
     bool? isTtsPlaying,
@@ -93,6 +96,7 @@ class NovelState {
       isSearchLoading: isSearchLoading ?? this.isSearchLoading,
       isContentLoading: isContentLoading ?? this.isContentLoading,
       error: error,
+      searchError: searchError,
       exploreRankings: exploreRankings ?? this.exploreRankings,
       isRankingsLoading: isRankingsLoading ?? this.isRankingsLoading,
       isTtsPlaying: isTtsPlaying ?? this.isTtsPlaying,
@@ -272,7 +276,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
   }
 
   void clearSearchState() {
-    state = state.copyWith(searchResults: [], error: null);
+    state = state.copyWith(searchResults: [], error: null, searchError: null);
   }
 
   @override
@@ -336,7 +340,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
 
   /// 2. Search novels via real-time stream (with dynamic Web compatibility fallback)
   Future<void> search(String q, bool inAbyss) async {
-    state = state.copyWith(isSearchLoading: true, error: null, searchResults: []);
+    state = state.copyWith(isSearchLoading: true, error: null, searchError: null, searchResults: []);
     try {
       if (kIsWeb) {
         // Dynamic Fallback: Web environment has constraints on EventSource/SSE streams.
@@ -371,7 +375,7 @@ class NovelNotifier extends StateNotifier<NovelState> {
       }
       state = state.copyWith(isSearchLoading: false);
     } catch (e) {
-      state = state.copyWith(isSearchLoading: false, error: e.toString());
+      state = state.copyWith(isSearchLoading: false, searchError: e.toString());
     }
   }
 

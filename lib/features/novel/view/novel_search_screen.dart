@@ -7,6 +7,7 @@ import '../model/novel_models.dart';
 import '../provider/novel_provider.dart';
 import 'novel_reader_screen.dart';
 import '../../../../core/widgets/dynamic_background.dart';
+import '../../../../core/storage/local_storage.dart';
 
 class NovelSearchScreen extends ConsumerStatefulWidget {
   final bool inAbyss;
@@ -25,10 +26,12 @@ class NovelSearchScreen extends ConsumerStatefulWidget {
 class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _hasSearched = false;
+  List<String> _searchHistory = [];
 
   @override
   void initState() {
     super.initState();
+    _loadSearchHistory();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(novelProvider.notifier).clearSearchState();
       if (widget.initialQuery != null) {
@@ -36,6 +39,50 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
         _performSearch();
       }
     });
+  }
+
+  void _loadSearchHistory() {
+    final storage = ref.read(localStorageServiceProvider);
+    final key = widget.inAbyss ? 'novel_abyss_search_history' : 'novel_search_history';
+    setState(() {
+      _searchHistory = storage.getStringList(key) ?? [];
+    });
+  }
+
+  Future<void> _saveSearchHistory(List<String> history) async {
+    final storage = ref.read(localStorageServiceProvider);
+    final key = widget.inAbyss ? 'novel_abyss_search_history' : 'novel_search_history';
+    await storage.setStringList(key, history);
+  }
+
+  void _addToHistory(String query) {
+    if (query.isEmpty) return;
+    final history = List<String>.from(_searchHistory);
+    history.remove(query);
+    history.insert(0, query);
+    if (history.length > 15) {
+      history.removeRange(15, history.length);
+    }
+    setState(() {
+      _searchHistory = history;
+    });
+    _saveSearchHistory(history);
+  }
+
+  void _removeFromHistory(String query) {
+    final history = List<String>.from(_searchHistory);
+    history.remove(query);
+    setState(() {
+      _searchHistory = history;
+    });
+    _saveSearchHistory(history);
+  }
+
+  void _clearHistory() {
+    setState(() {
+      _searchHistory = [];
+    });
+    _saveSearchHistory([]);
   }
 
   @override
@@ -50,6 +97,7 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
     setState(() {
       _hasSearched = true;
     });
+    _addToHistory(query);
     ref.read(novelProvider.notifier).search(query, widget.inAbyss);
   }
 
@@ -136,6 +184,127 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
     );
   }
 
+  Widget _buildSearchHistory(Color themeColor) {
+    if (_searchHistory.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.manage_search_rounded, size: 64, color: themeColor.withOpacity(0.4)),
+            const SizedBox(height: 16),
+            Text(
+              '搜索结果采用并发加速获取，去杂存真',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '历史搜索',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: onSurface.withOpacity(0.8),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline_rounded, color: onSurface.withOpacity(0.5), size: 20),
+                onPressed: _clearHistory,
+                tooltip: '清空历史记录',
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 10,
+            children: _searchHistory.map((query) => _buildHistoryChip(query, themeColor)).toList(),
+          ),
+          const SizedBox(height: 48),
+          Center(
+            child: Column(
+              children: [
+                Icon(Icons.manage_search_rounded, size: 48, color: themeColor.withOpacity(0.25)),
+                const SizedBox(height: 12),
+                Text(
+                  '搜索结果采用并发加速获取，去杂存真',
+                  style: TextStyle(color: onSurface.withOpacity(0.3), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryChip(String query, Color themeColor) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: onSurface.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: onSurface.withOpacity(0.08), width: 0.8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            _searchController.text = query;
+            _performSearch();
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(left: 12, right: 6, top: 5, bottom: 5),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    query,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: onSurface.withOpacity(0.85),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _removeFromHistory(query),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: onSurface.withOpacity(0.4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildResultsContent(NovelState state, Color themeColor) {
     final theme = Theme.of(context);
     final onSurface = theme.colorScheme.onSurface;
@@ -156,29 +325,17 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
       );
     }
 
-    if (state.error != null && state.searchResults.isEmpty) {
+    if (state.searchError != null && state.searchResults.isEmpty) {
       return Center(
         child: Text(
-          '⚠️ 检索失败: ${state.error}',
+          '⚠️ 检索失败: ${state.searchError}',
           style: const TextStyle(color: Colors.redAccent, fontSize: 13),
         ),
       );
     }
 
     if (!_hasSearched) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.manage_search_rounded, size: 64, color: themeColor.withOpacity(0.4)),
-            const SizedBox(height: 16),
-            Text(
-              '搜索结果采用并发加速获取，去杂存真',
-              style: TextStyle(color: onSurface.withOpacity(0.4), fontSize: 13),
-            ),
-          ],
-        ),
-      );
+      return _buildSearchHistory(themeColor);
     }
 
     if (state.searchResults.isEmpty) {
@@ -199,7 +356,7 @@ class _NovelSearchScreenState extends ConsumerState<NovelSearchScreen> {
 
     return Column(
       children: [
-        if (state.error != null) ...[
+        if (state.searchError != null) ...[
           Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
