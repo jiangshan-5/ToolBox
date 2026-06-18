@@ -11,7 +11,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 
-import '../../../../core/network/api_client.dart';
 import '../../auth/provider/auth_provider.dart';
 import '../../../features/dashboard/provider/tools_provider.dart';
 import '../../../../core/storage/local_storage.dart';
@@ -65,10 +64,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   // Track AudioPlayers for each channel
   final Map<String, AudioPlayer> _players = {};
 
-  // Visualizer timer and random bars height
-  Timer? _visualizerTimer;
-  final List<double> _visualizerHeights = List.generate(24, (_) => 4.0);
-  final Random _random = Random();
 
   // ===========================================================================
   // 2. BREATHING MEDITATION STATE
@@ -81,9 +76,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   String _breathingPhase = 'inhale'; // inhale, hold, exhale, hold2 (for box)
   int _breathingSecondsRemaining = 0;
   Timer? _breathingTimer;
-  Timer? _bubbleSmoothTimer; // High frequency timer for smooth bubble scaling
-  double _bubbleScale = 1.0;
-  double _elapsedFraction = 0.0; // Current state elapsed fractional progress
 
   // Cumulative parameters
   int _completedCycles = 0;
@@ -243,9 +235,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
-    _visualizerTimer?.cancel();
     _breathingTimer?.cancel();
-    _bubbleSmoothTimer?.cancel();
     _sleepTimer?.cancel();
     _dragEndTimer?.cancel();
     FlutterVolumeController.removeListener();
@@ -485,7 +475,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       final hasActive = _channelActive.values.any((isActive) => isActive);
       if (!hasActive) {
         _isMixerPlaying = false;
-        _visualizerTimer?.cancel();
       }
     });
 
@@ -664,7 +653,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       for (var key in _channelActive.keys) {
         _channelActive[key] = false;
       }
-      _visualizerTimer?.cancel();
       _secondsRemaining = 0;
     });
     _syncAudioPlayback();
@@ -697,15 +685,12 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
           final firstId = _remoteSounds.isNotEmpty ? _remoteSounds[0]['id'] : defaultWhiteNoiseSounds[0]['id'];
           _channelActive[firstId] = true;
         }
-        _startVisualizerAnimation();
         _logMeditationTelemetry('mixer_start', {
           'active_channels': _channelActive.entries
               .where((e) => e.value)
               .map((e) => e.key)
               .toList(),
         });
-      } else {
-        _visualizerTimer?.cancel();
       }
       _syncAudioPlayback();
     });
@@ -716,47 +701,31 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       _channelActive[id] = !(_channelActive[id] ?? false);
       if (_channelActive[id] == true) {
         _isMixerPlaying = true;
-        _startVisualizerAnimation();
         _logMeditationTelemetry('channel_enable', {'channel_id': id});
       } else {
         final hasActive = _channelActive.values.any((isActive) => isActive);
         if (!hasActive) {
           _isMixerPlaying = false;
-          _visualizerTimer?.cancel();
         }
       }
       _syncAudioPlayback();
     });
   }
 
-  void _startVisualizerAnimation() {
-    _visualizerTimer?.cancel();
-    _visualizerTimer = Timer.periodic(const Duration(milliseconds: 100), (
-      timer,
-    ) {
-      if (!_isMixerPlaying) {
-        timer.cancel();
-        return;
+  double _getMaxWaveHeight() {
+    double totalVolumeWeight = 0.0;
+    int activeCount = 0;
+    final allSounds = [..._localSounds, ..._remoteSounds];
+    for (var sound in allSounds) {
+      if (_channelActive[sound['id']] == true) {
+        totalVolumeWeight += _channelVolumes[sound['id']] ?? 0.5;
+        activeCount++;
       }
-      setState(() {
-        double totalVolumeWeight = 0.0;
-        int activeCount = 0;
-        final allSounds = [..._localSounds, ..._remoteSounds];
-        for (var sound in allSounds) {
-          if (_channelActive[sound['id']] == true) {
-            totalVolumeWeight += _channelVolumes[sound['id']] ?? 0.5;
-            activeCount++;
-          }
-        }
-        final double volumeAvg = activeCount > 0
-            ? (totalVolumeWeight / activeCount)
-            : 0.0;
-        final double maxWaveHeight = 8.0 + (volumeAvg * 34.0);
-        for (var i = 0; i < _visualizerHeights.length; i++) {
-          _visualizerHeights[i] = 3.0 + _random.nextDouble() * maxWaveHeight;
-        }
-      });
-    });
+    }
+    final double volumeAvg = activeCount > 0
+        ? (totalVolumeWeight / activeCount)
+        : 0.0;
+    return 8.0 + (volumeAvg * 34.0);
   }
 
   // ===========================================================================
@@ -780,7 +749,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       _breathingPhase = phases[0];
       _breathingSecondsRemaining = durations[_breathingPhase]!;
       _completedCycles = 0;
-      _elapsedFraction = 0.0;
     });
     _logMeditationTelemetry('breathing_coach_start', {
       'mode': _activeBreathingMode,
@@ -810,57 +778,12 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         });
       }
     });
-
-    const int updatePeriodMs = 40;
-    int elapsedTicks = 0;
-
-    _bubbleSmoothTimer = Timer.periodic(
-      Duration(milliseconds: updatePeriodMs),
-      (timer) {
-        if (!mounted || !_isBreathingActive) {
-          timer.cancel();
-          return;
-        }
-
-        final currentDuration = durations[_breathingPhase]!;
-        elapsedTicks = (elapsedTicks + updatePeriodMs);
-        final currentSecondsElapsed =
-            currentDuration - _breathingSecondsRemaining;
-
-        setState(() {
-          final double ratio =
-              (currentSecondsElapsed + (elapsedTicks % 1000) / 1000.0) /
-              currentDuration;
-          _elapsedFraction = ratio.clamp(0.0, 1.0);
-          switch (_breathingPhase) {
-            case 'inhale':
-              _bubbleScale = 1.0 + (0.8 * _elapsedFraction);
-              break;
-            case 'hold':
-              _bubbleScale =
-                  1.8 +
-                  sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.03;
-              break;
-            case 'exhale':
-              _bubbleScale = 1.8 - (0.8 * _elapsedFraction);
-              break;
-            case 'hold2':
-              _bubbleScale =
-                  1.0 +
-                  sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.01;
-              break;
-          }
-        });
-      },
-    );
   }
 
   void _stopBreathingCoach() {
     _breathingTimer?.cancel();
-    _bubbleSmoothTimer?.cancel();
     setState(() {
       _isBreathingActive = false;
-      _bubbleScale = 1.0;
       _breathingPhase = 'inhale';
       _breathingSecondsRemaining = 0;
     });
@@ -1087,12 +1010,11 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
         NoiseBreathingBubble(
           isBreathingActive: _isBreathingActive,
           glowColor: glowColor,
-          bubbleScale: _bubbleScale,
-          elapsedFraction: _elapsedFraction,
           breathingSecondsRemaining: _breathingSecondsRemaining,
           completedCycles: _completedCycles,
           breathingPhase: _breathingPhase,
           onToggle: _toggleBreathingCoach,
+          phaseDuration: activeConfig['durations'][_breathingPhase] ?? 4,
         ),
         const SizedBox(height: 20),
         Text(
@@ -1200,7 +1122,7 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
       children: [
         NoiseVisualizer(
           isMixerPlaying: _isMixerPlaying,
-          visualizerHeights: _visualizerHeights,
+          maxWaveHeight: _getMaxWaveHeight(),
           onToggleMixerPlay: _toggleMixerPlay,
         ),
         const SizedBox(height: 20),
@@ -1351,7 +1273,6 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                     _channelVolumes[key] = newVol;
                   }
                   _isMixerPlaying = true;
-                  _startVisualizerAnimation();
                 });
                 FlutterVolumeController.setVolume(newVol, stream: AudioStream.music).catchError((_) => null);
               },

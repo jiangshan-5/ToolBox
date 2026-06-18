@@ -64,9 +64,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                     const SizedBox(width: 24),
                     Expanded(
                       flex: 2,
-                      child: PersonalCenterPanel(
-                        email: widget.userEmail,
-                      ),
+                      child: PersonalCenterPanel(email: widget.userEmail),
                     ),
                   ],
                 )
@@ -77,7 +75,7 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                   widget.isWide,
                 ),
         ),
-        const SizedBox(height: 80),
+        const SizedBox(height: 112),
       ],
     );
   }
@@ -104,7 +102,8 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             '主题风格设置',
             Colors.pinkAccent,
             subtitle: '当前主题: ${ref.watch(themePresetProvider).name}',
-            onTap: () => ProfileThemeDialogs.showThemeSelectionBottomSheet(context, ref),
+            onTap: () =>
+                ProfileThemeDialogs.showThemeSelectionBottomSheet(context, ref),
           ),
           _buildListTile(
             Icons.straighten_rounded,
@@ -176,7 +175,6 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
             Colors.orangeAccent,
             onTap: () => ProfileDialogs.showChangePasswordDialog(context, ref),
           ),
-
         ]),
         _buildSettingsGroup('数据与云端', [
           _buildListTile(
@@ -213,7 +211,11 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
               '个人中心与数据日志',
               primaryColor,
               subtitle: '查看个人状态及数据库 Telemetry 实况',
-              onTap: () => ProfileDialogs.showPersonalCenterBottomSheet(context, ref, email),
+              onTap: () => ProfileDialogs.showPersonalCenterBottomSheet(
+                context,
+                ref,
+                email,
+              ),
             ),
         ]),
         _buildSettingsGroup('Sandbox 沙盒引擎', [
@@ -272,17 +274,11 @@ class _ProfileTabViewState extends ConsumerState<ProfileTabView> {
                         ),
                         title: Text(
                           item.name,
-                          style: TextStyle(
-                            color: subTextColor,
-                            fontSize: 13,
-                          ),
+                          style: TextStyle(color: subTextColor, fontSize: 13),
                         ),
                         subtitle: Text(
                           '1 ${item.fromUnit} = ${item.factor} ${item.toUnit} (+${item.offset})',
-                          style: TextStyle(
-                            color: faintTextColor,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: faintTextColor, fontSize: 11),
                         ),
                         trailing: IconButton(
                           icon: const Icon(

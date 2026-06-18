@@ -25,28 +25,69 @@ class ParallaxGlassCard extends StatefulWidget {
 }
 
 class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
+  static final ValueNotifier<Offset> _globalTilt = ValueNotifier(Offset.zero);
+  static StreamSubscription<AccelerometerEvent>?
+  _globalAccelerometerSubscription;
+  static DateTime _lastTiltUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+  static int _activeTiltCards = 0;
+
+  static const Duration _tiltFrameInterval = Duration(milliseconds: 66);
+  static const double _minimumTiltDelta = 0.15;
+
   double _pitch = 0.0;
   double _roll = 0.0;
   double _scale = 1.0;
-  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
+  VoidCallback? _tiltListener;
+
+  bool get _usesMotionTilt => widget.tiltSensitivity > 0;
 
   @override
   void initState() {
     super.initState();
-    try {
-      _accelerometerSubscription = accelerometerEventStream().listen((
-        AccelerometerEvent event,
-      ) {
-        if (mounted) {
-          setState(() {
-            // Cap the max tilt to prevent extreme flips
-            double clampedX = event.x.clamp(-10.0, 10.0);
-            double clampedY = event.y.clamp(-10.0, 10.0);
-            _roll = clampedX * widget.tiltSensitivity;
-            _pitch = clampedY * widget.tiltSensitivity;
-          });
-        }
+    if (!_usesMotionTilt) return;
+
+    _tiltListener = () {
+      if (!mounted) return;
+      final tilt = _globalTilt.value;
+      final nextRoll = tilt.dx * widget.tiltSensitivity;
+      final nextPitch = tilt.dy * widget.tiltSensitivity;
+      if ((nextRoll - _roll).abs() < 0.002 &&
+          (nextPitch - _pitch).abs() < 0.002) {
+        return;
+      }
+      setState(() {
+        _roll = nextRoll;
+        _pitch = nextPitch;
       });
+    };
+    _globalTilt.addListener(_tiltListener!);
+    _activeTiltCards++;
+    _ensureAccelerometerSubscription();
+  }
+
+  static void _ensureAccelerometerSubscription() {
+    if (_globalAccelerometerSubscription != null) return;
+    try {
+      _globalAccelerometerSubscription = accelerometerEventStream().listen(
+        (AccelerometerEvent event) {
+          final now = DateTime.now();
+          if (now.difference(_lastTiltUpdate) < _tiltFrameInterval) return;
+          _lastTiltUpdate = now;
+
+          // Cap the max tilt to prevent extreme flips.
+          final nextTilt = Offset(
+            event.x.clamp(-10.0, 10.0).toDouble(),
+            event.y.clamp(-10.0, 10.0).toDouble(),
+          );
+          if ((nextTilt - _globalTilt.value).distance < _minimumTiltDelta) {
+            return;
+          }
+          _globalTilt.value = nextTilt;
+        },
+        onError: (Object error) {
+          debugPrint('Accelerometer not available: $error');
+        },
+      );
     } catch (e) {
       // Fallback if device has no accelerometer
       debugPrint('Accelerometer not available: $e');
@@ -55,7 +96,16 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
 
   @override
   void dispose() {
-    _accelerometerSubscription?.cancel();
+    final listener = _tiltListener;
+    if (listener != null) {
+      _globalTilt.removeListener(listener);
+      _activeTiltCards = _activeTiltCards > 0 ? _activeTiltCards - 1 : 0;
+      if (_activeTiltCards == 0) {
+        _globalAccelerometerSubscription?.cancel();
+        _globalAccelerometerSubscription = null;
+        _globalTilt.value = Offset.zero;
+      }
+    }
     super.dispose();
   }
 
@@ -66,7 +116,7 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
       ..setEntry(3, 2, 0.001) // perspective
       ..rotateX(-_pitch) // tilt up/down
       ..rotateY(-_roll) // tilt left/right
-      ..scale(_scale); // dynamic scale feedback
+      ..scaleByDouble(_scale, _scale, 1, 1); // dynamic scale feedback
 
     return Listener(
       onPointerDown: (_) {
@@ -96,10 +146,12 @@ class _ParallaxGlassCardState extends State<ParallaxGlassCard> {
           );
         },
         child: GlassCard(
-          onTap: () {
-            HapticFeedback.lightImpact(); // Micro-interaction vibration
-            if (widget.onTap != null) widget.onTap!();
-          },
+          onTap: widget.onTap == null
+              ? null
+              : () {
+                  HapticFeedback.lightImpact(); // Micro-interaction vibration
+                  widget.onTap!();
+                },
           borderColor: widget.borderColor,
           glowColor: widget.glowColor,
           child: widget.child,

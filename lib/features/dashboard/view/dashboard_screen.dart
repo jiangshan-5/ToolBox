@@ -19,7 +19,9 @@ import 'widgets/workbench_tab_view.dart';
 import 'widgets/profile_tab_view.dart';
 
 /// Riverpod Provider for System Announcements
-final announcementsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
+final announcementsProvider = FutureProvider.autoDispose<List<dynamic>>((
+  ref,
+) async {
   final apiClient = ref.watch(apiClientProvider);
   final response = await apiClient.instance.get('/system/announcements');
   return response.data as List<dynamic>;
@@ -65,9 +67,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _connectedUrl = baseUrl;
 
     String wsUrl =
-        '${baseUrl
-            .replaceAll('http://', 'ws://')
-            .replaceAll('https://', 'wss://')}/system/ws/updates';
+        '${baseUrl.replaceAll('http://', 'ws://').replaceAll('https://', 'wss://')}/system/ws/updates';
 
     try {
       _socket = await WebSocket.connect(
@@ -83,13 +83,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               final changelog = data['changelog'] as String;
               final downloadUrl = data['download_url'] as String;
               final forceUpdate = data['force_update'] as bool;
-              
+
               final packageInfo = ref.read(packageInfoProvider);
-              final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
+              final currentVersionCode =
+                  int.tryParse(packageInfo.buildNumber) ?? 0;
 
               if (versionCode > currentVersionCode) {
                 final prefs = ref.read(sharedPreferencesProvider);
-                final ignoredVersion = prefs.getInt('ignored_version_code') ?? 0;
+                final ignoredVersion =
+                    prefs.getInt('ignored_version_code') ?? 0;
                 if (forceUpdate || versionCode > ignoredVersion) {
                   if (mounted) {
                     UpdateDialog.show(
@@ -129,8 +131,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
-
-
   /// Perform system update validation
   Future<void> _checkForUpdates() async {
     if (kIsWeb) return;
@@ -147,10 +147,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final changelog = data['changelog'] as String;
         final downloadUrl = data['download_url'] as String;
         final forceUpdate = data['force_update'] as bool;
-        
+
         final packageInfo = ref.read(packageInfoProvider);
         final currentVersionCode = int.tryParse(packageInfo.buildNumber) ?? 0;
-        
+
         if (versionCode > currentVersionCode) {
           final prefs = ref.read(sharedPreferencesProvider);
           final ignoredVersion = prefs.getInt('ignored_version_code') ?? 0;
@@ -207,7 +207,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   topRight: Radius.circular(30),
                 ),
                 border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.black.withOpacity(0.08),
                   width: 1.2,
                 ),
               ),
@@ -228,31 +230,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const SizedBox(height: 20),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.notifications_active_rounded,
-                              color: primaryColor,
-                              size: 24,
+                        Icon(
+                          Icons.notifications_active_rounded,
+                          color: primaryColor,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '安全公告与通告中心',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '安全公告与通告中心',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                         IconButton(
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: subTextColor,
-                          ),
+                          icon: Icon(Icons.close_rounded, color: subTextColor),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ],
@@ -260,20 +258,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Toolbox Pro 核心安全隔离通报与版本日志',
-                      style: TextStyle(color: subTextColor.withOpacity(0.6), fontSize: 12),
+                      style: TextStyle(
+                        color: subTextColor.withOpacity(0.6),
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Expanded(
                       child: Consumer(
                         builder: (context, ref, child) {
-                          final announcementsAsync = ref.watch(announcementsProvider);
+                          final announcementsAsync = ref.watch(
+                            announcementsProvider,
+                          );
                           return announcementsAsync.when(
                             data: (announcements) {
                               if (announcements.isEmpty) {
                                 return Center(
                                   child: Text(
                                     '📭 暂无任何公告通知',
-                                    style: TextStyle(color: subTextColor, fontSize: 13),
+                                    style: TextStyle(
+                                      color: subTextColor,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 );
                               }
@@ -281,10 +287,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 physics: const BouncingScrollPhysics(),
                                 itemCount: announcements.length,
                                 itemBuilder: (context, index) {
-                                  final item = announcements[index] as Map<String, dynamic>;
+                                  final item =
+                                      announcements[index]
+                                          as Map<String, dynamic>;
                                   return _buildNotificationCard(
                                     context: context,
-                                    icon: _getIconData(item['icon']?.toString() ?? ''),
+                                    icon: _getIconData(
+                                      item['icon']?.toString() ?? '',
+                                    ),
                                     title: item['title']?.toString() ?? '',
                                     time: item['time']?.toString() ?? '',
                                     content: item['content']?.toString() ?? '',
@@ -298,12 +308,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               );
                             },
                             loading: () => Center(
-                              child: CircularProgressIndicator(color: primaryColor),
+                              child: CircularProgressIndicator(
+                                color: primaryColor,
+                              ),
                             ),
                             error: (err, stack) => Center(
                               child: Text(
                                 '⚠️ 加载公告失败: $err',
-                                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           );
@@ -321,13 +336,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   IconData _getIconData(String iconName) => switch (iconName) {
-        'rocket_launch_rounded' => Icons.rocket_launch_rounded,
-        'shield_rounded' => Icons.shield_rounded,
-        'dns_rounded' => Icons.dns_rounded,
-        _ => Icons.notifications_rounded,
-      };
+    'rocket_launch_rounded' => Icons.rocket_launch_rounded,
+    'shield_rounded' => Icons.shield_rounded,
+    'dns_rounded' => Icons.dns_rounded,
+    _ => Icons.notifications_rounded,
+  };
 
-  Color _getBadgeColor(String colorName, Color primaryColor) => switch (colorName) {
+  Color _getBadgeColor(String colorName, Color primaryColor) =>
+      switch (colorName) {
         'primary' => primaryColor,
         'greenAccent' => Colors.greenAccent,
         'cyanAccent' => Colors.cyanAccent,
@@ -353,10 +369,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
+        color: isDark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.01),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.05),
+          color: isDark
+              ? Colors.white.withOpacity(0.04)
+              : Colors.black.withOpacity(0.05),
         ),
       ),
       child: Column(
@@ -380,10 +400,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ),
               ),
-              Text(
-                time,
-                style: TextStyle(color: timeColor, fontSize: 11),
-              ),
+              Text(time, style: TextStyle(color: timeColor, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 12),
@@ -406,11 +423,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             content,
-            style: TextStyle(
-              color: subTextColor,
-              fontSize: 12,
-              height: 1.5,
-            ),
+            style: TextStyle(color: subTextColor, fontSize: 12, height: 1.5),
           ),
         ],
       ),
@@ -419,7 +432,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
     final isDark = theme.brightness == Brightness.dark;
@@ -430,6 +442,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final userNickname = ref.watch(authProvider).nickname ?? "Toolbox User";
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 950;
+    final horizontalPadding = isWide ? 28.0 : (size.width < 380 ? 16.0 : 20.0);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -462,9 +475,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const DynamicBackground(child: SizedBox.expand()),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 8.0,
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: isWide ? 12.0 : 8.0,
               ),
               child: _buildActiveTabContent(userEmail, userNickname, isWide),
             ),
@@ -536,7 +549,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildAnalyticsHeader(),
             const SizedBox(height: 16),
             const Expanded(child: AnalyticsView()),
-            const SizedBox(height: 80),
+            const SizedBox(height: 112),
           ],
         );
       case 2:

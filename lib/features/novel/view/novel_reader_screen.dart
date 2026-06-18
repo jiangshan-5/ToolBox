@@ -62,6 +62,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     [const Color(0xFFE8F5E9), const Color(0xFF1B5E20), '护眼'],
     [const Color(0xFF1A1A24), const Color(0xFFA0A0C0), '极夜'],
     [const Color(0xFF0A0714), const Color(0xFFD0D0FF), '深渊'],
+    [const Color(0xFF000000), const Color(0xFFE0E0E0), 'OLED纯黑'],
+    [const Color(0xFF0D0F08), const Color(0xFF00FF66), '黑客帝国'],
+    [const Color(0xFF140D20), const Color(0xFFE2A8FF), '霓虹玻璃'],
   ];
   int _activeThemeIndex = 0;
 
@@ -631,31 +634,6 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
     );
   }
 
-  Widget _buildDockButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-    required Color themeText,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Icon(
-              icon,
-              color: themeText.withOpacity(0.7),
-              size: 20,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildBottomNavigationBar(Color themeText, NovelState state) {
     final theme = Theme.of(context);
@@ -831,7 +809,6 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> with Sing
       builder: (context) {
         final theme = Theme.of(context);
         final surfaceColor = theme.colorScheme.surface;
-        final onSurfaceColor = theme.colorScheme.onSurface;
         final primaryColor = theme.colorScheme.primary;
 
         return AlertDialog(

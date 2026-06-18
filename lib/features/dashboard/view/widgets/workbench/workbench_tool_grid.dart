@@ -53,11 +53,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
     {'title': '随机选择生成器', 'key': 'randomizer', 'desc': '极速随机生成数字，支持快速去重'},
     {'title': '标准单位转换器', 'key': 'converter', 'desc': '多种体积长度质量快速一键互转'},
     {'title': '健康 BMI 计算器', 'key': 'bmi_calculator', 'desc': '标准人体健康指标评测云储存'},
-    {
-      'title': '字数与字符统计器',
-      'key': 'word_counter',
-      'desc': '统计文本 of 字数、词数及中英文字符占比',
-    },
+    {'title': '字数与字符统计器', 'key': 'word_counter', 'desc': '统计文本字数、词数及中英文字符占比'},
     {
       'title': '密码生成与强度分析',
       'key': 'password_generator',
@@ -66,35 +62,23 @@ class WorkbenchToolGrid extends ConsumerWidget {
     {'title': '多时区时钟与番茄钟', 'key': 'world_clock', 'desc': '多时区对照与高精度番茄专注时钟'},
     {'title': '白噪音专注冥想', 'key': 'white_noise', 'desc': '精选自然白噪音辅助冥想与高效专注'},
     {
-      'title': '极极简 Markdown 编辑器',
+      'title': '极简 Markdown 编辑器',
       'key': 'markdown_editor',
-      'desc': '极极简 Markdown 实时预览排版与字数统计',
+      'desc': '极简 Markdown 实时预览排版与字数统计',
     },
-    {
-      'title': 'AI 智能多轮对话助理',
-      'key': 'ai_chat',
-      'desc': '结合大语言模型的高强度多轮文本 analysis',
-    },
+    {'title': 'AI 智能多轮对话助理', 'key': 'ai_chat', 'desc': '结合大语言模型的高强度多轮文本分析'},
     {
       'title': 'AI 写作引擎',
       'key': 'ai_text_processor',
       'desc': '一键精准翻译、句式优雅润色与摘要提取',
     },
-    {
-      'title': 'LED 手持弹幕',
-      'key': 'led_banner',
-      'desc': '炫彩手持霓虹灯弹幕，支持多种闪烁与滚动特效',
-    },
+    {'title': 'LED 手持弹幕', 'key': 'led_banner', 'desc': '炫彩手持霓虹灯弹幕，支持多种闪烁与滚动特效'},
     {
       'title': '开发者沙盒编码盒',
       'key': 'dev_encoder',
       'desc': '支持 Base64、URL 编码转换，MD5/SHA256 哈希与 JSON 格式化',
     },
-    {
-      'title': '今日热闻与卡片工坊',
-      'key': 'daily_board',
-      'desc': '60秒读懂世界早报与炫彩卡片一言工坊',
-    },
+    {'title': '今日热闻与卡片工坊', 'key': 'daily_board', 'desc': '60秒读懂世界早报与炫彩卡片一言工坊'},
     {
       'title': '智能去噪小说阅读器',
       'key': 'novel_reader',
@@ -110,7 +94,9 @@ class WorkbenchToolGrid extends ConsumerWidget {
   }
 
   bool _isLargeTool(String toolKey) {
-    return toolKey == 'ai_chat' || toolKey == 'ai_text_processor' || toolKey == 'novel_reader';
+    return toolKey == 'ai_chat' ||
+        toolKey == 'ai_text_processor' ||
+        toolKey == 'novel_reader';
   }
 
   Widget _buildToolItem({
@@ -175,7 +161,10 @@ class WorkbenchToolGrid extends ConsumerWidget {
                             if (toolKey.startsWith('ai_')) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1.5,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [Colors.purpleAccent, color],
@@ -194,11 +183,17 @@ class WorkbenchToolGrid extends ConsumerWidget {
                             ] else if (toolKey == 'novel_reader') ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1.5,
+                                ),
                                 decoration: BoxDecoration(
                                   color: color.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+                                  border: Border.all(
+                                    color: color.withOpacity(0.3),
+                                    width: 0.5,
+                                  ),
                                 ),
                                 child: Text(
                                   'PRO',
@@ -236,7 +231,10 @@ class WorkbenchToolGrid extends ConsumerWidget {
               ),
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 8.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -286,10 +284,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
                           description,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            color: subTextColor,
-                          ),
+                          style: TextStyle(fontSize: 9.5, color: subTextColor),
                         ),
                       ],
                     ),
@@ -302,12 +297,14 @@ class WorkbenchToolGrid extends ConsumerWidget {
     return SizedBox(
       width: width,
       height: isLarge ? 76 : 110,
-      child: _buildReorderableToolCard(
-        toolKey: toolKey,
-        child: _buildWiggleWrapper(
-          child: _buildToolCardWithDeleteBadge(
-            toolKey: toolKey,
-            cardChild: cardChild,
+      child: RepaintBoundary(
+        child: _buildReorderableToolCard(
+          toolKey: toolKey,
+          child: _buildWiggleWrapper(
+            child: _buildToolCardWithDeleteBadge(
+              toolKey: toolKey,
+              cardChild: cardChild,
+            ),
           ),
         ),
       ),
@@ -317,21 +314,17 @@ class WorkbenchToolGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final textColor = theme.brightness == Brightness.dark ? Colors.white : Colors.black87;
+    final textColor = theme.brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
     final isDark = theme.brightness == Brightness.dark;
     final categoriesState = ref.watch(categoriesProvider);
 
     return AnimatedCrossFade(
       duration: const Duration(milliseconds: 400),
-      firstChild: _buildStaticGrid(
-        context,
-        isWide,
-        textColor,
-        isDark,
-      ),
+      firstChild: _buildStaticGrid(context, isWide, textColor, isDark),
       secondChild:
-          (categoriesState.value != null &&
-              categoriesState.value!.isNotEmpty)
+          (categoriesState.value != null && categoriesState.value!.isNotEmpty)
           ? _buildDynamicGrid(
               context,
               categoriesState.value!,
@@ -340,8 +333,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
             )
           : const SizedBox.shrink(),
       crossFadeState:
-          (categoriesState.value == null ||
-              categoriesState.value!.isEmpty)
+          (categoriesState.value == null || categoriesState.value!.isEmpty)
           ? CrossFadeState.showFirst
           : CrossFadeState.showSecond,
     );
@@ -359,10 +351,7 @@ class WorkbenchToolGrid extends ConsumerWidget {
 
     if (categories.isEmpty) {
       return Center(
-        child: Text(
-          '无内置工具，请检查数据库配置',
-          style: TextStyle(color: subTextColor),
-        ),
+        child: Text('无内置工具，请检查数据库配置', style: TextStyle(color: subTextColor)),
       );
     }
     return ListView.builder(
@@ -373,20 +362,22 @@ class WorkbenchToolGrid extends ConsumerWidget {
       itemBuilder: (context, catIndex) {
         final category = categories[catIndex];
         final List<dynamic> catToolsRaw = category['tools'] ?? [];
-        final List<dynamic> catTools = catToolsRaw
-            .where((t) => myToolsKeys.contains(t['tool_key']))
-            .toList()
-          ..sort((a, b) {
-            final idxA = myToolsKeys.indexOf(a['tool_key']);
-            final idxB = myToolsKeys.indexOf(b['tool_key']);
-            return idxA.compareTo(idxB);
-          });
+        final List<dynamic> catTools =
+            catToolsRaw
+                .where((t) => myToolsKeys.contains(t['tool_key']))
+                .toList()
+              ..sort((a, b) {
+                final idxA = myToolsKeys.indexOf(a['tool_key']);
+                final idxB = myToolsKeys.indexOf(b['tool_key']);
+                return idxA.compareTo(idxB);
+              });
         final List<String> catDisabledTools = catToolsRaw
             .map((t) => t['tool_key'] as String)
             .where((key) => !myToolsKeys.contains(key))
             .toList();
 
-        if (catTools.isEmpty && catDisabledTools.isEmpty) return const SizedBox();
+        if (catTools.isEmpty && catDisabledTools.isEmpty)
+          return const SizedBox();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -414,12 +405,12 @@ class WorkbenchToolGrid extends ConsumerWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 final double maxWidth = constraints.maxWidth;
-                int crossAxisCount = isWide
-                    ? (maxWidth > 1100 ? 3 : 2)
-                    : (maxWidth > 600 ? 3 : 2);
-                
+                final crossAxisCount = _resolveCrossAxisCount(maxWidth, isWide);
+
                 const double spacing = 12;
-                final double normalWidth = (maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount;
+                final double normalWidth =
+                    (maxWidth - (crossAxisCount - 1) * spacing) /
+                    crossAxisCount;
 
                 return Wrap(
                   spacing: spacing,
@@ -434,7 +425,9 @@ class WorkbenchToolGrid extends ConsumerWidget {
                       final IconData icon = getToolIcon(toolKey);
                       final isLarge = _isLargeTool(toolKey);
                       final double itemWidth = isLarge
-                          ? (crossAxisCount == 2 ? maxWidth : (2 * normalWidth + spacing))
+                          ? (crossAxisCount == 2
+                                ? maxWidth
+                                : (2 * normalWidth + spacing))
                           : normalWidth;
 
                       return _buildToolItem(
@@ -512,12 +505,11 @@ class WorkbenchToolGrid extends ConsumerWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final double maxWidth = constraints.maxWidth;
-            int crossAxisCount = isWide
-                ? (maxWidth > 1100 ? 3 : 2)
-                : (maxWidth > 600 ? 3 : 2);
-            
+            final crossAxisCount = _resolveCrossAxisCount(maxWidth, isWide);
+
             const double spacing = 12;
-            final double normalWidth = (maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount;
+            final double normalWidth =
+                (maxWidth - (crossAxisCount - 1) * spacing) / crossAxisCount;
 
             return Wrap(
               spacing: spacing,
@@ -531,7 +523,9 @@ class WorkbenchToolGrid extends ConsumerWidget {
                   final IconData icon = getToolIcon(toolKey);
                   final isLarge = _isLargeTool(toolKey);
                   final double itemWidth = isLarge
-                      ? (crossAxisCount == 2 ? maxWidth : (2 * normalWidth + spacing))
+                      ? (crossAxisCount == 2
+                            ? maxWidth
+                            : (2 * normalWidth + spacing))
                       : normalWidth;
 
                   return _buildToolItem(
@@ -567,13 +561,17 @@ class WorkbenchToolGrid extends ConsumerWidget {
       animation: wiggleController,
       builder: (context, child) {
         final angle = sin(wiggleController.value * 2 * pi) * 0.015;
-        return Transform.rotate(
-          angle: angle,
-          child: child,
-        );
+        return Transform.rotate(angle: angle, child: child);
       },
       child: child,
     );
+  }
+
+  int _resolveCrossAxisCount(double maxWidth, bool isWide) {
+    if (isWide) return maxWidth > 1100 ? 3 : 2;
+    if (maxWidth > 620) return 3;
+    if (maxWidth > 340) return 2;
+    return 1;
   }
 
   Widget _buildReorderableToolCard({
@@ -599,13 +597,17 @@ class WorkbenchToolGrid extends ConsumerWidget {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: isHovered ? Border.all(color: Colors.pinkAccent, width: 2) : null,
+            border: isHovered
+                ? Border.all(color: Colors.pinkAccent, width: 2)
+                : null,
           ),
           child: GestureDetector(
             onTap: isEditingTools ? () {} : null,
             child: LongPressDraggable<String>(
               data: toolKey,
-              delay: isEditingTools ? Duration.zero : const Duration(milliseconds: 500),
+              delay: isEditingTools
+                  ? Duration.zero
+                  : const Duration(milliseconds: 500),
               onDragStarted: () {
                 if (!isEditingTools) {
                   onEditModeTriggered();
@@ -616,16 +618,10 @@ class WorkbenchToolGrid extends ConsumerWidget {
                 child: SizedBox(
                   width: 220,
                   height: 90,
-                  child: Opacity(
-                    opacity: 0.8,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: 0.8, child: child),
                 ),
               ),
-              childWhenDragging: Opacity(
-                opacity: 0.25,
-                child: child,
-              ),
+              childWhenDragging: Opacity(opacity: 0.25, child: child),
               child: child,
             ),
           ),
@@ -697,7 +693,11 @@ class WorkbenchToolGrid extends ConsumerWidget {
             );
             return;
           }
-          WorkbenchDialogs.showAddToolsDialog(context, disabledToolsList, onToolAdded);
+          WorkbenchDialogs.showAddToolsDialog(
+            context,
+            disabledToolsList,
+            onToolAdded,
+          );
         },
         borderColor: Colors.transparent,
         child: CustomPaint(
@@ -707,11 +707,16 @@ class WorkbenchToolGrid extends ConsumerWidget {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.005) : Colors.black.withOpacity(0.005),
+              color: isDark
+                  ? Colors.white.withOpacity(0.005)
+                  : Colors.black.withOpacity(0.005),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 12.0,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -726,7 +731,11 @@ class WorkbenchToolGrid extends ConsumerWidget {
                         width: 1,
                       ),
                     ),
-                    child: const Icon(Icons.add_rounded, size: 22, color: Colors.pinkAccent),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      size: 22,
+                      color: Colors.pinkAccent,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(

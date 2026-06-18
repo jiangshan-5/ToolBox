@@ -23,7 +23,8 @@ class WorkbenchTabView extends ConsumerStatefulWidget {
   ConsumerState<WorkbenchTabView> createState() => _WorkbenchTabViewState();
 }
 
-class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with TickerProviderStateMixin {
+class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView>
+    with TickerProviderStateMixin {
   List<String> _recentlyUsed = ['randomizer', 'converter'];
 
   static const List<String> _masterToolKeys = [
@@ -164,20 +165,30 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with Ticker
               onToolClicked: _onDynamicToolClicked,
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 4.0,
+                vertical: 8.0,
+              ),
               child: Row(
                 children: [
                   Icon(Icons.grid_view_rounded, color: primaryColor, size: 16),
                   const SizedBox(width: 8),
-                  Text(
-                    _isEditingTools ? '⚙️ 正在编辑布局 (拖动排序/右上角删除)' : '全部工具分类库',
-                    style: TextStyle(
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black54,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      _isEditingTools ? '⚙️ 正在编辑布局 (拖动排序/右上角删除)' : '全部工具分类库',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white70
+                            : Colors.black54,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: () {
                       setState(() {
@@ -192,7 +203,9 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with Ticker
                       });
                     },
                     icon: Icon(
-                      _isEditingTools ? Icons.check_circle_outline_rounded : Icons.edit_note_rounded,
+                      _isEditingTools
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.edit_note_rounded,
                       size: 16,
                       color: Colors.pinkAccent,
                     ),
@@ -239,7 +252,7 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView> with Ticker
                 });
               },
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 112),
           ],
         ),
       ),

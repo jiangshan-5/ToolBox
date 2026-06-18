@@ -1,31 +1,124 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math';
 import '../../../../core/widgets/glass_card.dart';
 
-class NoiseBreathingBubble extends StatelessWidget {
+class NoiseBreathingBubble extends StatefulWidget {
   final bool isBreathingActive;
   final Color glowColor;
-  final double bubbleScale;
-  final double elapsedFraction;
   final int breathingSecondsRemaining;
   final int completedCycles;
   final String breathingPhase;
   final VoidCallback onToggle;
+  final int phaseDuration;
 
   const NoiseBreathingBubble({
     super.key,
     required this.isBreathingActive,
     required this.glowColor,
-    required this.bubbleScale,
-    required this.elapsedFraction,
     required this.breathingSecondsRemaining,
     required this.completedCycles,
     required this.breathingPhase,
     required this.onToggle,
+    required this.phaseDuration,
   });
 
+  @override
+  State<NoiseBreathingBubble> createState() => _NoiseBreathingBubbleState();
+}
+
+class _NoiseBreathingBubbleState extends State<NoiseBreathingBubble> {
+  Timer? _bubbleSmoothTimer;
+  double _bubbleScale = 1.0;
+  double _elapsedFraction = 0.0;
+  int _elapsedMs = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isBreathingActive) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(NoiseBreathingBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isBreathingActive != oldWidget.isBreathingActive ||
+        widget.breathingPhase != oldWidget.breathingPhase ||
+        widget.phaseDuration != oldWidget.phaseDuration ||
+        widget.breathingSecondsRemaining != oldWidget.breathingSecondsRemaining) {
+      
+      // If phase changes or seconds remaining changes, align the smooth animation
+      if (widget.breathingPhase != oldWidget.breathingPhase) {
+        _elapsedMs = 0;
+      }
+      
+      if (widget.isBreathingActive) {
+        _startTimer();
+      } else {
+        _stopTimer();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _bubbleSmoothTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _bubbleSmoothTimer?.cancel();
+    const int updatePeriodMs = 40;
+    
+    _bubbleSmoothTimer = Timer.periodic(
+      const Duration(milliseconds: updatePeriodMs),
+      (timer) {
+        if (!mounted || !widget.isBreathingActive) {
+          timer.cancel();
+          return;
+        }
+
+        _elapsedMs += updatePeriodMs;
+        final currentSecondsElapsed = widget.phaseDuration - widget.breathingSecondsRemaining;
+
+        setState(() {
+          final double ratio = (currentSecondsElapsed + (_elapsedMs % 1000) / 1000.0) / widget.phaseDuration;
+          _elapsedFraction = ratio.clamp(0.0, 1.0);
+          
+          switch (widget.breathingPhase) {
+            case 'inhale':
+              _bubbleScale = 1.0 + (0.8 * _elapsedFraction);
+              break;
+            case 'hold':
+              _bubbleScale = 1.8 + sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.03;
+              break;
+            case 'exhale':
+              _bubbleScale = 1.8 - (0.8 * _elapsedFraction);
+              break;
+            case 'hold2':
+              _bubbleScale = 1.0 + sin(DateTime.now().millisecondsSinceEpoch / 250.0) * 0.01;
+              break;
+          }
+        });
+      },
+    );
+  }
+
+  void _stopTimer() {
+    _bubbleSmoothTimer?.cancel();
+    _bubbleSmoothTimer = null;
+    setState(() {
+      _bubbleScale = 1.0;
+      _elapsedFraction = 0.0;
+      _elapsedMs = 0;
+    });
+  }
+
   String _getBreathingPhaseEmoji() {
-    if (!isBreathingActive) return '🧘';
-    switch (breathingPhase) {
+    if (!widget.isBreathingActive) return '🧘';
+    switch (widget.breathingPhase) {
       case 'inhale':
         return '🌬️';
       case 'hold':
@@ -39,8 +132,8 @@ class NoiseBreathingBubble extends StatelessWidget {
   }
 
   String _getBreathingPhaseText() {
-    if (!isBreathingActive) return '开始吸气放松调息';
-    switch (breathingPhase) {
+    if (!widget.isBreathingActive) return '开始吸气放松调息';
+    switch (widget.breathingPhase) {
       case 'inhale':
         return '💨 缓慢吸气...';
       case 'hold':
@@ -61,11 +154,11 @@ class NoiseBreathingBubble extends StatelessWidget {
     final Color faintTextColor = isDark ? Colors.white38 : Colors.black54;
 
     return GlassCard(
-      glowColor: isBreathingActive
-          ? glowColor
+      glowColor: widget.isBreathingActive
+          ? widget.glowColor
           : (isDark
-                ? Colors.white.withOpacity(0.04)
-                : Colors.black.withOpacity(0.04)),
+                ? Colors.white.withValues(alpha: 0.04)
+                : Colors.black.withValues(alpha: 0.04)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
         child: Column(
@@ -77,19 +170,18 @@ class NoiseBreathingBubble extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    if (isBreathingActive)
+                    if (widget.isBreathingActive)
                       ...List.generate(2, (idx) {
                         final delayOffset = (idx + 1) / 3.0;
-                        final currentScale = bubbleScale + (delayOffset * 0.15);
+                        final currentScale = _bubbleScale + (delayOffset * 0.15);
                         return Transform.scale(
                           scale: currentScale.clamp(1.0, 2.5),
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: glowColor.withOpacity(
-                                  (0.15 - (idx * 0.05)) *
-                                      (1.0 - elapsedFraction),
+                                color: widget.glowColor.withValues(
+                                  alpha: ((0.15 - (idx * 0.05)) * (1.0 - _elapsedFraction)).clamp(0.0, 1.0),
                                 ),
                                 width: 1.5,
                               ),
@@ -98,7 +190,7 @@ class NoiseBreathingBubble extends StatelessWidget {
                         );
                       }),
                     Transform.scale(
-                      scale: bubbleScale,
+                      scale: _bubbleScale,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         width: 110,
@@ -107,26 +199,26 @@ class NoiseBreathingBubble extends StatelessWidget {
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              isBreathingActive
-                                  ? glowColor.withOpacity(0.25)
+                              widget.isBreathingActive
+                                  ? widget.glowColor.withValues(alpha: 0.25)
                                   : (isDark
-                                        ? Colors.white.withOpacity(0.02)
-                                        : Colors.black.withOpacity(0.03)),
-                              isBreathingActive
-                                  ? glowColor.withOpacity(0.08)
-                                  : Colors.white.withOpacity(0.005),
+                                        ? Colors.white.withValues(alpha: 0.02)
+                                        : Colors.black.withValues(alpha: 0.03)),
+                              widget.isBreathingActive
+                                  ? widget.glowColor.withValues(alpha: 0.08)
+                                  : Colors.white.withValues(alpha: 0.005),
                             ],
                           ),
                           border: Border.all(
-                            color: isBreathingActive
-                                ? glowColor
+                            color: widget.isBreathingActive
+                                ? widget.glowColor
                                 : (isDark ? Colors.white30 : Colors.black26),
-                            width: isBreathingActive ? 2.5 : 1.5,
+                            width: widget.isBreathingActive ? 2.5 : 1.5,
                           ),
                           boxShadow: [
-                            if (isBreathingActive)
+                            if (widget.isBreathingActive)
                               BoxShadow(
-                                color: glowColor.withOpacity(0.35),
+                                color: widget.glowColor.withValues(alpha: 0.35),
                                 blurRadius: 18,
                                 spreadRadius: 2,
                               ),
@@ -156,17 +248,17 @@ class NoiseBreathingBubble extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isBreathingActive
-                  ? '当前周期倒计时：$breathingSecondsRemaining 秒'
+              widget.isBreathingActive
+                  ? '当前周期倒计时：${widget.breathingSecondsRemaining} 秒'
                   : '选择模式开启科学吐纳',
               style: TextStyle(color: faintTextColor, fontSize: 11.5),
             ),
-            if (isBreathingActive && completedCycles > 0) ...[
+            if (widget.isBreathingActive && widget.completedCycles > 0) ...[
               const SizedBox(height: 6),
               Text(
-                '已成功调息：$completedCycles 次循环',
+                '已成功调息：${widget.completedCycles} 次循环',
                 style: TextStyle(
-                  color: glowColor,
+                  color: widget.glowColor,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
@@ -174,7 +266,7 @@ class NoiseBreathingBubble extends StatelessWidget {
             ],
             const SizedBox(height: 20),
             GestureDetector(
-              onTap: onToggle,
+              onTap: widget.onToggle,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 36,
@@ -182,17 +274,17 @@ class NoiseBreathingBubble extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: isBreathingActive
+                    colors: widget.isBreathingActive
                         ? [Colors.redAccent, Colors.deepOrangeAccent]
-                        : [glowColor.withOpacity(0.8), glowColor],
+                        : [widget.glowColor.withValues(alpha: 0.8), widget.glowColor],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: (isBreathingActive ? Colors.redAccent : glowColor)
-                          .withOpacity(0.3),
+                      color: (widget.isBreathingActive ? Colors.redAccent : widget.glowColor)
+                          .withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -202,7 +294,7 @@ class NoiseBreathingBubble extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isBreathingActive
+                      widget.isBreathingActive
                           ? Icons.pause_circle_filled_rounded
                           : Icons.play_arrow_rounded,
                       color: Colors.white,
@@ -210,7 +302,7 @@ class NoiseBreathingBubble extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isBreathingActive ? '停止呼吸向导' : '开始放松调息',
+                      widget.isBreathingActive ? '停止呼吸向导' : '开始放松调息',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,

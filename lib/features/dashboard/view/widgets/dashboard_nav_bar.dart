@@ -22,7 +22,8 @@ class DashboardNavBar extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
 
     // Constrain width on wide screens (BETA/Tablet/Web layout optimization)
-    final double navBarWidth = width > 600 ? 460 : width - 48;
+    final horizontalMargin = width < 360 ? 12.0 : 24.0;
+    final double navBarWidth = width > 600 ? 460 : width - horizontalMargin * 2;
 
     return Positioned(
       bottom: bottomPadding > 0 ? bottomPadding : 20,
@@ -63,8 +64,8 @@ class DashboardNavBar extends StatelessWidget {
                     currentIndex == 0
                         ? -0.926
                         : currentIndex == 1
-                            ? 0.0
-                            : 0.926,
+                        ? 0.0
+                        : 0.926,
                     0.0,
                   ),
                   child: FractionallySizedBox(
@@ -88,7 +89,12 @@ class DashboardNavBar extends StatelessWidget {
                   children: [
                     _buildNavItem(context, 0, Icons.grid_view_rounded, '工作台'),
                     _buildNavItem(context, 1, Icons.bar_chart_rounded, '分析站'),
-                    _buildNavItem(context, 2, Icons.face_retouching_natural_rounded, '个人中心'),
+                    _buildNavItem(
+                      context,
+                      2,
+                      Icons.face_retouching_natural_rounded,
+                      '个人中心',
+                    ),
                   ],
                 ),
               ],
@@ -124,11 +130,7 @@ class DashboardNavBar extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: isSelected ? 24 : 22,
-                ),
+                child: Icon(icon, color: color, size: isSelected ? 24 : 22),
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
@@ -137,9 +139,14 @@ class DashboardNavBar extends StatelessWidget {
                   color: color,
                   fontSize: 10.5,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  letterSpacing: 0.5,
+                  letterSpacing: 0,
                 ),
-                child: Text(label),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                ),
               ),
             ],
           ),
