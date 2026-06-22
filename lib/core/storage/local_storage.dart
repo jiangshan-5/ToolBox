@@ -30,6 +30,11 @@ class LocalStorageService {
   Future<bool> clear() async {
     return await _prefs.clear();
   }
+
+  /// Remove a key
+  Future<bool> remove(String key) async {
+    return await _prefs.remove(key);
+  }
 }
 
 /// Provider for SharedPreferences instance (to be overridden in main.dart)

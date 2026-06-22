@@ -42,6 +42,7 @@ class _WorkbenchTabViewState extends ConsumerState<WorkbenchTabView>
     'dev_encoder',
     'daily_board',
     'novel_reader',
+    'anime_player',
   ];
 
   List<String> _myToolsKeys = [];

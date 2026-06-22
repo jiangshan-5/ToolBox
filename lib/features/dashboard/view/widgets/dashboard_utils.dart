@@ -15,6 +15,7 @@ import '../../../led_banner/view/led_banner_screen.dart';
 import '../../../dev_encoder/view/dev_encoder_screen.dart';
 import '../../../daily_board/view/daily_board_screen.dart';
 import '../../../novel/view/novel_workbench_screen.dart';
+import '../../../anime/view/anime_search_screen.dart';
 
 /// Elite ultra-smooth fade transition route that eliminates page entry stutters
 class FadePageRoute<T> extends PageRouteBuilder<T> {
@@ -48,6 +49,7 @@ Widget? getToolPage(String toolKey) => switch (toolKey) {
       'dev_encoder' => const DeferredPage(title: '开发者沙盒编码盒', child: DevEncoderScreen()),
       'daily_board' => const DeferredPage(title: '今日时事与卡片工坊', child: DailyBoardScreen()),
       'novel_reader' => const DeferredPage(title: '全网去噪智能小说阅读器', child: NovelWorkbenchScreen()),
+      'anime_player' => const DeferredPage(title: '智能高清动漫解析播放舱', child: AnimeSearchScreen()),
       _ => null,
     };
 
@@ -66,6 +68,7 @@ IconData getToolIcon(String toolKey) => switch (toolKey) {
       'dev_encoder' => Icons.code_rounded,
       'daily_board' => Icons.newspaper_rounded,
       'novel_reader' => Icons.auto_stories_rounded,
+      'anime_player' => Icons.live_tv_rounded,
       _ => Icons.build_rounded,
     };
 
@@ -88,6 +91,7 @@ Color getToolColor(String toolKey, BuildContext context) {
     'dev_encoder' => Colors.cyanAccent,
     'daily_board' => Colors.cyanAccent,
     'novel_reader' => Colors.pinkAccent,
+    'anime_player' => Colors.deepOrangeAccent,
     _ => secondaryColor,
   };
 }
@@ -107,6 +111,7 @@ String getToolChineseName(String toolKey) => switch (toolKey) {
       'dev_encoder' => '开发者沙盒编码盒',
       'daily_board' => '今日热闻与卡片工坊',
       'novel_reader' => '智能去噪小说阅读器',
+      'anime_player' => '高清动漫解析播放舱',
       _ => '常用系统工具',
     };
 
